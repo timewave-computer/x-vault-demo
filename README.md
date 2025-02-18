@@ -1,6 +1,6 @@
 # X—Vault Demo App
 
-![X—Vault Demo App Screenshot](screenshot.png)
+![X—Vault Demo App Screenshot](./readme_screenshot.png)
 
 A simple web application for interacting with ERC-4626 vault contracts on Ethereum mainnet in order to integrate with Valence cross-chain vaults. Built with Next.js, Tailwind CSS, and wagmi. Nix reproducible environment and Foundry/Anvil for local Ethereum development.
 
