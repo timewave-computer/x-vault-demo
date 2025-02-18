@@ -1,0 +1,88 @@
+@font-face {
+  font-family: 'Beast';
+  src: url('/src/assets/fonts/Beast.woff2') format('woff2'),
+       url('/src/assets/fonts/Beast.woff') format('woff'),
+       url('/src/assets/fonts/Beast.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Recursive';
+  src: url('https://fonts.googleapis.com/css2?family=Recursive:wght@300..800,CASL@0..1,CRSV@0..1,MONO@0..1,slnt@-15..0&display=swap');
+  font-weight: 300 800;
+  font-display: swap;
+}
+
+:root {
+  --mono: "MONO" 0;
+  --casl: "CASL" 0;
+  --wght: "wght" 400;
+  --slnt: "slnt" 0;
+  --CRSV: "CRSV" 0;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Beast', sans-serif;
+  }
+
+  body {
+    font-family: 'Recursive', sans-serif;
+    font-variation-settings: var(--mono), var(--casl), var(--wght), var(--slnt), var(--CRSV);
+  }
+}
+
+/* Font loading states */
+.fonts-loading * {
+  opacity: 0;
+  transition: opacity 0.2s ease-in;
+}
+
+.fonts-loaded * {
+  opacity: 1;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-20px) rotate(2deg);
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-30px) rotate(-3deg);
+  }
+}
+
+@keyframes float-slower {
+  0%, 100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-15px) rotate(1deg);
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 8s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: float-slow 12s ease-in-out infinite;
+  }
+  .animate-float-slower {
+    animation: float-slower 15s ease-in-out infinite;
+  }
+} 

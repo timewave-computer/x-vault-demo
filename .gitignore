@@ -1,0 +1,42 @@
+# Foundry
+cache/
+out/
+broadcast/
+.anvil.pid
+anvil.log
+deployment.log
+deployed-addresses.txt
+
+# Dependencies
+node_modules/
+lib/
+
+# Environment
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Next.js
+.next/
+next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Nix
+.direnv/
+result
+result-*
+
+# Misc
+.DS_Store
+*.pem
+*.log
+coverage/
+.vercel 
