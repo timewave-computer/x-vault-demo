@@ -1,6 +1,23 @@
-import { useContractWrite, useContractRead, erc20ABI, useAccount } from 'wagmi'
-import { parseEther, parseUnits, formatUnits } from 'viem'
+import { useContractRead, useContractWrite, useAccount } from 'wagmi'
+import { parseUnits, formatUnits } from 'viem'
 
+/**
+ * Minimal ERC-20 ABI for basic token operations
+ * Includes only the functions needed for balance checking and approvals
+ */
+const ERC20_ABI = [
+  'function decimals() view returns (uint8)',
+  'function balanceOf(address account) view returns (uint256)',
+  'function approve(address spender, uint256 amount) returns (bool)',
+] as const
+
+/**
+ * ERC-4626 Vault ABI combining both vault-specific and ERC-20 functions
+ * Includes functions for:
+ * - Deposits and withdrawals
+ * - Asset conversion calculations
+ * - Balance and allowance checks
+ */
 const VAULT_ABI = [
   // ERC-4626 deposit/withdraw functions
   'function deposit(uint256 assets, address receiver) returns (uint256 shares)',
@@ -15,136 +32,130 @@ const VAULT_ABI = [
   'function decimals() view returns (uint8)',
   'function balanceOf(address account) view returns (uint256)',
   'function approve(address spender, uint256 amount) returns (bool)',
-]
+] as const
 
+/**
+ * Hook for interacting with an ERC-4626 vault contract
+ * Provides functionality for:
+ * - Reading token and share balances
+ * - Converting between assets and shares
+ * - Depositing assets and withdrawing shares
+ */
 export function useVaultContract(vaultAddress: string, tokenAddress: string) {
   const { address } = useAccount()
 
-  // Get token decimals
+  // Query token decimals for formatting
   const { data: decimals } = useContractRead({
-    address: tokenAddress as `0x${string}`,
-    abi: erc20ABI,
+    abi: ERC20_ABI,
     functionName: 'decimals',
-  })
-
-  // Get token balance
-  const { data: balance } = useContractRead({
+    chainId: 1337,
     address: tokenAddress as `0x${string}`,
-    abi: erc20ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    watch: true,
   })
 
-  // Get share balance
+  // Query user's token balance
+  const { data: balance } = useContractRead({
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    chainId: 1337,
+    address: tokenAddress as `0x${string}`,
+    args: address ? [address] : undefined,
+  })
+
+  // Query user's vault share balance
   const { data: shareBalance } = useContractRead({
-    address: vaultAddress as `0x${string}`,
     abi: VAULT_ABI,
     functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    watch: true,
-  })
-
-  // Get max redeemable shares
-  const { data: maxShares } = useContractRead({
+    chainId: 1337,
     address: vaultAddress as `0x${string}`,
-    abi: VAULT_ABI,
-    functionName: 'maxRedeem',
     args: address ? [address] : undefined,
-    watch: true,
   })
 
-  // Conversion functions
-  const { data: assetsForShares, refetch: refetchAssetsForShares } = useContractRead({
-    address: vaultAddress as `0x${string}`,
+  // Query maximum withdrawable amount
+  const { data: maxWithdraw } = useContractRead({
     abi: VAULT_ABI,
-    functionName: 'convertToAssets',
-    args: shareBalance ? [shareBalance] : undefined,
+    functionName: 'maxWithdraw',
+    chainId: 1337,
+    address: vaultAddress as `0x${string}`,
+    args: address ? [address] : undefined,
   })
 
-  // Contract write functions
+  // Set up token approval for vault deposits
+  const { writeAsync: approve } = useContractWrite({
+    abi: ERC20_ABI,
+    functionName: 'approve',
+    chainId: 1337,
+    address: tokenAddress as `0x${string}`,
+  })
+
+  // Set up vault deposit function
   const { writeAsync: deposit } = useContractWrite({
-    address: vaultAddress as `0x${string}`,
     abi: VAULT_ABI,
     functionName: 'deposit',
+    chainId: 1337,
+    address: vaultAddress as `0x${string}`,
   })
 
+  // Set up vault withdraw function
   const { writeAsync: withdraw } = useContractWrite({
-    address: vaultAddress as `0x${string}`,
     abi: VAULT_ABI,
     functionName: 'withdraw',
+    chainId: 1337,
+    address: vaultAddress as `0x${string}`,
   })
 
-  const { writeAsync: approveToken } = useContractWrite({
-    address: tokenAddress as `0x${string}`,
-    abi: erc20ABI,
-    functionName: 'approve',
-  })
-
+  /**
+   * Deposit assets into the vault
+   * Handles approval and deposit transaction sequence
+   */
   const depositWithAmount = async (amount: string) => {
-    if (!address) throw new Error('No wallet connected')
-    if (!decimals) throw new Error('Could not get token decimals')
-    if (!balance) throw new Error('Could not get token balance')
-    
-    try {
-      const amountInWei = parseUnits(amount, decimals)
-      
-      // Check if user has enough balance
-      if (balance && amountInWei > BigInt(balance.toString())) {
-        throw new Error(`Insufficient balance. You have ${formatUnits(balance, decimals)} tokens available.`)
-      }
-      
-      // First approve the vault to spend tokens
-      console.log('Approving token spend...')
-      const approveTx = await approveToken({
-        args: [vaultAddress, amountInWei],
-      })
-      
-      console.log('Approved! Now depositing...')
-      const depositTx = await deposit({
-        args: [amountInWei, address],
-      })
+    if (!address || !decimals) return
 
-      console.log('Deposit successful!')
-      return true
+    try {
+      const parsedAmount = parseUnits(amount, decimals)
+      
+      // First approve vault to spend tokens
+      const approveTx = await approve({
+        args: [vaultAddress, parsedAmount],
+      })
+      await approveTx.wait()
+
+      // Then deposit tokens into vault
+      const depositTx = await deposit({
+        args: [parsedAmount, address],
+      })
+      await depositTx.wait()
     } catch (error) {
-      console.error('Deposit failed:', error)
+      console.error('Error depositing:', error)
       throw error
     }
   }
 
+  /**
+   * Withdraw shares from the vault
+   * Converts share amount to assets and executes withdrawal
+   */
   const withdrawShares = async (shares: string) => {
-    if (!address) throw new Error('No wallet connected')
-    if (!decimals) throw new Error('Could not get token decimals')
-    if (!maxShares) throw new Error('Could not get maximum withdrawable shares')
-    
-    try {
-      const sharesInWei = parseUnits(shares, decimals)
-      
-      // Check if user has enough shares
-      if (maxShares && sharesInWei > BigInt(maxShares.toString())) {
-        throw new Error(`Insufficient shares. You have ${formatUnits(maxShares, decimals)} shares available.`)
-      }
-      
-      console.log('Withdrawing shares...')
-      const withdrawTx = await withdraw({
-        args: [sharesInWei, address, address],
-      })
+    if (!address || !decimals) return
 
-      console.log('Withdrawal successful!')
-      return true
+    try {
+      const parsedShares = parseUnits(shares, decimals)
+      
+      // Execute withdrawal transaction
+      const withdrawTx = await withdraw({
+        args: [parsedShares, address, address],
+      })
+      await withdrawTx.wait()
     } catch (error) {
-      console.error('Withdrawal failed:', error)
+      console.error('Error withdrawing:', error)
       throw error
     }
   }
 
   return {
+    balance: balance ? formatUnits(balance, decimals || 18) : undefined,
+    shareBalance: shareBalance ? formatUnits(shareBalance, decimals || 18) : undefined,
+    maxWithdraw: maxWithdraw ? formatUnits(maxWithdraw, decimals || 18) : undefined,
     depositWithAmount,
     withdrawShares,
-    shareBalance: shareBalance ? formatUnits(shareBalance, decimals ?? 18) : '0',
-    maxShares: maxShares ? formatUnits(maxShares, decimals ?? 18) : '0',
-    assetsForShares: assetsForShares ? formatUnits(assetsForShares, decimals ?? 18) : '0',
-    refetchAssetsForShares,
   }
 } 

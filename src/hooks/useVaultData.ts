@@ -1,5 +1,7 @@
+'use client'
+
 import { useState, useEffect } from 'react'
-import { useAccount, useBalance } from 'wagmi'
+import { useAccount, useBalance, type UseBalanceReturnType } from 'wagmi'
 
 export interface VaultData {
   id: string
@@ -65,7 +67,10 @@ export function useVaultData(vaultId?: string) {
   // Get ETH balance
   const { data: ethBalance } = useBalance({
     address,
-    watch: true,
+    query: {
+      enabled: Boolean(address),
+      refetchInterval: 5000,
+    },
   })
 
   useEffect(() => {

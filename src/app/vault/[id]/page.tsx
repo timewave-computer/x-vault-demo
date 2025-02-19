@@ -20,10 +20,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const { 
     depositWithAmount, 
     withdrawShares: withdrawSharesFromVault,
-    shareBalance,
-    maxShares,
-    assetsForShares,
-    refetchAssetsForShares 
+    maxWithdraw,
+    balance
   } = useVaultContract(
     vaultData?.vaultAddress ?? '',
     vaultData?.tokenAddress ?? ''
@@ -211,7 +209,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             <div className="h-6 mt-4 flex justify-between items-center">
               {depositAmount && (
                 <p className="text-sm text-gray-500">
-                  ≈ {assetsForShares} shares
+                  ≈ {balance} {vaultData.token}
                 </p>
               )}
               {!isConnected ? (
@@ -245,10 +243,10 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 <p className="text-sm text-gray-500">Convert your shares to tokens</p>
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-gray-500">
-                    Available: {maxShares} shares
+                    Available: {maxWithdraw} shares
                   </p>
                   <button
-                    onClick={() => setWithdrawShares(maxShares)}
+                    onClick={() => setWithdrawShares(maxWithdraw ?? '0')}
                     className="px-2 py-1 text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded transition-colors"
                   >
                     MAX
@@ -279,9 +277,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
 
             <button
               onClick={handleWithdraw}
-              disabled={!isConnected || !withdrawShares || isWithdrawing || !maxShares || maxShares === '0'}
+              disabled={!isConnected || !withdrawShares || isWithdrawing || !maxWithdraw || maxWithdraw === '0'}
               className={`w-full rounded-lg px-8 py-3 text-base font-beast focus:outline-none focus:ring mt-4 ${
-                !isConnected || !withdrawShares || isWithdrawing || !maxShares || maxShares === '0'
+                !isConnected || !withdrawShares || isWithdrawing || !maxWithdraw || maxWithdraw === '0'
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-accent-purple text-white hover:scale-110 hover:shadow-xl hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all'
               }`}
@@ -293,14 +291,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             <div className="h-6 mt-4 flex justify-between items-center">
               {withdrawShares && (
                 <p className="text-sm text-gray-500">
-                  ≈ {assetsForShares} {vaultData.token}
+                  ≈ {balance} {vaultData.token}
                 </p>
               )}
               {!isConnected ? (
                 <p className="text-sm text-secondary">
                   Connect your wallet to start withdrawing
                 </p>
-              ) : (withdrawShares && (!maxShares || maxShares === '0')) && (
+              ) : (withdrawShares && (!maxWithdraw || maxWithdraw === '0')) && (
                 <p className="text-sm text-secondary">
                   You need vault shares to withdraw
                 </p>
