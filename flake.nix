@@ -55,8 +55,9 @@
             NEW_KEY=$(${pkgs.foundry}/bin/cast wallet new | grep "Private key" | cut -d: -f2 | tr -d ' ')
             NEW_ADDRESS=$(${pkgs.foundry}/bin/cast wallet address "$NEW_KEY")
             
-            # Write to .env file
-            echo "DEPLOYER_PRIVATE_KEY=$NEW_KEY" > .env
+            # Write persistent environment variables to .env
+            echo "# Persistent environment variables" > .env
+            echo "DEPLOYER_PRIVATE_KEY=$NEW_KEY" >> .env
             echo "DEPLOYER_ADDRESS=$NEW_ADDRESS" >> .env
             
             # Export variables to current environment
@@ -78,7 +79,15 @@
               fi
               echo "Current deployer address: $ADDRESS"
             else
-              echo "No private key found in environment"
+              if [ -f .env ]; then
+                echo "Found .env file. Loading variables..."
+                set -a
+                source .env
+                set +a
+                show_key_info
+              else
+                echo "No private key found in environment"
+              fi
             fi
           }
 
@@ -164,6 +173,22 @@
               if [ "$token" = "ETH" ]; then
                 return
               fi
+              
+              # Source .env.local and transform variables
+              if [ -f .env.local ]; then
+                while IFS='=' read -r key value || [ -n "$key" ]; do
+                  if [[ $key == \#* ]] || [ -z "$key" ]; then
+                    continue
+                  fi
+                  # Remove quotes and spaces from value
+                  value=$(echo "$value" | tr -d '"' | tr -d "'")
+                  # Export without NEXT_PUBLIC_ prefix
+                  if [[ $key == NEXT_PUBLIC_* ]]; then
+                    export "''${key#NEXT_PUBLIC_}=$value"
+                  fi
+                done < "''${PWD}/.env.local"
+              fi
+              
               case $token in
                 WETH) echo "$WETH_ADDRESS" ;;
                 USDC) echo "$USDC_ADDRESS" ;;
@@ -200,7 +225,7 @@
               local decimals=$2
               local token=$3
               local formatted
-              formatted=$(cast to-wei "$balance" ether)
+              formatted=$(cast --from-wei "$balance")
               echo "$formatted $token"
             }
 
@@ -301,14 +326,14 @@
               echo "Token Faucet - Manage token balances on local testnet"
               echo
               echo "Usage:"
-              echo "  faucet balance <address>                     - Show token balances"
+              echo "  faucet balance <address>                    - Show token balances"
               echo "  faucet mint <address> <token> <amount>      - Mint tokens to address"
               echo "  faucet burn <address> <token> <amount>      - Burn tokens from address"
               echo
               echo "Available tokens: ETH, WETH, USDC, DAI"
               echo
               echo "Examples:"
-              echo "  faucet balance 0x123...  - Show all token balances"
+              echo "  faucet balance 0x123...       - Show all token balances"
               echo "  faucet mint 0x123... ETH 10   - Set balance to 10 ETH"
               echo "  faucet burn 0x123... ETH 5    - Burn 5 ETH from balance"
               echo "  faucet mint 0x123... WETH 10  - Mint 10 WETH"
@@ -430,7 +455,7 @@
           # Extract and save contract addresses
           echo "Saving deployed addresses..."
           if grep "Deployed addresses:" -A 6 deployment.log > deployed-addresses.txt; then
-            # Extract addresses and save to .env
+            # Extract addresses and save to .env.local
             # Use awk for more reliable extraction
             WETH_ADDRESS=$(awk '/WETH:/ {print $2}' deployed-addresses.txt)
             USDC_ADDRESS=$(awk '/USDC:/ {print $2}' deployed-addresses.txt)
@@ -448,7 +473,7 @@
               exit 1
             fi
             
-            # Export variables immediately
+            # Export variables immediately for current session
             export WETH_ADDRESS
             export USDC_ADDRESS
             export DAI_ADDRESS
@@ -456,30 +481,9 @@
             export USDC_VAULT_ADDRESS
             export DAI_VAULT_ADDRESS
             
-            # Append to .env file (preserving existing variables)
-            if [ -f .env ]; then
-              # Remove old token addresses if they exist
-              sed -i.bak '/^WETH_ADDRESS=/d' .env
-              sed -i.bak '/^USDC_ADDRESS=/d' .env
-              sed -i.bak '/^DAI_ADDRESS=/d' .env
-              sed -i.bak '/^ETH_VAULT_ADDRESS=/d' .env
-              sed -i.bak '/^USDC_VAULT_ADDRESS=/d' .env
-              sed -i.bak '/^DAI_VAULT_ADDRESS=/d' .env
-              rm -f .env.bak
-            fi
-            
-            # Add new token addresses
+            # Create session-specific Next.js environment file
             {
-              echo "WETH_ADDRESS=$WETH_ADDRESS"
-              echo "USDC_ADDRESS=$USDC_ADDRESS"
-              echo "DAI_ADDRESS=$DAI_ADDRESS"
-              echo "ETH_VAULT_ADDRESS=$ETH_VAULT_ADDRESS"
-              echo "USDC_VAULT_ADDRESS=$USDC_VAULT_ADDRESS"
-              echo "DAI_VAULT_ADDRESS=$DAI_VAULT_ADDRESS"
-            } >> .env
-
-            # Create Next.js environment file
-            {
+              echo "# Session-specific environment variables"
               echo "NEXT_PUBLIC_WETH_ADDRESS=$WETH_ADDRESS"
               echo "NEXT_PUBLIC_USDC_ADDRESS=$USDC_ADDRESS"
               echo "NEXT_PUBLIC_DAI_ADDRESS=$DAI_ADDRESS"
@@ -489,7 +493,8 @@
             } > .env.local
             
             rm deployment.log
-            echo "Vaults deployed successfully! Addresses saved to deployed-addresses.txt, .env, and .env.local"
+            echo "Vaults deployed successfully!"
+            echo "Session-specific addresses saved to .env.local"
             echo "Token addresses exported to environment:"
             echo "WETH: $WETH_ADDRESS"
             echo "USDC: $USDC_ADDRESS"
@@ -538,17 +543,28 @@
               npm install --no-audit --no-fund
             fi
 
+            # Ensure pino-pretty is installed
+            if ! npm list pino-pretty >/dev/null 2>&1; then
+              echo "Installing pino-pretty..."
+              npm install --save-dev pino-pretty
+            fi
+
             # Setup Foundry configuration
             cp ${foundry-toml} foundry.toml
             
-            # Source .env file if it exists
+            # Source .env file if it exists and export DEPLOYER_PRIVATE_KEY
             if [ -f .env ]; then
               set -a
               source .env
               set +a
-              echo "Loaded environment from .env file"
+              if [ -n "$DEPLOYER_PRIVATE_KEY" ]; then
+                echo "Found and loaded deployer key from .env"
+                echo "Deployer address: $(${pkgs.foundry}/bin/cast wallet address "$DEPLOYER_PRIVATE_KEY")"
+              else
+                echo "No deployer key found in .env. Run 'manage-key' to generate one."
+              fi
             else
-              echo "No .env file found. One will be created when needed."
+              echo "No .env file found. Run 'manage-key' to generate one."
             fi
             
             # Ensure node_modules/.bin is in PATH

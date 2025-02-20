@@ -21,21 +21,21 @@ export interface VaultData {
 const WETH_ADDRESS = process.env.NEXT_PUBLIC_WETH_ADDRESS as `0x${string}`
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}`
 const DAI_ADDRESS = process.env.NEXT_PUBLIC_DAI_ADDRESS as `0x${string}`
-const ETH_VAULT_ADDRESS = process.env.NEXT_PUBLIC_ETH_VAULT_ADDRESS as `0x${string}`
+const WETH_VAULT_ADDRESS = process.env.NEXT_PUBLIC_ETH_VAULT_ADDRESS as `0x${string}`
 const USDC_VAULT_ADDRESS = process.env.NEXT_PUBLIC_USDC_VAULT_ADDRESS as `0x${string}`
 const DAI_VAULT_ADDRESS = process.env.NEXT_PUBLIC_DAI_VAULT_ADDRESS as `0x${string}`
 
 // Base vault data without user-specific info
 const BASE_VAULTS: Record<string, Omit<VaultData, 'userDeposit' | 'userShares' | 'ethBalance'>> = {
-  eth: {
-    id: 'eth',
-    name: 'ETH Yield Vault',
-    description: 'A simple vault for earning yield on ETH deposits.',
-    tvl: '0 ETH',
+  weth: {
+    id: 'weth',
+    name: 'WETH Yield Vault',
+    description: 'A simple vault for earning yield on WETH deposits.',
+    tvl: '0 WETH',
     apr: '5.2%',
-    token: 'ETH',
+    token: 'WETH',
     tokenAddress: WETH_ADDRESS,
-    vaultAddress: ETH_VAULT_ADDRESS,
+    vaultAddress: WETH_VAULT_ADDRESS,
   },
   usdc: {
     id: 'usdc',
@@ -78,10 +78,16 @@ export function useVaultData(vaultId?: string) {
     const fullVaults = Object.entries(BASE_VAULTS).map(([id, vault]) => ({
       ...vault,
       userDeposit: id === 'eth' && ethBalance 
-        ? `${ethBalance.formatted} ${ethBalance.symbol}`
+        ? Number(ethBalance.formatted) === 0 
+          ? `0 ${ethBalance.symbol}`
+          : `${Number(ethBalance.formatted).toFixed(4)} ${ethBalance.symbol}`
         : '0 ' + vault.token,
       userShares: '0 shares',
-      ethBalance: ethBalance ? `${ethBalance.formatted} ${ethBalance.symbol}` : '0 ETH'
+      ethBalance: ethBalance 
+        ? Number(ethBalance.formatted) === 0
+          ? `0 ${ethBalance.symbol}`
+          : `${Number(ethBalance.formatted).toFixed(4)} ${ethBalance.symbol}`
+        : '0 ETH'
     }))
 
     if (vaultId) {

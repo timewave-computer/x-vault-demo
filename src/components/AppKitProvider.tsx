@@ -4,7 +4,7 @@ import { createAppKit } from '@reown/appkit'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { mainnet } from '@reown/appkit/networks'
 import type { AppKitNetwork } from '@reown/appkit-common'
-import { type ReactNode, useEffect, useRef } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import Script from 'next/script'
 
 // Define the local development network configuration for Anvil
@@ -26,34 +26,9 @@ const networks: [AppKitNetwork, ...AppKitNetwork[]] = [
 ]
 
 // Validate required environment variables
-const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
 if (!projectId) {
-  throw new Error('Missing NEXT_PUBLIC_REOWN_PROJECT_ID in environment variables')
-}
-
-// Define core application configuration for AppKit
-const config = {
-  // Application metadata for wallet connections
-  metadata: {
-    name: 'X—Vault Demo',
-    description: 'A simple web application for interacting with ERC-4626 vault contracts.',
-    url: 'https://x-vault-demo.com',
-    icons: ['https://x-vault-demo.com/icon.png'] as string[]
-  },
-  // Configure Wagmi adapter for Web3 interactions
-  adapter: new WagmiAdapter({
-    ssr: true,
-    projectId: projectId as string,
-    networks
-  }),
-  // UI theme configuration
-  theme: {
-    mode: 'light' as const,
-    variables: {
-      '--w3m-accent': '#600473',
-      '--w3m-color-mix': '#600473'
-    }
-  }
+  throw new Error('Missing NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in environment variables')
 }
 
 // Store AppKit instance
@@ -73,18 +48,64 @@ export function useAppKit() {
  */
 export function AppKitProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
-    if (!appKitInstance) {
-      appKitInstance = createAppKit({
-        adapters: [config.adapter],
-        networks,
-        metadata: config.metadata,
-        projectId: projectId as string,
-        features: {
-          analytics: false,
-        },
-        themeMode: config.theme.mode,
-        themeVariables: config.theme.variables
-      })
+    // Cleanup any existing instance first
+    if (appKitInstance) {
+      appKitInstance.disconnect().catch(console.error)
+      appKitInstance = undefined
+    }
+
+    const initializeAppKit = async () => {
+      try {
+        // Create adapter instance
+        const adapter = new WagmiAdapter({
+          ssr: false,
+          projectId: projectId as string,
+          networks
+        })
+
+        // Create AppKit instance with error handling
+        appKitInstance = await createAppKit({
+          adapters: [adapter],
+          networks,
+          projectId: projectId as string,
+          features: {
+            analytics: false
+          },
+          themeMode: 'light',
+          themeVariables: {
+            '--w3m-accent': '#600473',
+            '--w3m-color-mix': '#600473',
+            '--w3m-z-index': 1000
+          }
+        })
+
+        // Add event listener for page unload
+        const handleUnload = () => {
+          if (appKitInstance) {
+            appKitInstance.disconnect().catch(console.error)
+            appKitInstance = undefined
+          }
+        }
+        window.addEventListener('beforeunload', handleUnload)
+
+        return () => {
+          window.removeEventListener('beforeunload', handleUnload)
+        }
+      } catch (error) {
+        console.error('Failed to initialize AppKit:', error)
+        appKitInstance = undefined
+      }
+    }
+
+    const cleanup = initializeAppKit()
+
+    // Cleanup function
+    return () => {
+      cleanup?.then(cleanupFn => cleanupFn?.())
+      if (appKitInstance) {
+        appKitInstance.disconnect().catch(console.error)
+        appKitInstance = undefined
+      }
     }
   }, [])
 

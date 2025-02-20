@@ -5,10 +5,11 @@ import { useVaultData } from '@/hooks/useVaultData'
 import { useAccount } from 'wagmi'
 import { useState } from 'react'
 import { useVaultContract } from '@/hooks/useVaultContract'
+import { useTokenBalances } from '@/hooks/useTokenBalances'
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData()
-  const { isConnected } = useAccount()
+  const { isConnected, address } = useAccount()
   const vaultData = vaults?.find((v) => v.id === params.id)
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawShares, setWithdrawShares] = useState('')
@@ -16,6 +17,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [successTxHash, setSuccessTxHash] = useState<string | null>(null)
+  const locale = "en-US"
 
   const { 
     depositWithAmount, 
@@ -27,16 +30,27 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     vaultData?.tokenAddress ?? ''
   )
 
+  const { tokenBalances } = useTokenBalances(address, vaultData ? [vaultData.tokenAddress] : [])
+  const tokenBalance = tokenBalances[0]?.balance.formatted ?? '0'
+  const tokenSymbol = tokenBalances[0]?.balance.symbol ?? ''
+
+  const dismissSuccess = () => {
+    setIsSuccess(false)
+    setSuccessTxHash(null)
+  }
+
   const handleDeposit = async () => {
     if (!depositAmount || !isConnected || !vaultData) return
     setIsDepositing(true)
     setError(null)
     setIsSuccess(false)
+    setSuccessTxHash(null)
     
     try {
-      await depositWithAmount(depositAmount)
+      const hash = await depositWithAmount(depositAmount)
       setDepositAmount('')
       setIsSuccess(true)
+      setSuccessTxHash(hash)
     } catch (err) {
       if (err instanceof Error) {
         if (err.message.includes('rejected')) {
@@ -58,11 +72,13 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     setIsWithdrawing(true)
     setError(null)
     setIsSuccess(false)
+    setSuccessTxHash(null)
     
     try {
-      await withdrawSharesFromVault(withdrawShares)
+      const hash = await withdrawSharesFromVault(withdrawShares)
       setWithdrawShares('')
       setIsSuccess(true)
+      setSuccessTxHash(hash)
     } catch (err) {
       if (err instanceof Error) {
         if (err.message.includes('rejected')) {
@@ -82,7 +98,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   if (!vaultData) {
     return (
       <div className="text-center">
-        <h1 className="text-2xl font-beast text-gray-900 sm:text-3xl">
+        <h1 className="text-3xl font-beast text-accent-purple sm:text-4xl">
           Vault Not Found
         </h1>
         <p className="mt-4 text-gray-500">
@@ -90,7 +106,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         </p>
         <Link
           href="/"
-          className="mt-8 inline-block rounded-lg bg-primary px-8 py-3 text-sm font-medium text-white transition hover:scale-110 hover:shadow-xl focus:outline-none focus:ring active:bg-primary-hover"
+          className="mt-8 inline-block rounded-lg bg-accent-purple px-8 py-3 text-sm font-medium text-white transition hover:scale-110 hover:shadow-xl focus:outline-none focus:ring active:bg-accent-purple-hover"
         >
           Go back home
         </Link>
@@ -117,10 +133,10 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         <dl className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-4">
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
             <dt className="text-base text-black">
-              ETH Balance
+              Balance
             </dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {isConnected ? vaultData.ethBalance : '-'}
+              {isConnected ? `${tokenBalance} ${tokenSymbol}` : '-'}
             </dd>
           </div>
 
@@ -161,11 +177,16 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 <p className="text-sm text-gray-500">Add tokens to start earning yield</p>
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-gray-500">
-                    Available: {vaultData.userDeposit}
+                    Available: {tokenBalance ?? '0'} {tokenSymbol}
                   </p>
                   <button
-                    onClick={() => setDepositAmount(vaultData.userDeposit.split(' ')[0])}
-                    className="px-2 py-1 text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded transition-colors"
+                    onClick={() => tokenBalance && setDepositAmount(tokenBalance)}
+                    disabled={!isConnected}
+                    className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+                      isConnected 
+                        ? 'text-white bg-primary hover:bg-primary-hover'
+                        : 'text-gray-400 bg-gray-200 cursor-not-allowed'
+                    }`}
                   >
                     MAX
                   </button>
@@ -177,27 +198,48 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             <div className="flex rounded-lg border-2 border-primary/40">
               <input
                 type="number"
-                name="depositAmount"
                 id="depositAmount"
-                className="w-full px-4 py-3 text-base text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-0 focus:shadow-[inset_0_1px_8px_rgba(0,145,255,0.25)] rounded-l-lg"
+                name="depositAmount"
+                aria-label={`Deposit amount in ${tokenSymbol}`}
+                className={`w-full px-4 py-3 text-base text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-0 [border-top-left-radius:0.4rem] [border-bottom-left-radius:0.4rem] transition-shadow ${
+                  depositAmount && parseFloat(depositAmount) > parseFloat(tokenBalance || '0')
+                    ? 'shadow-[inset_0_1px_8px_rgba(255,0,0,0.25)]'
+                    : 'focus:shadow-[inset_0_1px_8px_rgba(0,145,255,0.25)]'
+                }`}
                 placeholder="0.0"
                 value={depositAmount}
                 onChange={(e) => {
                   setError(null)
-                  setDepositAmount(e.target.value)
+                  const value = e.target.value
+                  // Only allow positive numbers and format using US locale
+                  if (value === '' || parseFloat(value) >= 0) {
+                    const number = parseFloat(value)
+                    if (isNaN(number)) {
+                      setDepositAmount('')
+                    } else {
+                      setDepositAmount(number.toLocaleString(locale, { 
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 18,
+                        useGrouping: false 
+                      }))
+                    }
+                  }
                 }}
+                min="0"
+                step="any"
+                inputMode="decimal"
                 disabled={!isConnected || isDepositing}
               />
-              <div className="flex items-center bg-primary-light px-4 text-base text-black border-l border-primary rounded-r-lg">
-                {vaultData.token}
+              <div className="flex items-center bg-primary-light px-4 text-base text-black border-l-2 border-primary/40 rounded-r-lg">
+                {tokenSymbol}
               </div>
             </div>
 
             <button
               onClick={handleDeposit}
-              disabled={!isConnected || !depositAmount || isDepositing || !vaultData.userDeposit || vaultData.userDeposit.startsWith('0')}
+              disabled={!isConnected || !depositAmount || parseFloat(depositAmount || '0') <= 0 || isDepositing || !tokenBalance || parseFloat(depositAmount || '0') > parseFloat(tokenBalance || '0')}
               className={`w-full rounded-lg px-8 py-3 text-base font-beast focus:outline-none focus:ring mt-4 ${
-                !isConnected || !depositAmount || isDepositing || !vaultData.userDeposit || vaultData.userDeposit.startsWith('0')
+                !isConnected || !depositAmount || parseFloat(depositAmount || '0') <= 0 || isDepositing || !tokenBalance || parseFloat(depositAmount || '0') > parseFloat(tokenBalance || '0')
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-accent-purple text-white hover:scale-110 hover:shadow-xl hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all'
               }`}
@@ -207,27 +249,18 @@ export default function VaultPage({ params }: { params: { id: string } }) {
 
             {/* Deposit estimate and warning display */}
             <div className="h-6 mt-4 flex justify-between items-center">
-              {depositAmount && (
+              {depositAmount && parseFloat(depositAmount) > 0 && (
                 <p className="text-sm text-gray-500">
-                  ≈ {balance} {vaultData.token}
+                  Balance: {tokenBalance ?? '0'} {tokenSymbol}
                 </p>
               )}
-              {!isConnected ? (
+              {isConnected && depositAmount && tokenBalance && parseFloat(depositAmount) > parseFloat(tokenBalance) && (
                 <p className="text-sm text-secondary">
-                  Connect your wallet to start depositing
-                </p>
-              ) : (depositAmount && (!vaultData.userDeposit || vaultData.userDeposit.startsWith('0'))) && (
-                <p className="text-sm text-secondary">
-                  You need {vaultData.token} tokens to deposit into this vault
+                  Insufficient {tokenSymbol} balance
                 </p>
               )}
             </div>
 
-            {isSuccess && (
-              <p className="mt-4 text-sm text-accent-purple">
-                Transaction successful! Your position will update shortly.
-              </p>
-            )}
             {error && (
               <p className="mt-4 text-sm text-secondary">
                 {error}
@@ -247,7 +280,12 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   </p>
                   <button
                     onClick={() => setWithdrawShares(maxWithdraw ?? '0')}
-                    className="px-2 py-1 text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded transition-colors"
+                    disabled={!isConnected}
+                    className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
+                      isConnected 
+                        ? 'text-white bg-primary hover:bg-primary-hover'
+                        : 'text-gray-400 bg-gray-200 cursor-not-allowed'
+                    }`}
                   >
                     MAX
                   </button>
@@ -259,18 +297,39 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             <div className="flex rounded-lg border-2 border-primary/40">
               <input
                 type="number"
-                name="withdrawShares"
                 id="withdrawShares"
-                className="w-full px-4 py-3 text-base text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-0 focus:shadow-[inset_0_1px_8px_rgba(0,145,255,0.25)] rounded-l-lg"
+                name="withdrawShares"
+                aria-label="Withdraw shares amount"
+                className={`w-full px-4 py-3 text-base text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-0 [border-top-left-radius:0.4rem] [border-bottom-left-radius:0.4rem] transition-shadow ${
+                  withdrawShares && (!maxWithdraw || parseFloat(withdrawShares) > parseFloat(maxWithdraw))
+                    ? 'shadow-[inset_0_1px_8px_rgba(255,0,0,0.25)]'
+                    : 'focus:shadow-[inset_0_1px_8px_rgba(0,145,255,0.25)]'
+                }`}
                 placeholder="0.0"
                 value={withdrawShares}
                 onChange={(e) => {
                   setError(null)
-                  setWithdrawShares(e.target.value)
+                  const value = e.target.value
+                  // Only allow positive numbers and format using US locale
+                  if (value === '' || parseFloat(value) >= 0) {
+                    const number = parseFloat(value)
+                    if (isNaN(number)) {
+                      setWithdrawShares('')
+                    } else {
+                      setWithdrawShares(number.toLocaleString(locale, { 
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 18,
+                        useGrouping: false 
+                      }))
+                    }
+                  }
                 }}
+                min="0"
+                step="any"
+                inputMode="decimal"
                 disabled={!isConnected || isWithdrawing}
               />
-              <div className="flex items-center bg-primary-light px-4 text-base text-black border-l border-primary rounded-r-lg">
+              <div className="flex items-center bg-primary-light px-4 text-base text-black border-l-2 border-primary/40 rounded-r-lg">
                 Shares
               </div>
             </div>
@@ -294,22 +353,13 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   ≈ {balance} {vaultData.token}
                 </p>
               )}
-              {!isConnected ? (
-                <p className="text-sm text-secondary">
-                  Connect your wallet to start withdrawing
-                </p>
-              ) : (withdrawShares && (!maxWithdraw || maxWithdraw === '0')) && (
+              {isConnected && withdrawShares && (!maxWithdraw || maxWithdraw === '0') && (
                 <p className="text-sm text-secondary">
                   You need vault shares to withdraw
                 </p>
               )}
             </div>
 
-            {isSuccess && (
-              <p className="mt-4 text-sm text-accent-purple">
-                Transaction successful! Your position will update shortly.
-              </p>
-            )}
             {error && (
               <p className="mt-4 text-sm text-secondary">
                 {error}
@@ -317,6 +367,30 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             )}
           </div>
         </div>
+
+        {/* Success message */}
+        {isSuccess && successTxHash && (
+          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 text-center bg-accent-purple rounded-lg px-10 py-4 shadow-lg min-w-[480px]">
+            <button
+              onClick={dismissSuccess}
+              className="absolute top-2 right-4 text-white hover:text-accent-purple-light transition-colors"
+              aria-label="Dismiss message"
+            >
+              ✕
+            </button>
+            <p className="text-sm text-white mb-2">
+              Transaction successful! Your position will update shortly.
+            </p>
+            <a
+              href={`https://etherscan.io/8545/tx/${successTxHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-white hover:text-accent-purple-light transition-colors"
+            >
+              View Transaction Details ↗
+            </a>
+          </div>
+        )}
       </div>
     </div>
   )

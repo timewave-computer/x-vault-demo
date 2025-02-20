@@ -24,16 +24,6 @@ const wagmiConfig = createConfig({
   },
 })
 
-// Configure React Query client with optimized settings
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false, // Prevent unnecessary refetches
-      retry: 1                     // Limit retry attempts
-    }
-  }
-})
-
 /**
  * Root provider component that wraps the application
  * Sets up:
@@ -42,6 +32,20 @@ const queryClient = new QueryClient({
  * - AppKit for wallet connection and UI
  */
 export function Providers({ children }: { children: ReactNode }) {
+  // Create a new QueryClient instance for each request
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: 1,
+        // Disable automatic background refetching
+        staleTime: Infinity,
+        // Prevent hydration mismatch by disabling initial data
+        enabled: false
+      }
+    }
+  })
+
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>

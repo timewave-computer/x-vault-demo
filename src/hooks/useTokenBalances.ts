@@ -44,13 +44,42 @@ export function useTokenBalances(address: `0x${string}` | undefined, tokenAddres
 
   // Construct token balances array
   const tokenBalances: TokenBalance[] = [
-    wethBalance && { balance: wethBalance, address: tokenAddresses[0] },
-    usdcBalance && { balance: usdcBalance, address: tokenAddresses[1] },
-    daiBalance && { balance: daiBalance, address: tokenAddresses[2] },
+    wethBalance && { 
+      balance: {
+        ...wethBalance,
+        formatted: Number(wethBalance.formatted) === 0 
+          ? '0'
+          : Number(wethBalance.formatted).toFixed(4)
+      }, 
+      address: tokenAddresses[0] 
+    },
+    usdcBalance && { 
+      balance: {
+        ...usdcBalance,
+        formatted: Number(usdcBalance.formatted) === 0 
+          ? '0'
+          : Number(usdcBalance.formatted).toFixed(4)
+      }, 
+      address: tokenAddresses[1] 
+    },
+    daiBalance && { 
+      balance: {
+        ...daiBalance,
+        formatted: Number(daiBalance.formatted) === 0 
+          ? '0'
+          : Number(daiBalance.formatted).toFixed(4)
+      }, 
+      address: tokenAddresses[2] 
+    },
   ].filter((balance): balance is TokenBalance => Boolean(balance?.balance))
 
   return {
-    ethBalance,
+    ethBalance: ethBalance ? {
+      ...ethBalance,
+      formatted: Number(ethBalance.formatted) === 0 
+        ? '0'
+        : Number(ethBalance.formatted).toFixed(4)
+    } : undefined,
     tokenBalances,
   }
 } 
