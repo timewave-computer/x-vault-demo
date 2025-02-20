@@ -1,17 +1,10 @@
-@font-face {
-  font-family: 'Beast';
-  src: url('/src/assets/fonts/Beast.woff2') format('woff2'),
-       url('/src/assets/fonts/Beast.woff') format('woff'),
-       url('/src/assets/fonts/Beast.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
+@import url('https://fonts.googleapis.com/css2?family=Recursive:wght@300..800&display=swap');
 
 @font-face {
-  font-family: 'Recursive';
-  src: url('https://fonts.googleapis.com/css2?family=Recursive:wght@300..800,CASL@0..1,CRSV@0..1,MONO@0..1,slnt@-15..0&display=swap');
-  font-weight: 300 800;
+  font-family: 'Beast';
+  src: url('/fonts/Beast.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
   font-display: swap;
 }
 

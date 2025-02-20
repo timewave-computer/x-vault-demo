@@ -23,7 +23,7 @@ export function VaultCard({
         <dl>
           <div>
             <dt className="sr-only">Name</dt>
-            <dd className="text-lg font-beast text-primary">{name}</dd>
+            <dd className="text-2xl font-beast text-primary">{name}</dd>
           </div>
           <div className="mt-2">
             <dt className="sr-only">Description</dt>

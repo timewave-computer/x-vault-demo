@@ -1,41 +1,57 @@
 'use client'
 
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useDisconnect } from 'wagmi'
 import { useVaultData } from '@/hooks/useVaultData'
 import { useTokenBalances } from '@/hooks/useTokenBalances'
 import { useState, useEffect } from 'react'
+import { useAppKit } from '@/components/AppKitProvider'
 
+/**
+ * Utility function to format an Ethereum address for display
+ * Returns address in format: 0x1234...5678
+ */
 function shortenAddress(address: string) {
   return `${address.slice(0, 6)}...${address.slice(-4)}`
 }
 
+/**
+ * Utility function to format token balances with specified decimals
+ * Returns balance in format: "123.45 TOKEN"
+ */
 function formatBalance(balance: string | undefined, symbol: string, decimals: number = 4): string {
   if (!balance) return `0 ${symbol}`
   return `${Number(balance).toFixed(decimals)} ${symbol}`
 }
 
+/**
+ * ConnectButton component
+ * Handles wallet connection state and displays:
+ * - Connect button when disconnected
+ * - Address and balances when connected
+ * - Disconnect button to terminate connection
+ */
 export function ConnectButton() {
   const [mounted, setMounted] = useState(false)
-  const { connect, connectors, isLoading, pendingConnector } = useConnect()
   const { address, isConnected } = useAccount()
   const { disconnect } = useDisconnect()
   const { vaults } = useVaultData()
+  const appKit = useAppKit()
 
-  // Get unique token addresses from vaults
+  // Extract unique token addresses from vaults
   const tokenAddresses = Array.from(new Set(vaults.map(vault => vault.tokenAddress)))
 
-  // Get all balances
+  // Fetch ETH and token balances for connected wallet
   const { ethBalance, tokenBalances } = useTokenBalances(
-    address,
+    address as `0x${string}` | undefined,
     tokenAddresses
   )
 
-  // Prevent hydration mismatch by only rendering after mount
+  // Handle client-side mounting to prevent hydration issues
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Return null on server-side or before mounting to prevent hydration issues
+  // Show placeholder during server-side rendering
   if (!mounted) {
     return (
       <button
@@ -47,16 +63,19 @@ export function ConnectButton() {
     )
   }
 
+  // Render connected state with balances and disconnect button
   if (isConnected && address) {
     return (
       <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
         <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 text-sm">
           <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 sm:gap-5">
+            {/* Display ETH balance */}
             {ethBalance && (
               <span className="text-accent-purple whitespace-nowrap">
                 {formatBalance(ethBalance.formatted, 'ETH')}
               </span>
             )}
+            {/* Display token balances */}
             {tokenBalances.map(({ balance, address: tokenAddress }, index) => 
               balance && (
                 <span key={tokenAddress} className="text-accent-purple whitespace-nowrap">
@@ -66,6 +85,7 @@ export function ConnectButton() {
             )}
           </div>
           <span className="hidden sm:inline text-primary/30">•</span>
+          {/* Etherscan link for address */}
           <a
             href={`https://etherscan.io/address/${address}`}
             target="_blank"
@@ -75,14 +95,13 @@ export function ConnectButton() {
             {shortenAddress(address)}
           </a>
         </div>
+        {/* Disconnect button */}
         <button
-          onClick={() => disconnect()}
-          disabled={isLoading}
-          className={`rounded-md border-2 border-primary/40 px-5 py-2.5 text-sm font-beast ${
-            isLoading 
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-              : 'bg-white text-primary hover:bg-primary-light hover:text-primary-hover active:bg-primary-light'
-          } focus:outline-none focus:ring focus:ring-primary`}
+          onClick={() => {
+            disconnect()
+            appKit?.disconnect()
+          }}
+          className="rounded-md border-2 border-primary/40 px-5 py-2.5 text-sm font-beast bg-white text-primary hover:bg-primary-light hover:text-primary-hover active:bg-primary-light focus:outline-none focus:ring focus:ring-primary"
         >
           Disconnect
         </button>
@@ -90,26 +109,17 @@ export function ConnectButton() {
     )
   }
 
+  // Render connect button for disconnected state
   return (
-    <div className="relative">
-      <button
-        onClick={() => connect({ connector: connectors[0] })}
-        disabled={isLoading}
-        className={`inline-block rounded-md px-12 py-4 text-base font-beast focus:outline-none focus:ring focus:ring-secondary/20 ${
-          isLoading 
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-            : 'bg-secondary text-white hover:scale-110 hover:shadow-xl hover:bg-secondary-hover active:bg-secondary-hover transition-all'
-        }`}
-      >
-        Connect Wallet
-      </button>
-      {isLoading && (
-        <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-xl ring-1 ring-primary/20">
-          <div className="px-4 py-2 text-sm text-primary">
-            Connecting to {pendingConnector?.name}...
-          </div>
-        </div>
-      )}
-    </div>
+    <button
+      onClick={() => {
+        if (appKit) {
+          appKit.open({ view: 'Connect' })
+        }
+      }}
+      className="inline-block rounded-md px-12 py-4 text-base font-beast bg-secondary text-white hover:scale-110 hover:shadow-xl hover:bg-secondary-hover active:bg-secondary-hover transition-all focus:outline-none focus:ring focus:ring-secondary/20"
+    >
+      Connect Wallet
+    </button>
   )
 } 

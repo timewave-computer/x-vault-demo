@@ -12,7 +12,7 @@ export default function Home() {
       <div className="relative">
         <div className="flex flex-col gap-1.5">
           <h1 className="text-3xl font-beast text-accent-purple sm:text-4xl">
-            VALENCE VAULTS
+            ELSEWHERE VAULTS
           </h1>
 
           <p className="text-sm text-gray-500">

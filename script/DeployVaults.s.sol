@@ -26,7 +26,6 @@ contract BasicVault is ERC4626 {
 contract DeployVaults is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-        address deployer = vm.addr(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
 
         // Deploy basic tokens
@@ -37,7 +36,7 @@ contract DeployVaults is Script {
         // Deploy basic vaults
         BasicVault ethVault = new BasicVault(
             IERC20(address(weth)),
-            "ETH Yield Vault",
+            "WETH Yield Vault",
             "yvWETH"
         );
 
@@ -53,17 +52,12 @@ contract DeployVaults is Script {
             "yvDAI"
         );
 
-        // Mint initial tokens to deployer for testing
-        weth.mint(deployer, 1000 ether);
-        usdc.mint(deployer, 1000000 * 10**6);
-        dai.mint(deployer, 1000000 ether);
-
         // Log deployed addresses
         console.log("Deployed addresses:");
         console.log("WETH:", address(weth));
         console.log("USDC:", address(usdc));
         console.log("DAI:", address(dai));
-        console.log("ETH Vault:", address(ethVault));
+        console.log("WETH Vault:", address(ethVault));
         console.log("USDC Vault:", address(usdcVault));
         console.log("DAI Vault:", address(daiVault));
 
