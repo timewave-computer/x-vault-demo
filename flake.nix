@@ -379,7 +379,7 @@
         # Script to deploy local vaults
         deploy-vaults-script = pkgs.writeShellScriptBin "deploy-vaults" ''
           # Create project structure
-          mkdir -p script lib
+          mkdir -p scripts lib
 
           # Download dependencies directly
           echo "Downloading dependencies..."
@@ -444,7 +444,7 @@
           echo "Building and deploying contracts..."
 
           # Build and deploy the contracts
-          if ! ${pkgs.foundry}/bin/forge script script/DeployVaults.s.sol:DeployVaults \
+          if ! ${pkgs.foundry}/bin/forge script scripts/DeployVaults.s.sol:DeployVaults \
             --rpc-url http://localhost:8545 \
             --broadcast \
             --private-key $DEPLOYER_PRIVATE_KEY 2>&1 | tee deployment.log; then
@@ -509,9 +509,9 @@
         # Create foundry.toml configuration
         foundry-toml = pkgs.writeText "foundry.toml" ''
           [profile.default]
-          src = 'script'
+          src = 'scripts'
           test = 'test'
-          script = 'script'
+          script = 'scripts'
           out = 'out'
           libs = ['lib']
           solc = "0.8.20"
@@ -567,8 +567,8 @@
               echo "No .env file found. Run 'manage-key' to generate one."
             fi
             
-            # Ensure node_modules/.bin is in PATH
-            export PATH="$PWD/node_modules/.bin:$PATH"
+            # Ensure scripts:$PATH is in PATH
+            export PATH=$PWD/scripts:$PATH
 
             echo "Development environment ready. Available commands:"
             echo "  start-anvil    - Start local Anvil node"
