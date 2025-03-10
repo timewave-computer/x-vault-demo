@@ -1,7 +1,7 @@
 [profile.default]
-src = 'script'
+src = 'scripts'
 test = 'test'
-script = 'script'
+script = 'scripts'
 out = 'out'
 libs = ['lib']
 solc = "0.8.20"

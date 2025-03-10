@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "start-anvil": "./scripts/start-anvil.sh",
+    "manage-key": "./scripts/manage-key.sh",
+    "deploy-vaults": "./scripts/deploy-vaults.sh",
+    "faucet": "./scripts/faucet.sh"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.1",
