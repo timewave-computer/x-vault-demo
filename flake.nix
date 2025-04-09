@@ -22,7 +22,7 @@
           echo "Starting Anvil node..."
           ${pkgs.foundry}/bin/anvil \
             --block-time 12 \
-            --chain-id 1337 \
+            --chain-id 31337 \
             --balance 10000 \
             --fork-url https://eth-mainnet.public.blastapi.io \
             --fork-block-number 19250000 > anvil.log 2>&1 & echo $! > .anvil.pid

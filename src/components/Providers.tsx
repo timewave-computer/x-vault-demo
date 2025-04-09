@@ -10,7 +10,7 @@ const wagmiConfig = createConfig({
   // Define available blockchain networks
   chains: [
     {
-      id: 1337,
+      id: 31337,
       name: 'Anvil Local',
       nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
       rpcUrls: {
@@ -20,7 +20,7 @@ const wagmiConfig = createConfig({
   ],
   // Configure network transport methods
   transports: {
-    1337: http('http://localhost:8545'),
+    31337: http('http://localhost:8545'),
   },
 })
 

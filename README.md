@@ -19,7 +19,7 @@ A simple web application for interacting with ERC-4626 vault contracts on Ethere
    This will start a local Ethereum node that forks mainnet, giving you access to real mainnet state while allowing local testing.
 
    The node will run with the following configuration:
-   - Chain ID: 1337
+   - Chain ID: 31337
    - Block time: 12 seconds
    - Initial account balance: 10,000 ETH
    - RPC URL: http://localhost:8545
@@ -38,7 +38,7 @@ A simple web application for interacting with ERC-4626 vault contracts on Ethere
 4. Configure your browser wallet:
    - Network Name: Anvil Local
    - RPC URL: http://localhost:8545
-   - Chain ID: 1337
+   - Chain ID: 31337
    - Currency Symbol: ETH
 
 5. Get test tokens using the faucet:
