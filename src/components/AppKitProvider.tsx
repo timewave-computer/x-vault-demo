@@ -7,22 +7,25 @@ import type { AppKitNetwork } from '@reown/appkit-common'
 import { type ReactNode, useEffect } from 'react'
 import Script from 'next/script'
 
-// Define the local development network configuration for Anvil
+// Get Anvil RPC URL from environment variables
+const anvilRpcUrl = process.env.NEXT_PUBLIC_ANVIL_RPC_URL
+
+// Define network configurations for Appkit
 const networks: [AppKitNetwork, ...AppKitNetwork[]] = [
-  {
-    id: 1337,
-    name: 'Anvil Local',
+  mainnet,
+  ...(anvilRpcUrl ?[{ // If testnet RPC URL is provided, add Anvil network
+    id: 31337,
+   testnet: true,
+    name: 'Anvil',
     nativeCurrency: {
       name: 'Ethereum',
       symbol: 'ETH',
       decimals: 18,
     },
     rpcUrls: {
-      default: { http: ['http://localhost:8545'] },
-      public: { http: ['http://localhost:8545'] },
+      default: { http: [anvilRpcUrl] },
     },
-  },
-  mainnet // Include Ethereum mainnet as an available network
+  }] :[]),
 ]
 
 // Validate required environment variables
@@ -65,6 +68,7 @@ export function AppKitProvider({ children }: { children: ReactNode }) {
 
         // Create AppKit instance with error handling
         appKitInstance = await createAppKit({
+          defaultNetwork: mainnet,
           adapters: [adapter],
           networks,
           projectId: projectId as string,
