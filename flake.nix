@@ -378,6 +378,8 @@
 
         # Script to deploy local vaults
         deploy-vaults-script = pkgs.writeShellScriptBin "deploy-vaults" ''
+
+          ## NOTE: DEPRECATED
           # Create project structure
           mkdir -p scripts lib
 
@@ -532,7 +534,6 @@
             manage-key-script
             faucet-script
           ];
-
           NODE_ENV = "development";
           
           shellHook = ''
