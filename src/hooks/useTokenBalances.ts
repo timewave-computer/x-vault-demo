@@ -18,28 +18,28 @@ export function useTokenBalances(address: `0x${string}` | undefined, tokenAddres
   // Get ETH balance
   const { data: ethBalance } = useBalance({
     address,
-    chainId: 1337,
+    chainId: 31337,
   })
 
   // Get WETH balance (if available)
   const { data: wethBalance } = useBalance({
     address,
     token: tokenAddresses[0],
-    chainId: 1337,
+    chainId: 31337,
   })
 
   // Get USDC balance (if available)
   const { data: usdcBalance } = useBalance({
     address,
     token: tokenAddresses[1],
-    chainId: 1337,
+    chainId: 31337,
   })
 
   // Get DAI balance (if available)
   const { data: daiBalance } = useBalance({
     address,
     token: tokenAddresses[2],
-    chainId: 1337,
+    chainId: 31337,
   })
 
   // Construct token balances array

@@ -103,7 +103,7 @@ export function useVaultContract(vaultAddress: string, tokenAddress: string) {
   const { data: decimals } = useContractRead({
     abi: ERC20_ABI,
     functionName: 'decimals',
-    chainId: 1337,
+    chainId: 31337,
     address: tokenAddress as Address,
   })
 
@@ -111,7 +111,7 @@ export function useVaultContract(vaultAddress: string, tokenAddress: string) {
   const { data: balance } = useContractRead({
     abi: ERC20_ABI,
     functionName: 'balanceOf',
-    chainId: 1337,
+    chainId: 31337,
     address: tokenAddress as Address,
     args: address ? [address] : undefined,
   })
@@ -120,7 +120,7 @@ export function useVaultContract(vaultAddress: string, tokenAddress: string) {
   const { data: shareBalance } = useContractRead({
     abi: VAULT_ABI,
     functionName: 'balanceOf',
-    chainId: 1337,
+    chainId: 31337,
     address: vaultAddress as Address,
     args: address ? [address] : undefined,
   })
@@ -129,7 +129,7 @@ export function useVaultContract(vaultAddress: string, tokenAddress: string) {
   const { data: maxWithdraw } = useContractRead({
     abi: VAULT_ABI,
     functionName: 'maxWithdraw',
-    chainId: 1337,
+    chainId: 31337,
     address: vaultAddress as Address,
     args: address ? [address] : undefined,
   })

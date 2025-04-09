@@ -21,6 +21,9 @@ export default function Home() {
         </div>
         
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+         {vaults.length === 0 && <p>
+          No vaults to show.
+          </p>}
           {vaults.map((vault) => (
             <VaultCard 
               key={vault.id} 
