@@ -3,7 +3,7 @@
 import { useAccount, useDisconnect } from 'wagmi'
 import { useVaultData } from '@/hooks/useVaultData'
 import { useTokenBalances } from '@/hooks/useTokenBalances'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { useAppKit } from '@/components/AppKitProvider'
 
 /**
@@ -77,11 +77,16 @@ export function ConnectButton() {
             )}
             {/* Display token balances */}
             {tokenBalances.map(({ balance, address: tokenAddress }, index) => 
-              balance && (
+            // TODO: hook needs to be fixed so tokenAddress is not undefined
+            <Fragment key={`accountTokenBalance-${index}`}> 
+              {  balance && (
                 <span key={tokenAddress} className="text-accent-purple whitespace-nowrap">
                   {formatBalance(balance.formatted, balance.symbol)}
                 </span>
-              )
+              )}
+
+            </Fragment>
+           
             )}
           </div>
           <span className="hidden sm:inline text-primary/30">•</span>

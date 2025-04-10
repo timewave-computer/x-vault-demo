@@ -10,10 +10,18 @@ export type VaultData = BaseVaultData & {
   ethBalance: string
 }
 
+// default to Ethereum mainnet if no account connected
+const defaultChainId = 1
+
 export function useVaultData(
 ) {
-  const { address, isConnected, chainId, } = useAccount()
+  const { address, isConnected, chainId:accountChainId, } = useAccount()
   const [vaults, setVaults] = useState<VaultData[]>([])
+  const [chainId, setChainId] = useState<number | null>(null)
+  useEffect(() => {
+    // Update chainId on the client side
+    setChainId( accountChainId || defaultChainId)
+  }, [accountChainId])
 
   // Get ETH balance
   const { data: ethBalance } = useBalance({
@@ -24,7 +32,10 @@ export function useVaultData(
     },
   })
 
+
+
   useEffect(() => {
+   
     // Read vault addresses from config
     const BASE_VAULTS_FOR_CHAIN = chainId ? BASE_VAULTS[chainId] : []
 
@@ -49,5 +60,6 @@ export function useVaultData(
   return {
     isConnected,
     vaults,
+    chainId
   }
 } 
