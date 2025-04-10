@@ -1,4 +1,3 @@
-'use client'
 import Link from 'next/link'
 import type { VaultData } from '@/hooks/useVaultData'
 
@@ -15,6 +14,7 @@ export function VaultCard({
   userDeposit,
   isConnected 
 }: VaultCardProps) {
+
   return (
     <Link 
       href={`/vault/${id}`}

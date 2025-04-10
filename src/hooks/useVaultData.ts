@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAccount, useBalance } from 'wagmi'
-import { type BaseVaultData,BASE_VAULTS } from '@/config'
+import { type BaseVaultData,BASE_VAULTS, defaultChainId } from '@/config'
 
 export type VaultData = BaseVaultData & {
   userDeposit: string
@@ -10,8 +10,7 @@ export type VaultData = BaseVaultData & {
   ethBalance: string
 }
 
-// default to Ethereum mainnet if no account connected
-const defaultChainId = 1
+
 
 export function useVaultData(
 ) {
@@ -31,8 +30,6 @@ export function useVaultData(
       refetchInterval: 5000,
     },
   })
-
-
 
   useEffect(() => {
    
