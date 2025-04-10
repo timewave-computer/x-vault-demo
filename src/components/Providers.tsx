@@ -1,27 +1,37 @@
 'use client'
 
 import { type ReactNode } from 'react'
-import { WagmiProvider, createConfig, http } from 'wagmi'
+import { CreateConfigParameters, WagmiProvider, createConfig, http } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppKitProvider } from '@/components/AppKitProvider'
+import { networks } from '@/config'
+
+type WagmiTransportConfig =  CreateConfigParameters['transports']
+type WagmiChainParameters = CreateConfigParameters['chains']
+
+const wagmiChainConfig: WagmiChainParameters = networks.map((network) => ({
+    id: network.id,
+    name: network.name,
+    nativeCurrency: network.nativeCurrency,
+    rpcUrls: {
+      default: { http: network.rpcUrls.default.http },
+    },
+    // Type requires at least 1 chain object. networks is guaranteed to always have at least mainnet, so type cast is safe
+})) as unknown as WagmiChainParameters
+
+const wagmiTransportConfig: WagmiTransportConfig = networks.reduce((acc, network) => {
+  if (acc) {
+    acc[network.id as number] = http(network.rpcUrls.default.http[0] )
+  }
+  return acc
+},{} as WagmiTransportConfig)
 
 // Configure Wagmi client for Ethereum interactions
 const wagmiConfig = createConfig({
   // Define available blockchain networks
-  chains: [
-    {
-      id: 31337,
-      name: 'Anvil Local',
-      nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
-      rpcUrls: {
-        default: { http: ['http://localhost:8545'] },
-      },
-    }
-  ],
+  chains: wagmiChainConfig,
   // Configure network transport methods
-  transports: {
-    31337: http('http://localhost:8545'),
-  },
+  transports:wagmiTransportConfig
 })
 
 /**
