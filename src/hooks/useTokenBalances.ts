@@ -1,85 +1,88 @@
 'use client'
 
-import { useBalance } from 'wagmi'
+import { useBalance, useConfig } from 'wagmi'
+import {  readContracts } from '@wagmi/core'
+import { erc20Abi } from 'viem'
+import { useQueries } from '@tanstack/react-query'
+import { formatUnits } from 'viem'
+import { QUERY_KEYS } from '@/const'
 
-type BalanceData = {
-  formatted: string
-  symbol: string
-  decimals: number
-  value: bigint
-}
+export function useBalances({
+  address,
+  tokenAddresses
+}:{address: `0x${string}` | undefined, tokenAddresses: `0x${string}`[]}) {
 
-interface TokenBalance {
-  balance: BalanceData
-  address: `0x${string}`
-}
+  const config = useConfig()
 
-export function useTokenBalances(address: `0x${string}` | undefined, tokenAddresses: `0x${string}`[]) {
-  // Get ETH balance
-  const { data: ethBalance } = useBalance({
+  const ethBalance = useBalance({
     address,
-    chainId: 31337,
-  })
-
-  // Get WETH balance (if available)
-  const { data: wethBalance } = useBalance({
-    address,
-    token: tokenAddresses[0],
-    chainId: 31337,
-  })
-
-  // Get USDC balance (if available)
-  const { data: usdcBalance } = useBalance({
-    address,
-    token: tokenAddresses[1],
-    chainId: 31337,
-  })
-
-  // Get DAI balance (if available)
-  const { data: daiBalance } = useBalance({
-    address,
-    token: tokenAddresses[2],
-    chainId: 31337,
-  })
-
-  // Construct token balances array
-  const tokenBalances: TokenBalance[] = [
-    wethBalance && { 
-      balance: {
-        ...wethBalance,
-        formatted: Number(wethBalance.formatted) === 0 
-          ? '0'
-          : Number(wethBalance.formatted).toFixed(4)
-      }, 
-      address: tokenAddresses[0] 
+    query: {
+      enabled: !!address,
+      refetchInterval: 5000,
     },
-    usdcBalance && { 
-      balance: {
-        ...usdcBalance,
-        formatted: Number(usdcBalance.formatted) === 0 
-          ? '0'
-          : Number(usdcBalance.formatted).toFixed(4)
-      }, 
-      address: tokenAddresses[1] 
+  })
+
+  const tokenBalances = useQueries({
+    queries: tokenAddresses.map((tokenAddress) => ({
+      queryKey: [QUERY_KEYS.TOKEN_BALANCE, address, tokenAddress],
+      enabled: !!address,
+      queryFn: async () => {
+        if (!address) return
+        const [balance, decimals, symbol] = await readContracts(config, { 
+          allowFailure: false, 
+          contracts: [ 
+            { 
+              address: tokenAddress,
+              abi: erc20Abi, 
+              functionName: 'balanceOf', 
+              args: [address], 
+            }, 
+            { 
+              address: tokenAddress,
+              abi: erc20Abi, 
+              functionName: 'decimals', 
+            }, 
+            { 
+              address: tokenAddress,
+              abi: erc20Abi, 
+              functionName: 'symbol', 
+            }, 
+          ] 
+        })
+        return {
+          balance: {
+            raw: balance,
+            formatted: formatUnits(balance, decimals)
+          },
+          decimals,
+           symbol
+        }
+      },
+
+    })),
+    combine: (results) => {
+      return {
+        data: results.map((result) => result.data),
+        isLoading: results.some((result) => result.isLoading),
+        isError: results.some((result) => result.isPending),
+        error: results.map((result) => result.error),
+      }
     },
-    daiBalance && { 
-      balance: {
-        ...daiBalance,
-        formatted: Number(daiBalance.formatted) === 0 
-          ? '0'
-          : Number(daiBalance.formatted).toFixed(4)
-      }, 
-      address: tokenAddresses[2] 
-    },
-  ].filter((balance): balance is TokenBalance => Boolean(balance?.balance))
+  })
 
   return {
-    ethBalance: ethBalance ? {
-      ...ethBalance,
-      formatted: Number(ethBalance.formatted) === 0 
-        ? '0'
-        : Number(ethBalance.formatted).toFixed(4)
-    } : undefined,
     tokenBalances,
+    ethBalance: {
+      ...ethBalance,
+      data: {
+        balance: {
+          raw: ethBalance.data?.value,
+          formatted: formatUnits(ethBalance.data?.value ?? BigInt(0), 18),
+        },
+        decimals: ethBalance.data?.decimals,
+        symbol: ethBalance.data?.symbol,
+      },
+      
+    }
   }
-} 
+}

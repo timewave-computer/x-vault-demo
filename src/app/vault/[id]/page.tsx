@@ -5,7 +5,7 @@ import { useVaultData } from '@/hooks/useVaultData'
 import { useAccount } from 'wagmi'
 import { useState } from 'react'
 import { useVaultContract } from '@/hooks/useVaultContract'
-import { useTokenBalances } from '@/hooks/useTokenBalances'
+import { useBalances } from '@/hooks/useTokenBalances'
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData()
@@ -30,9 +30,10 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     vaultData?.tokenAddress ?? ''
   )
 
-  const { tokenBalances } = useTokenBalances(address, vaultData ? [vaultData.tokenAddress] : [])
-  const tokenBalance = tokenBalances[0]?.balance.formatted ?? '0'
-  const tokenSymbol = tokenBalances[0]?.balance.symbol ?? ''
+  const { tokenBalances } = useBalances({address, tokenAddresses: vaultData ? [vaultData.tokenAddress] : []})
+  const vaultTokenBalance = tokenBalances.data?.[0] ?? undefined;
+  const tokenBalance = vaultTokenBalance?.balance.formatted ?? '0'
+  const tokenSymbol = vaultTokenBalance?.symbol
 
   const dismissSuccess = () => {
     setIsSuccess(false)
