@@ -1,27 +1,28 @@
-'use client'
+"use client";
 
-import { createAppKit } from '@reown/appkit'
-import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
-import { mainnet } from '@reown/appkit/networks'
-import { type ReactNode, useEffect } from 'react'
-import Script from 'next/script'
-import { networks } from '@/config'
-
+import { createAppKit } from "@reown/appkit";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import { mainnet } from "@reown/appkit/networks";
+import { type ReactNode, useEffect } from "react";
+import Script from "next/script";
+import { networks } from "@/config";
 
 // Validate required environment variables
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 if (!projectId) {
-  throw new Error('Missing NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in environment variables')
+  throw new Error(
+    "Missing NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in environment variables",
+  );
 }
 
 // Store AppKit instance
-let appKitInstance: ReturnType<typeof createAppKit> | undefined
+let appKitInstance: ReturnType<typeof createAppKit> | undefined;
 
 /**
  * Hook to access the AppKit instance
  */
 export function useAppKit() {
-  return appKitInstance
+  return appKitInstance;
 }
 
 /**
@@ -33,8 +34,8 @@ export function AppKitProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Cleanup any existing instance first
     if (appKitInstance) {
-      appKitInstance.disconnect().catch(console.error)
-      appKitInstance = undefined
+      appKitInstance.disconnect().catch(console.error);
+      appKitInstance = undefined;
     }
 
     const initializeAppKit = async () => {
@@ -43,8 +44,8 @@ export function AppKitProvider({ children }: { children: ReactNode }) {
         const adapter = new WagmiAdapter({
           ssr: false,
           projectId: projectId as string,
-          networks
-        })
+          networks,
+        });
 
         // Create AppKit instance with error handling
         appKitInstance = createAppKit({
@@ -53,45 +54,45 @@ export function AppKitProvider({ children }: { children: ReactNode }) {
           networks,
           projectId: projectId as string,
           features: {
-            analytics: false
+            analytics: false,
           },
-          themeMode: 'light',
+          themeMode: "light",
           themeVariables: {
-            '--w3m-accent': '#600473',
-            '--w3m-color-mix': '#600473',
-            '--w3m-z-index': 1000
-          }
-        })
+            "--w3m-accent": "#600473",
+            "--w3m-color-mix": "#600473",
+            "--w3m-z-index": 1000,
+          },
+        });
 
         // Add event listener for page unload
         const handleUnload = () => {
           if (appKitInstance) {
-            appKitInstance.disconnect().catch(console.error)
-            appKitInstance = undefined
+            appKitInstance.disconnect().catch(console.error);
+            appKitInstance = undefined;
           }
-        }
-        window.addEventListener('beforeunload', handleUnload)
+        };
+        window.addEventListener("beforeunload", handleUnload);
 
         return () => {
-          window.removeEventListener('beforeunload', handleUnload)
-        }
+          window.removeEventListener("beforeunload", handleUnload);
+        };
       } catch (error) {
-        console.error('Failed to initialize AppKit:', error)
-        appKitInstance = undefined
+        console.error("Failed to initialize AppKit:", error);
+        appKitInstance = undefined;
       }
-    }
+    };
 
-    const cleanup = initializeAppKit()
+    const cleanup = initializeAppKit();
 
     // Cleanup function
     return () => {
-      cleanup?.then(cleanupFn => cleanupFn?.())
+      cleanup?.then((cleanupFn) => cleanupFn?.());
       if (appKitInstance) {
-        appKitInstance.disconnect().catch(console.error)
-        appKitInstance = undefined
+        appKitInstance.disconnect().catch(console.error);
+        appKitInstance = undefined;
       }
-    }
-  }, [])
+    };
+  }, []);
 
   return (
     <>
@@ -102,5 +103,5 @@ export function AppKitProvider({ children }: { children: ReactNode }) {
       />
       {children}
     </>
-  )
-} 
+  );
+}

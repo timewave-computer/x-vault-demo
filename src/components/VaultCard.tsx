@@ -1,21 +1,21 @@
-import Link from 'next/link'
-import type { VaultData } from '@/hooks/useVaultData'
+import Link from "next/link";
+import type { VaultData } from "@/hooks/useVaultData";
 
 interface VaultCardProps extends VaultData {
-  isConnected: boolean,
+  isConnected: boolean;
 }
 
-export function VaultCard({ 
-  id, 
-  name, 
-  description, 
-  tvl, 
-  apr, 
+export function VaultCard({
+  id,
+  name,
+  description,
+  tvl,
+  apr,
   userShares,
-  isConnected 
+  isConnected,
 }: VaultCardProps) {
   return (
-    <Link 
+    <Link
       href={`/vault/${id}`}
       className="block rounded-lg p-4 shadow-sm hover:shadow-lg hover:shadow-primary transition-all duration-200 active:scale-95 active:shadow-inner bg-primary-light border-2 border-primary/40"
     >
@@ -51,7 +51,9 @@ export function VaultCard({
               <div className="sm:inline-flex sm:shrink-0 sm:items-center sm:gap-2">
                 <div className="mt-1.5 sm:mt-0">
                   <p className="text-black">Your Deposit</p>
-                  <p className="text-xl font-beast text-accent-purple">{userShares}</p>
+                  <p className="text-xl font-beast text-accent-purple">
+                    {userShares}
+                  </p>
                 </div>
               </div>
             </div>
@@ -59,5 +61,5 @@ export function VaultCard({
         </div>
       </div>
     </Link>
-  )
-} 
+  );
+}

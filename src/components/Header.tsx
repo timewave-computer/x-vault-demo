@@ -1,13 +1,13 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { ConnectButton } from '@/components/ConnectButton'
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ConnectButton } from "@/components/ConnectButton";
 
 export function Header() {
-  const pathname = usePathname()
-  const isVaultPage = pathname.startsWith('/vault/')
-  const vaultId = isVaultPage ? pathname.split('/')[2] : null
+  const pathname = usePathname();
+  const isVaultPage = pathname.startsWith("/vault/");
+  const vaultId = isVaultPage ? pathname.split("/")[2] : null;
 
   return (
     <header>
@@ -16,7 +16,7 @@ export function Header() {
           {/* Left section - navigation */}
           <div className="flex flex-col gap-8 pt-2">
             <div className="flex flex-wrap items-center gap-6">
-              <Link 
+              <Link
                 href="/"
                 className="text-lg font-medium text-primary hover:text-primary-hover transition"
               >
@@ -63,5 +63,5 @@ export function Header() {
         </div>
       </div>
     </header>
-  )
-} 
+  );
+}
