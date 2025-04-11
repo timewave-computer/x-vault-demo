@@ -119,3 +119,7 @@ The development environment provides several useful commands:
   - `faucet burn <address> <token> <amount>`: Burn tokens from address
   - `faucet`: Show help menu
 - `npm run dev`: Start Next.js development server
+
+## Commit Hooks
+
+The project is configured to reformat all staged files on commit, using `prettier` and `husky`.
