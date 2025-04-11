@@ -17,8 +17,9 @@ export function useVaultData(
   const { address, isConnected, chainId:accountChainId, } = useAccount()
   const [vaults, setVaults] = useState<VaultData[]>([])
   const [chainId, setChainId] = useState<number | null>(null)
+
   useEffect(() => {
-    // Update chainId on the client side
+    // client may have different chain ID than what is server rendered. Need to set with effect to avoid hydration error
     setChainId( accountChainId || defaultChainId)
   }, [accountChainId])
 
