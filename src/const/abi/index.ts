@@ -1,1 +1,1 @@
-export * from './ValenceVault'
+export * from './valenceVaultAbi'

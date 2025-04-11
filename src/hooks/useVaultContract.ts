@@ -3,8 +3,6 @@ import { parseUnits, formatUnits, erc20Abi } from 'viem'
 import { type Address } from 'viem'
 import { valenceVaultABI } from '@/const'
 
-
-
 /**
  * Hook for interacting with an ERC-4626 vault contract
  * Provides functionality for:
