@@ -1,3 +1,3 @@
 export enum QUERY_KEYS {
-    TOKEN_BALANCE= 'tokenBalance'
+  TOKEN_BALANCE = "tokenBalance",
 }

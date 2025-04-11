@@ -1,25 +1,29 @@
-'use client'
+"use client";
 
-import { useAccount, useDisconnect } from 'wagmi'
-import { useState, useEffect, Fragment } from 'react'
-import { useAppKit } from '@/components'
-import { useBalances, useVaultData } from '@/hooks'
+import { useAccount, useDisconnect } from "wagmi";
+import { useState, useEffect, Fragment } from "react";
+import { useAppKit } from "@/components";
+import { useBalances, useVaultData } from "@/hooks";
 
 /**
  * Utility function to format an Ethereum address for display
  * Returns address in format: 0x1234...5678
  */
 function shortenAddress(address: string) {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 /**
  * Utility function to format token balances with specified decimals
  * Returns balance in format: "123.45 TOKEN"
  */
-function formatBalance(balance: string | undefined, symbol: string, decimals: number = 4): string {
-  if (!balance) return `0 ${symbol}`
-  return `${Number(balance).toFixed(decimals)} ${symbol}`
+function formatBalance(
+  balance: string | undefined,
+  symbol: string,
+  decimals: number = 4,
+): string {
+  if (!balance) return `0 ${symbol}`;
+  return `${Number(balance).toFixed(decimals)} ${symbol}`;
 }
 
 /**
@@ -30,27 +34,27 @@ function formatBalance(balance: string | undefined, symbol: string, decimals: nu
  * - Disconnect button to terminate connection
  */
 export function ConnectButton() {
-  const [mounted, setMounted] = useState(false)
-  const { address, isConnected } = useAccount()
-  const { disconnect } = useDisconnect()
-  const { vaults } = useVaultData()
-  const appKit = useAppKit()
+  const [mounted, setMounted] = useState(false);
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+  const { vaults } = useVaultData();
+  const appKit = useAppKit();
 
   // Extract unique token addresses from vaults
-  const tokenAddresses = Array.from(new Set(vaults.map(vault => vault.tokenAddress)))
+  const tokenAddresses = Array.from(
+    new Set(vaults.map((vault) => vault.tokenAddress)),
+  );
 
   // Fetch eth and tokens for the connected address
-  const {ethBalance, tokenBalances} = useBalances(
-    {
-      address,
-      tokenAddresses
-    }
-  )
+  const { ethBalance, tokenBalances } = useBalances({
+    address,
+    tokenAddresses,
+  });
 
   // Handle client-side mounting to prevent hydration issues
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   // Show placeholder during server-side rendering
   if (!mounted) {
@@ -61,7 +65,7 @@ export function ConnectButton() {
       >
         Connect Wallet
       </button>
-    )
+    );
   }
 
   // Render connected state with balances and disconnect button
@@ -73,21 +77,22 @@ export function ConnectButton() {
             {/* Display ETH balance */}
             {ethBalance && (
               <span className="text-accent-purple whitespace-nowrap">
-                {formatBalance(ethBalance.data?.balance.formatted, 'ETH')}
+                {formatBalance(ethBalance.data?.balance.formatted, "ETH")}
               </span>
             )}
             {/* Display token balances */}
-            {tokenBalances.data?.map((tokenBalance , index) => 
-            <Fragment key={`accountTokenBalance-${index}`}> 
-         {
-          tokenBalance &&
-                <span  className="text-accent-purple whitespace-nowrap">
-                  {formatBalance(tokenBalance.balance.formatted, tokenBalance.symbol)}
-                </span>
-  }
-            </Fragment>
-           
-            )}
+            {tokenBalances.data?.map((tokenBalance, index) => (
+              <Fragment key={`accountTokenBalance-${index}`}>
+                {tokenBalance && (
+                  <span className="text-accent-purple whitespace-nowrap">
+                    {formatBalance(
+                      tokenBalance.balance.formatted,
+                      tokenBalance.symbol,
+                    )}
+                  </span>
+                )}
+              </Fragment>
+            ))}
           </div>
           <span className="hidden sm:inline text-primary/30">•</span>
           {/* Etherscan link for address */}
@@ -103,15 +108,15 @@ export function ConnectButton() {
         {/* Disconnect button */}
         <button
           onClick={() => {
-            disconnect()
-            appKit?.disconnect()
+            disconnect();
+            appKit?.disconnect();
           }}
           className="rounded-md border-2 border-primary/40 px-5 py-2.5 text-sm font-beast bg-white text-primary hover:bg-primary-light hover:text-primary-hover active:bg-primary-light focus:outline-none focus:ring focus:ring-primary"
         >
           Disconnect
         </button>
       </div>
-    )
+    );
   }
 
   // Render connect button for disconnected state
@@ -119,12 +124,12 @@ export function ConnectButton() {
     <button
       onClick={() => {
         if (appKit) {
-          appKit.open({ view: 'Connect' })
+          appKit.open({ view: "Connect" });
         }
       }}
       className="inline-block rounded-md px-12 py-4 text-base font-beast bg-secondary text-white hover:scale-110 hover:shadow-xl hover:bg-secondary-hover active:bg-secondary-hover transition-all focus:outline-none focus:ring focus:ring-secondary/20"
     >
       Connect Wallet
     </button>
-  )
-} 
+  );
+}

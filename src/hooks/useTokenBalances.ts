@@ -1,18 +1,20 @@
-'use client'
+"use client";
 
-import { useBalance, useConfig } from 'wagmi'
-import {  readContracts } from '@wagmi/core'
-import { erc20Abi } from 'viem'
-import { useQueries } from '@tanstack/react-query'
-import { formatUnits } from 'viem'
-import { QUERY_KEYS } from '@/const'
+import { useBalance, useConfig } from "wagmi";
+import { readContracts } from "@wagmi/core";
+import { erc20Abi } from "viem";
+import { useQueries } from "@tanstack/react-query";
+import { formatUnits } from "viem";
+import { QUERY_KEYS } from "@/const";
 
 export function useBalances({
   address,
-  tokenAddresses
-}:{address: `0x${string}` | undefined, tokenAddresses: `0x${string}`[]}) {
-
-  const config = useConfig()
+  tokenAddresses,
+}: {
+  address: `0x${string}` | undefined;
+  tokenAddresses: `0x${string}`[];
+}) {
+  const config = useConfig();
 
   const ethBalance = useBalance({
     address,
@@ -20,45 +22,44 @@ export function useBalances({
       enabled: !!address,
       refetchInterval: 5000,
     },
-  })
+  });
 
   const tokenBalances = useQueries({
     queries: tokenAddresses.map((tokenAddress) => ({
       queryKey: [QUERY_KEYS.TOKEN_BALANCE, address, tokenAddress],
       enabled: !!address,
       queryFn: async () => {
-        if (!address) return
-        const [balance, decimals, symbol] = await readContracts(config, { 
-          allowFailure: false, 
-          contracts: [ 
-            { 
+        if (!address) return;
+        const [balance, decimals, symbol] = await readContracts(config, {
+          allowFailure: false,
+          contracts: [
+            {
               address: tokenAddress,
-              abi: erc20Abi, 
-              functionName: 'balanceOf', 
-              args: [address], 
-            }, 
-            { 
+              abi: erc20Abi,
+              functionName: "balanceOf",
+              args: [address],
+            },
+            {
               address: tokenAddress,
-              abi: erc20Abi, 
-              functionName: 'decimals', 
-            }, 
-            { 
+              abi: erc20Abi,
+              functionName: "decimals",
+            },
+            {
               address: tokenAddress,
-              abi: erc20Abi, 
-              functionName: 'symbol', 
-            }, 
-          ] 
-        })
+              abi: erc20Abi,
+              functionName: "symbol",
+            },
+          ],
+        });
         return {
           balance: {
             raw: balance,
-            formatted: formatUnits(balance, decimals)
+            formatted: formatUnits(balance, decimals),
           },
           decimals,
-           symbol
-        }
+          symbol,
+        };
       },
-
     })),
     combine: (results) => {
       return {
@@ -66,9 +67,9 @@ export function useBalances({
         isLoading: results.some((result) => result.isLoading),
         isError: results.some((result) => result.isPending),
         error: results.map((result) => result.error),
-      }
+      };
     },
-  })
+  });
 
   return {
     tokenBalances,
@@ -82,7 +83,6 @@ export function useBalances({
         decimals: ethBalance.data?.decimals,
         symbol: ethBalance.data?.symbol,
       },
-      
-    }
-  }
+    },
+  };
 }
