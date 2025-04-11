@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount, useBalance } from 'wagmi'
+import { useAccount, useBalance, useConfig } from 'wagmi'
 import { type BaseVaultData,BASE_VAULTS, defaultChainId } from '@/config'
+import { valenceVaultABI } from '@/const'
+import { readContract } from '@wagmi/core'
+
 
 export type VaultData = BaseVaultData & {
-  userDeposit: string
   userShares: string
+  userPosition: string
   ethBalance: string
 }
 
@@ -17,6 +20,7 @@ export function useVaultData(
   const { address, isConnected, chainId:accountChainId, } = useAccount()
   const [vaults, setVaults] = useState<VaultData[]>([])
   const [chainId, setChainId] = useState<number | null>(null)
+  const config  = useConfig()
 
   useEffect(() => {
     // client may have different chain ID than what is server rendered. Need to set with effect to avoid hydration error
@@ -32,27 +36,84 @@ export function useVaultData(
     },
   })
 
-  useEffect(() => {
+
+  useEffect( () => {
    
     // Read vault addresses from config
     const BASE_VAULTS_FOR_CHAIN = chainId ? BASE_VAULTS[chainId] : []
 
-    // Create full vault data with user-specific info
-    const fullVaults = BASE_VAULTS_FOR_CHAIN.map((vault) => ({
+    const generateAndSetVaults = async ()=>{
+         // Create full vault data with user-specific info
+    const fullVaults = await Promise.all(BASE_VAULTS_FOR_CHAIN.map(async (vault) => {
+      
+      let userShares:bigint | undefined
+      let vaultPosition: bigint |undefined
+  
+      let tvl = BigInt(0)
+      try {
+        tvl = await readContract(config, {
+          abi: valenceVaultABI,
+          address: vault.vaultAddress,
+          functionName: 'totalAssets',
+          args:[]
+        },
+       ) 
+      } catch (error) {
+        console.error('Error fetching TVL:', error)
+      }
+
+      if (address){
+        const _userShares = await readContract(config, {
+          abi: valenceVaultABI,
+          address: vault.vaultAddress,
+          functionName: 'balanceOf',
+          args: [address],
+        },
+       ) 
+       userShares =_userShares
+
+
+       try {
+        const _vaultPosition = await readContract(config, {
+          abi: valenceVaultABI,
+          address: vault.vaultAddress,
+          functionName: 'convertToAssets',
+          args: [_userShares],
+        },
+
+       )
+       vaultPosition = _vaultPosition
+
+       }
+        catch(error) {
+          console.error('Error fetching user shares:', error)
+        }
+   
+      }
+  
+
+      return {
       ...vault,
-      userDeposit: vault.id === 'eth' && ethBalance 
-        ? Number(ethBalance.formatted) === 0 
-          ? `0 ${ethBalance.symbol}`
-          : `${Number(ethBalance.formatted).toFixed(4)} ${ethBalance.symbol}`
-        : '0 ' + vault.token,
-      userShares: '0 shares',
+      tvl:  Number(tvl) === 0 ?
+       `${Number(tvl)} ${vault.token}`: `0 ${vault.token}`,
+      userShares: Number(userShares) === 0
+        ? `0 ${vault.token}`
+        : `${Number(userShares).toFixed(4)} ${vault.token}`,
+        userPosition: Number(vaultPosition) === 0
+        ? `0 ${vault.token}`
+        : `${Number(vaultPosition).toFixed(4)} ${vault.token}`,
+      apr: vault.apr,
+      userVaultBalance: 0,
       ethBalance: ethBalance 
         ? Number(ethBalance.formatted) === 0
           ? `0 ${ethBalance.symbol}`
           : `${Number(ethBalance.formatted).toFixed(4)} ${ethBalance.symbol}`
         : '0 ETH'
-    }))
+    }}))
     setVaults(fullVaults)
+
+    }
+    generateAndSetVaults()
   }, [chainId, ethBalance, address])
 
   return {

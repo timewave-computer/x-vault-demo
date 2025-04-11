@@ -146,7 +146,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               Your Vault Position
             </dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {isConnected ? vaultData.userDeposit : '-'}
+              {isConnected ? vaultData.userShares : '-'}
             </dd>
           </div>
 

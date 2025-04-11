@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { VaultData } from '@/hooks/useVaultData'
 
 interface VaultCardProps extends VaultData {
-  isConnected: boolean
+  isConnected: boolean,
 }
 
 export function VaultCard({ 
@@ -11,7 +11,7 @@ export function VaultCard({
   description, 
   tvl, 
   apr, 
-  userDeposit,
+  userShares,
   isConnected 
 }: VaultCardProps) {
   return (
@@ -51,7 +51,7 @@ export function VaultCard({
               <div className="sm:inline-flex sm:shrink-0 sm:items-center sm:gap-2">
                 <div className="mt-1.5 sm:mt-0">
                   <p className="text-black">Your Deposit</p>
-                  <p className="text-xl font-beast text-accent-purple">{userDeposit}</p>
+                  <p className="text-xl font-beast text-accent-purple">{userShares}</p>
                 </div>
               </div>
             </div>
