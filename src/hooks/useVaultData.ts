@@ -13,8 +13,6 @@ export type VaultData = BaseVaultData & {
   ethBalance: string
 }
 
-
-
 export function useVaultData(
 ) {
   const { address, isConnected, chainId:accountChainId, } = useAccount()
@@ -99,14 +97,9 @@ export function useVaultData(
 
       return {
       ...vault,
-      tvl:  Number(tvl) === 0 ? `0 ${vault.token}` :
-       `${Number(tvl)} ${vault.token}` ,
-      userShares: Number(userShares) === 0
-        ? `0 ${vault.token}`
-        : `${Number(userShares).toFixed(4)} ${vault.token}`,
-        userPosition: Number(vaultPosition) === 0
-        ? `0 ${vault.token}`
-        : `${Number(vaultPosition).toFixed(4)} ${vault.token}`,
+      tvl:  formatTokenAmount(tvl, vault.token),
+      userShares: formatTokenAmount(userShares,vault.token),
+     userPosition: formatTokenAmount(vaultPosition,vault.token),
       apr: vault.apr,
       userVaultBalance: 0,
       ethBalance: ethBalance 
@@ -127,3 +120,11 @@ export function useVaultData(
     chainId
   }
 } 
+
+function formatTokenAmount(value: bigint | undefined, symbol: string, displayDecimals: number = 4): string {
+  if (!value || value === BigInt(0)) {
+    return `0 ${symbol}`;
+  }
+  
+  return `${Number(value).toFixed(displayDecimals)}} ${symbol}`;
+}
