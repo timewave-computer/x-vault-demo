@@ -134,10 +134,19 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         <dl className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-4">
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
             <dt className="text-base text-black">
-              Balance
+              Your Balance
             </dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
               {isConnected ? `${tokenBalance} ${tokenSymbol}` : '-'}
+            </dd>
+          </div>
+
+          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+            <dt className="text-base text-black">
+              Your Vault Position
+            </dt>
+            <dd className="mt-2 text-2xl font-beast text-accent-purple">
+              {isConnected ? vaultData.userDeposit : '-'}
             </dd>
           </div>
 
@@ -159,14 +168,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </dd>
           </div>
 
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
-            <dt className="text-base text-black">
-              Your Position
-            </dt>
-            <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {isConnected ? vaultData.userDeposit : '-'}
-            </dd>
-          </div>
+
         </dl>
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
