@@ -1,90 +1,9 @@
-import { useContractRead, useContractWrite, useAccount, usePublicClient, useWalletClient } from 'wagmi'
-import { parseUnits, formatUnits, type Abi } from 'viem'
+import {   useReadContract, useAccount, usePublicClient, useWalletClient } from 'wagmi'
+import { parseUnits, formatUnits, erc20Abi } from 'viem'
 import { type Address } from 'viem'
-import { useAppKit } from '@/components/AppKitProvider'
+import { valenceVaultABI } from '@/const'
 
-/**
- * Minimal ERC-20 ABI for basic token operations
- * Includes only the functions needed for balance checking and approvals
- */
-const ERC20_ABI = [
-  {
-    type: 'function',
-    name: 'decimals',
-    inputs: [],
-    outputs: [{ type: 'uint8' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'balanceOf',
-    inputs: [{ type: 'address', name: 'account' }],
-    outputs: [{ type: 'uint256' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'approve',
-    inputs: [
-      { type: 'address', name: 'spender' },
-      { type: 'uint256', name: 'amount' },
-    ],
-    outputs: [{ type: 'bool' }],
-    stateMutability: 'nonpayable',
-  },
-] as const
 
-/**
- * ERC-4626 Vault ABI combining both vault-specific and ERC-20 functions
- * Includes functions for:
- * - Deposits and withdrawals
- * - Asset conversion calculations
- * - Balance and allowance checks
- */
-const VAULT_ABI = [
-  {
-    type: 'function',
-    name: 'deposit',
-    inputs: [
-      { type: 'uint256', name: 'assets' },
-      { type: 'address', name: 'receiver' },
-    ],
-    outputs: [{ type: 'uint256', name: 'shares' }],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'withdraw',
-    inputs: [
-      { type: 'uint256', name: 'shares' },
-      { type: 'address', name: 'receiver' },
-      { type: 'address', name: 'owner' },
-    ],
-    outputs: [{ type: 'uint256', name: 'assets' }],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'asset',
-    inputs: [],
-    outputs: [{ type: 'address' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'maxWithdraw',
-    inputs: [{ type: 'address', name: 'owner' }],
-    outputs: [{ type: 'uint256', name: 'maxAssets' }],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'balanceOf',
-    inputs: [{ type: 'address', name: 'account' }],
-    outputs: [{ type: 'uint256' }],
-    stateMutability: 'view',
-  },
-] as const
 
 /**
  * Hook for interacting with an ERC-4626 vault contract
@@ -95,41 +14,36 @@ const VAULT_ABI = [
  */
 export function useVaultContract(vaultAddress: string, tokenAddress: string) {
   const { address } = useAccount()
-  const appKit = useAppKit()
   const publicClient = usePublicClient()
   const { data: walletClient } = useWalletClient()
 
   // Query token decimals for formatting
-  const { data: decimals } = useContractRead({
-    abi: ERC20_ABI,
+  const { data: decimals } = useReadContract({
+    abi: erc20Abi,
     functionName: 'decimals',
-    chainId: 31337,
     address: tokenAddress as Address,
   })
 
   // Query user's token balance
-  const { data: balance } = useContractRead({
-    abi: ERC20_ABI,
+  const { data: balance } = useReadContract({
+    abi: erc20Abi,
     functionName: 'balanceOf',
-    chainId: 31337,
     address: tokenAddress as Address,
     args: address ? [address] : undefined,
   })
 
   // Query user's vault share balance
-  const { data: shareBalance } = useContractRead({
-    abi: VAULT_ABI,
+  const { data: shareBalance } = useReadContract({
+    abi: valenceVaultABI,
     functionName: 'balanceOf',
-    chainId: 31337,
     address: vaultAddress as Address,
     args: address ? [address] : undefined,
   })
 
   // Query maximum withdrawable amount
-  const { data: maxWithdraw } = useContractRead({
-    abi: VAULT_ABI,
+  const { data: maxWithdraw } = useReadContract({
+    abi: valenceVaultABI,
     functionName: 'maxWithdraw',
-    chainId: 31337,
     address: vaultAddress as Address,
     args: address ? [address] : undefined,
   })
@@ -145,7 +59,7 @@ export function useVaultContract(vaultAddress: string, tokenAddress: string) {
       // First approve the vault to spend tokens
       const approveHash = await walletClient.writeContract({
         address: tokenAddress as Address,
-        abi: ERC20_ABI,
+        abi: erc20Abi,
         functionName: 'approve',
         args: [vaultAddress as Address, parsedAmount],
       })
@@ -156,7 +70,7 @@ export function useVaultContract(vaultAddress: string, tokenAddress: string) {
       // Then deposit into the vault
       const depositHash = await walletClient.writeContract({
         address: vaultAddress as Address,
-        abi: VAULT_ABI,
+        abi: valenceVaultABI,
         functionName: 'deposit',
         args: [parsedAmount, address],
       })
@@ -180,7 +94,7 @@ export function useVaultContract(vaultAddress: string, tokenAddress: string) {
     try {
       const hash = await walletClient.writeContract({
         address: vaultAddress as Address,
-        abi: VAULT_ABI,
+        abi: valenceVaultABI,
         functionName: 'withdraw',
         args: [parsedShares, address, address],
       })
