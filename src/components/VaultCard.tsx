@@ -14,7 +14,6 @@ export function VaultCard({
   userDeposit,
   isConnected 
 }: VaultCardProps) {
-
   return (
     <Link 
       href={`/vault/${id}`}

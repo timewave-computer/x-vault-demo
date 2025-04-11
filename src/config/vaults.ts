@@ -31,7 +31,7 @@ export const BASE_VAULTS: Record<number,BaseVaultData[]> = {
             description: 'Stable yield generation for USDC deposits.',
             token: 'USDC',
             vaultAddress: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
-            tokenAddress: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e", // TODO replace with actual token address
+            tokenAddress: "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
 
            // TODO: these values should be fetched from the strategiest
            tvl: '0 USDC',

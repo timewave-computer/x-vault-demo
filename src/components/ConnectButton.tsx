@@ -1,10 +1,9 @@
 'use client'
 
 import { useAccount, useDisconnect } from 'wagmi'
-import { useVaultData } from '@/hooks/useVaultData'
-import { useBalances } from '@/hooks/useTokenBalances'
 import { useState, useEffect, Fragment } from 'react'
-import { useAppKit } from '@/components/AppKitProvider'
+import { useAppKit } from '@/components'
+import { useBalances, useVaultData } from '@/hooks'
 
 /**
  * Utility function to format an Ethereum address for display
