@@ -63,39 +63,45 @@ export function useVaultData(
       }
 
       if (address){
-        const _userShares = await readContract(config, {
-          abi: valenceVaultABI,
-          address: vault.vaultAddress,
-          functionName: 'balanceOf',
-          args: [address],
-        },
-       ) 
-       userShares =_userShares
-
-
-       try {
-        const _vaultPosition = await readContract(config, {
-          abi: valenceVaultABI,
-          address: vault.vaultAddress,
-          functionName: 'convertToAssets',
-          args: [_userShares],
-        },
-
-       )
-       vaultPosition = _vaultPosition
-
-       }
-        catch(error) {
+        try {
+          const _userShares = await readContract(config, {
+            abi: valenceVaultABI,
+            address: vault.vaultAddress,
+            functionName: 'balanceOf',
+            args: [address],
+          },
+         ) 
+         userShares =_userShares
+        }
+         catch (error) {
           console.error('Error fetching user shares:', error)
         }
-   
+  
+        if (userShares) {
+          try {
+        
+            const _vaultPosition = await readContract(config, {
+              abi: valenceVaultABI,
+              address: vault.vaultAddress,
+              functionName: 'convertToAssets',
+              args: [userShares],
+            },
+    
+           )
+           vaultPosition = _vaultPosition
+    
+           }
+            catch(error) {
+              console.error('Error fetching user shares:', error)
+            }
+        }
       }
   
 
       return {
       ...vault,
-      tvl:  Number(tvl) === 0 ?
-       `${Number(tvl)} ${vault.token}`: `0 ${vault.token}`,
+      tvl:  Number(tvl) === 0 ? `0 ${vault.token}` :
+       `${Number(tvl)} ${vault.token}` ,
       userShares: Number(userShares) === 0
         ? `0 ${vault.token}`
         : `${Number(userShares).toFixed(4)} ${vault.token}`,
