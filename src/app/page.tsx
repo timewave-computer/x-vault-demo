@@ -4,7 +4,7 @@ import { VaultCard } from '@/components/VaultCard'
 import { useVaultData } from '@/hooks/useVaultData'
 
 export default function Home() {
-  const { isConnected, vaults, chainId } = useVaultData()
+  const { isConnected, vaults } = useVaultData()
 
   return (
     <div className="relative">
@@ -22,11 +22,11 @@ export default function Home() {
         
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
          {vaults.length === 0 && <p>
-          No vaults to show for chain ID {chainId}.
+          No vaults to show.
           </p>}
           {vaults.map((vault) => (
             <VaultCard 
-              key={`vaultcard-${vault.id}`} 
+              key={vault.id} 
               {...vault} 
               isConnected={isConnected}
             />
