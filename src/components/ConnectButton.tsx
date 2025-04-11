@@ -1,10 +1,9 @@
 'use client'
 
 import { useAccount, useDisconnect } from 'wagmi'
-import { useVaultData } from '@/hooks/useVaultData'
-import { useTokenBalances } from '@/hooks/useTokenBalances'
-import { useState, useEffect } from 'react'
-import { useAppKit } from '@/components/AppKitProvider'
+import { useState, useEffect, Fragment } from 'react'
+import { useAppKit } from '@/components'
+import { useBalances, useVaultData } from '@/hooks'
 
 /**
  * Utility function to format an Ethereum address for display
@@ -40,10 +39,12 @@ export function ConnectButton() {
   // Extract unique token addresses from vaults
   const tokenAddresses = Array.from(new Set(vaults.map(vault => vault.tokenAddress)))
 
-  // Fetch ETH and token balances for connected wallet
-  const { ethBalance, tokenBalances } = useTokenBalances(
-    address as `0x${string}` | undefined,
-    tokenAddresses
+  // Fetch eth and tokens for the connected address
+  const {ethBalance, tokenBalances} = useBalances(
+    {
+      address,
+      tokenAddresses
+    }
   )
 
   // Handle client-side mounting to prevent hydration issues
@@ -72,16 +73,20 @@ export function ConnectButton() {
             {/* Display ETH balance */}
             {ethBalance && (
               <span className="text-accent-purple whitespace-nowrap">
-                {formatBalance(ethBalance.formatted, 'ETH')}
+                {formatBalance(ethBalance.data?.balance.formatted, 'ETH')}
               </span>
             )}
             {/* Display token balances */}
-            {tokenBalances.map(({ balance, address: tokenAddress }, index) => 
-              balance && (
-                <span key={tokenAddress} className="text-accent-purple whitespace-nowrap">
-                  {formatBalance(balance.formatted, balance.symbol)}
+            {tokenBalances.data?.map((tokenBalance , index) => 
+            <Fragment key={`accountTokenBalance-${index}`}> 
+         {
+          tokenBalance &&
+                <span  className="text-accent-purple whitespace-nowrap">
+                  {formatBalance(tokenBalance.balance.formatted, tokenBalance.symbol)}
                 </span>
-              )
+  }
+            </Fragment>
+           
             )}
           </div>
           <span className="hidden sm:inline text-primary/30">•</span>

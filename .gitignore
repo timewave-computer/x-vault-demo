@@ -40,3 +40,6 @@ result-*
 *.log
 coverage/
 .vercel 
+
+# Scratch files
+*scratch*

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAccount, useBalance } from 'wagmi'
-import { type BaseVaultData,BASE_VAULTS } from '@/config'
+import { type BaseVaultData,BASE_VAULTS, defaultChainId } from '@/config'
 
 export type VaultData = BaseVaultData & {
   userDeposit: string
@@ -10,10 +10,18 @@ export type VaultData = BaseVaultData & {
   ethBalance: string
 }
 
+
+
 export function useVaultData(
 ) {
-  const { address, isConnected, chainId, } = useAccount()
+  const { address, isConnected, chainId:accountChainId, } = useAccount()
   const [vaults, setVaults] = useState<VaultData[]>([])
+  const [chainId, setChainId] = useState<number | null>(null)
+
+  useEffect(() => {
+    // client may have different chain ID than what is server rendered. Need to set with effect to avoid hydration error
+    setChainId( accountChainId || defaultChainId)
+  }, [accountChainId])
 
   // Get ETH balance
   const { data: ethBalance } = useBalance({
@@ -25,6 +33,7 @@ export function useVaultData(
   })
 
   useEffect(() => {
+   
     // Read vault addresses from config
     const BASE_VAULTS_FOR_CHAIN = chainId ? BASE_VAULTS[chainId] : []
 
@@ -49,5 +58,6 @@ export function useVaultData(
   return {
     isConnected,
     vaults,
+    chainId
   }
 } 
