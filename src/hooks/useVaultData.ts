@@ -46,10 +46,8 @@ export function useVaultData(
          // Create full vault data with user-specific info
     const fullVaults = await Promise.all(BASE_VAULTS_FOR_CHAIN.map(async (vault) => {
       
-      let userShares:bigint | undefined
-      let vaultPosition: bigint |undefined
-  
-      let tvl = BigInt(0)
+      let userShares = BigInt(0), vaultPosition = BigInt(0), tvl = BigInt(0)
+
       try {
         tvl = await readContract(config, {
           abi: valenceVaultABI,
@@ -88,6 +86,7 @@ export function useVaultData(
             },
     
            )
+
            vaultPosition = _vaultPosition
     
            }
