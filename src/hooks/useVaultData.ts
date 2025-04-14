@@ -5,11 +5,13 @@ import { useAccount, useBalance, useConfig } from "wagmi";
 import { type BaseVaultData, BASE_VAULTS, defaultChainId } from "@/config";
 import { valenceVaultABI } from "@/const";
 import { readContract } from "@wagmi/core";
+import { erc20Abi, formatUnits } from "viem";
 
 export type VaultData = BaseVaultData & {
   userShares: string;
   userPosition: string;
   ethBalance: string;
+  tvl: string;
 };
 
 export function useVaultData() {
@@ -38,68 +40,77 @@ export function useVaultData() {
 
     const generateAndSetVaults = async () => {
       // Create full vault data with user-specific info
-      const fullVaults = await Promise.all(
+      const vaultPromises = await Promise.allSettled(
         BASE_VAULTS_FOR_CHAIN.map(async (vault) => {
-          let userShares = BigInt(0),
-            vaultPosition = BigInt(0),
-            tvl = BigInt(0);
-
           try {
-            tvl = await readContract(config, {
+            const decimals = await readContract(config, {
+              abi: erc20Abi,
+              address: vault.tokenAddress,
+              functionName: "decimals",
+              args: [],
+            });
+
+            const tvl = await readContract(config, {
               abi: valenceVaultABI,
-              address: vault.vaultAddress,
+              address: vault.vaultProxyAddress,
               functionName: "totalAssets",
               args: [],
             });
-          } catch (error) {
-            console.error("Error fetching TVL:", error);
-          }
 
-          if (address) {
-            try {
-              const _userShares = await readContract(config, {
+            let userShares = BigInt(0),
+              vaultPosition = BigInt(0);
+            if (address) {
+              userShares = await readContract(config, {
                 abi: valenceVaultABI,
-                address: vault.vaultAddress,
+                address: vault.vaultProxyAddress,
                 functionName: "balanceOf",
                 args: [address],
               });
-              userShares = _userShares;
-            } catch (error) {
-              console.error("Error fetching user shares:", error);
+
+              vaultPosition = await readContract(config, {
+                abi: valenceVaultABI,
+                address: vault.vaultProxyAddress,
+                functionName: "convertToAssets",
+                args: [userShares],
+              });
             }
 
-            if (userShares) {
-              try {
-                const _vaultPosition = await readContract(config, {
-                  abi: valenceVaultABI,
-                  address: vault.vaultAddress,
-                  functionName: "convertToAssets",
-                  args: [userShares],
-                });
-
-                vaultPosition = _vaultPosition;
-              } catch (error) {
-                console.error("Error fetching user shares:", error);
-              }
-            }
+            const result: VaultData = {
+              ...vault,
+              tvl: formatTokenAmount(tvl, vault.token, {
+                formatUnits: decimals,
+              }),
+              userShares: formatTokenAmount(userShares, vault.token, {
+                formatUnits: decimals,
+              }),
+              userPosition: formatTokenAmount(vaultPosition, vault.token, {
+                formatUnits: decimals,
+              }),
+              apr: vault.apr,
+              ethBalance: ethBalance
+                ? Number(ethBalance.formatted) === 0
+                  ? `0 ${ethBalance.symbol}`
+                  : `${Number(ethBalance.formatted).toFixed(4)} ${ethBalance.symbol}`
+                : "0 ETH",
+            };
+            return result;
+          } catch (error) {
+            return Promise.reject(error);
           }
-
-          return {
-            ...vault,
-            tvl: formatTokenAmount(tvl, vault.token),
-            userShares: formatTokenAmount(userShares, vault.token),
-            userPosition: formatTokenAmount(vaultPosition, vault.token),
-            apr: vault.apr,
-            userVaultBalance: 0,
-            ethBalance: ethBalance
-              ? Number(ethBalance.formatted) === 0
-                ? `0 ${ethBalance.symbol}`
-                : `${Number(ethBalance.formatted).toFixed(4)} ${ethBalance.symbol}`
-              : "0 ETH",
-          };
         }),
       );
-      setVaults(fullVaults);
+
+      vaultPromises
+        .filter((promise) => promise.status === "rejected")
+        .forEach((promise) => {
+          console.error("Error fetching vault:", promise.reason);
+        });
+
+      const hydratedVaults = vaultPromises
+        .filter((promise) => promise.status === "fulfilled")
+        .map((promise) => promise.value);
+
+      setVaults(hydratedVaults);
     };
     generateAndSetVaults();
   }, [chainId, ethBalance, address]);
@@ -111,14 +122,25 @@ export function useVaultData() {
   };
 }
 
+const defaultDisplayDecimals = 4;
+
 function formatTokenAmount(
-  value: bigint | undefined,
+  _value: bigint | undefined,
   symbol: string,
-  displayDecimals: number = 4,
+  options: {
+    displayDecimals?: number; // fraction precision
+    formatUnits?: number; // wei -> eth
+  },
 ): string {
-  if (!value || value === BigInt(0)) {
+  if (!_value || _value === BigInt(0)) {
     return `0 ${symbol}`;
   }
 
-  return `${Number(value).toFixed(displayDecimals)}} ${symbol}`;
+  let formattedValue: number;
+
+  if (options.formatUnits) {
+    formattedValue = Number(formatUnits(_value, options.formatUnits));
+  } else formattedValue = Number(_value);
+
+  return `${formattedValue.toFixed(options.displayDecimals ?? defaultDisplayDecimals)} ${symbol}`;
 }

@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useVaultData } from "@/hooks/useVaultData";
+import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
-import { useVaultContract } from "@/hooks/useVaultContract";
-import { useBalances } from "@/hooks/useTokenBalances";
+import { isValidNumberInput } from "@/const";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
@@ -26,11 +25,11 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     maxWithdraw,
     balance,
   } = useVaultContract(
-    vaultData?.vaultAddress ?? "",
+    vaultData?.vaultProxyAddress ?? "",
     vaultData?.tokenAddress ?? "",
   );
 
-  const { tokenBalances } = useBalances({
+  const { tokenBalances, ethBalance } = useTokenBalances({
     address,
     tokenAddresses: vaultData ? [vaultData.tokenAddress] : [],
   });
@@ -68,6 +67,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       console.error("Deposit failed:", err);
     } finally {
       setIsDepositing(false);
+      tokenBalances.refetch(vaultData?.tokenAddress);
+      ethBalance.refetch();
     }
   };
 
@@ -149,7 +150,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           </div>
 
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
-            <dt className="text-base text-black">TVL</dt>
+            <dt className="text-base text-black">Vault TVL</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
               {vaultData.tvl}
             </dd>
@@ -211,20 +212,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 onChange={(e) => {
                   setError(null);
                   const value = e.target.value;
-                  // Only allow positive numbers and format using US locale
-                  if (value === "" || parseFloat(value) >= 0) {
-                    const number = parseFloat(value);
-                    if (isNaN(number)) {
-                      setDepositAmount("");
-                    } else {
-                      setDepositAmount(
-                        number.toLocaleString(locale, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 18,
-                          useGrouping: false,
-                        }),
-                      );
-                    }
+                  // Only allow positive numbers
+                  if (isValidNumberInput(value) && parseFloat(value) >= 0) {
+                    setDepositAmount(value);
                   }
                 }}
                 min="0"
@@ -331,20 +321,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 onChange={(e) => {
                   setError(null);
                   const value = e.target.value;
-                  // Only allow positive numbers and format using US locale
-                  if (value === "" || parseFloat(value) >= 0) {
-                    const number = parseFloat(value);
-                    if (isNaN(number)) {
-                      setWithdrawShares("");
-                    } else {
-                      setWithdrawShares(
-                        number.toLocaleString(locale, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 18,
-                          useGrouping: false,
-                        }),
-                      );
-                    }
+                  // Only allow positive numbers
+                  if (isValidNumberInput(value) && parseFloat(value) >= 0) {
+                    setWithdrawShares(value);
                   }
                 }}
                 min="0"

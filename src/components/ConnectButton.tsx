@@ -3,7 +3,7 @@
 import { useAccount, useDisconnect } from "wagmi";
 import { useState, useEffect, Fragment } from "react";
 import { useAppKit } from "@/components";
-import { useBalances, useVaultData } from "@/hooks";
+import { useTokenBalances, useVaultData } from "@/hooks";
 
 /**
  * Utility function to format an Ethereum address for display
@@ -46,7 +46,7 @@ export function ConnectButton() {
   );
 
   // Fetch eth and tokens for the connected address
-  const { ethBalance, tokenBalances } = useBalances({
+  const { ethBalance, tokenBalances } = useTokenBalances({
     address,
     tokenAddresses,
   });

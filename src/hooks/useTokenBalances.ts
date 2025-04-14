@@ -3,11 +3,11 @@
 import { useBalance, useConfig } from "wagmi";
 import { readContracts } from "@wagmi/core";
 import { erc20Abi } from "viem";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { QUERY_KEYS } from "@/const";
 
-export function useBalances({
+export function useTokenBalances({
   address,
   tokenAddresses,
 }: {
@@ -15,6 +15,7 @@ export function useBalances({
   tokenAddresses: `0x${string}`[];
 }) {
   const config = useConfig();
+  const queryClient = useQueryClient();
 
   const ethBalance = useBalance({
     address,
@@ -67,6 +68,12 @@ export function useBalances({
         isLoading: results.some((result) => result.isLoading),
         isError: results.some((result) => result.isPending),
         error: results.map((result) => result.error),
+        refetch: (tokenAddress: `0x${string}`) => {
+          if (!address) return;
+          return queryClient.invalidateQueries({
+            queryKey: [QUERY_KEYS.TOKEN_BALANCE, address, tokenAddress],
+          });
+        },
       };
     },
   });

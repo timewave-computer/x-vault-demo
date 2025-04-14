@@ -4,7 +4,13 @@ import {
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import { parseUnits, formatUnits, erc20Abi } from "viem";
+import {
+  parseUnits,
+  formatUnits,
+  erc20Abi,
+  ContractFunctionRevertedError,
+  BaseError,
+} from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
 
@@ -15,7 +21,10 @@ import { valenceVaultABI } from "@/const";
  * - Converting between assets and shares
  * - Depositing assets and withdrawing shares
  */
-export function useVaultContract(vaultAddress: string, tokenAddress: string) {
+export function useVaultContract(
+  vaultProxyAddress: string,
+  tokenAddress: string,
+) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
@@ -39,7 +48,7 @@ export function useVaultContract(vaultAddress: string, tokenAddress: string) {
   const { data: shareBalance } = useReadContract({
     abi: valenceVaultABI,
     functionName: "balanceOf",
-    address: vaultAddress as Address,
+    address: vaultProxyAddress as Address,
     args: address ? [address] : undefined,
   });
 
@@ -47,7 +56,7 @@ export function useVaultContract(vaultAddress: string, tokenAddress: string) {
   const { data: maxWithdraw } = useReadContract({
     abi: valenceVaultABI,
     functionName: "maxWithdraw",
-    address: vaultAddress as Address,
+    address: vaultProxyAddress as Address,
     args: address ? [address] : undefined,
   });
 
@@ -64,22 +73,49 @@ export function useVaultContract(vaultAddress: string, tokenAddress: string) {
         address: tokenAddress as Address,
         abi: erc20Abi,
         functionName: "approve",
-        args: [vaultAddress as Address, parsedAmount],
+        args: [vaultProxyAddress as Address, parsedAmount],
       });
+
+      try {
+        await publicClient.simulateContract({
+          address: vaultProxyAddress as Address,
+          abi: valenceVaultABI,
+          functionName: "deposit",
+          args: [parsedAmount, address],
+          account: address,
+        });
+      } catch (err) {
+        if (err instanceof ContractFunctionRevertedError) {
+          throw new Error(err.reason);
+        } else if (err instanceof BaseError) {
+          throw new Error(err.shortMessage);
+        } else {
+          throw new Error(
+            `Transaction simulation failed. ${JSON.stringify(err)}`,
+          );
+        }
+      }
 
       // Wait for approval to be mined
       await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
       // Then deposit into the vault
       const depositHash = await walletClient.writeContract({
-        address: vaultAddress as Address,
+        address: vaultProxyAddress as Address,
         abi: valenceVaultABI,
         functionName: "deposit",
         args: [parsedAmount, address],
       });
 
       // Wait for deposit to be mined
-      await publicClient.waitForTransactionReceipt({ hash: depositHash });
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: depositHash,
+      });
+
+      if (receipt.status !== "success") {
+        console.error("Transaction reciept:", receipt);
+        throw new Error(`Transaction reciept status: ${receipt.status}`);
+      }
 
       return depositHash;
     } catch (error) {
@@ -96,7 +132,7 @@ export function useVaultContract(vaultAddress: string, tokenAddress: string) {
     const parsedShares = parseUnits(shares, Number(decimals));
     try {
       const hash = await walletClient.writeContract({
-        address: vaultAddress as Address,
+        address: vaultProxyAddress as Address,
         abi: valenceVaultABI,
         functionName: "withdraw",
         args: [parsedShares, address, address],

@@ -1,2 +1,2 @@
-export * from "./vaults";
-export * from "./networks";
+export * from "./vaults.config";
+export * from "./networks.config";
