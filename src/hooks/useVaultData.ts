@@ -5,6 +5,7 @@ import { useAccount, useBalance, useConfig } from "wagmi";
 import { type BaseVaultData, BASE_VAULTS, defaultChainId } from "@/config";
 import { valenceVaultABI } from "@/const";
 import { readContract } from "@wagmi/core";
+import { erc20Abi, formatUnits } from "viem";
 
 export type VaultData = BaseVaultData & {
   userShares: string;
@@ -39,11 +40,18 @@ export function useVaultData() {
 
     const generateAndSetVaults = async () => {
       // Create full vault data with user-specific info
-      const fullVaults = await Promise.all(
+      const fullVaults: VaultData[] = await Promise.all(
         BASE_VAULTS_FOR_CHAIN.map(async (vault) => {
           let userShares = BigInt(0),
             vaultPosition = BigInt(0),
             tvl = BigInt(0);
+
+          const decimals = await readContract(config, {
+            abi: erc20Abi,
+            address: vault.tokenAddress,
+            functionName: "decimals",
+            args: [],
+          });
 
           try {
             tvl = await readContract(config, {
@@ -87,9 +95,13 @@ export function useVaultData() {
 
           return {
             ...vault,
-            tvl: formatTokenAmount(tvl, vault.token),
-            userShares: formatTokenAmount(userShares, vault.token),
-            userPosition: formatTokenAmount(vaultPosition, vault.token),
+            tvl: formatTokenAmount(tvl, vault.token, { formatUnits: decimals }),
+            userShares: formatTokenAmount(userShares, vault.token, {
+              formatUnits: decimals,
+            }),
+            userPosition: formatTokenAmount(vaultPosition, vault.token, {
+              formatUnits: decimals,
+            }),
             apr: vault.apr,
             userVaultBalance: 0,
             ethBalance: ethBalance
@@ -113,13 +125,26 @@ export function useVaultData() {
 }
 
 function formatTokenAmount(
-  value: bigint | undefined,
+  _value: bigint | undefined,
   symbol: string,
-  displayDecimals: number = 4,
+  options:
+    | {
+        displayDecimals?: number;
+        formatUnits?: number; // wei -> eth
+      }
+    | undefined = { displayDecimals: 4 },
 ): string {
-  if (!value || value === BigInt(0)) {
+  if (!_value || _value === BigInt(0)) {
     return `0 ${symbol}`;
   }
 
-  return `${Number(value).toFixed(displayDecimals)}} ${symbol}`;
+  let formattedValue: number;
+  if (!_value || _value === BigInt(0)) {
+    formattedValue = 0;
+  }
+  if (options.formatUnits) {
+    formattedValue = Number(formatUnits(_value, options.formatUnits));
+  } else formattedValue = Number(_value);
+
+  return `${formattedValue.toFixed(options.displayDecimals)} ${symbol}`;
 }
