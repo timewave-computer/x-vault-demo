@@ -124,15 +124,15 @@ export function useVaultData() {
   };
 }
 
+const defaultDisplayDecimals = 4;
+
 function formatTokenAmount(
   _value: bigint | undefined,
   symbol: string,
-  options:
-    | {
-        displayDecimals?: number;
-        formatUnits?: number; // wei -> eth
-      }
-    | undefined = { displayDecimals: 4 },
+  options: {
+    displayDecimals?: number; // fraction precision
+    formatUnits?: number; // wei -> eth
+  },
 ): string {
   if (!_value || _value === BigInt(0)) {
     return `0 ${symbol}`;
@@ -146,5 +146,5 @@ function formatTokenAmount(
     formattedValue = Number(formatUnits(_value, options.formatUnits));
   } else formattedValue = Number(_value);
 
-  return `${formattedValue.toFixed(options.displayDecimals)} ${symbol}`;
+  return `${formattedValue.toFixed(options.displayDecimals ?? defaultDisplayDecimals)} ${symbol}`;
 }
