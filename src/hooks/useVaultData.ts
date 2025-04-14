@@ -10,6 +10,7 @@ export type VaultData = BaseVaultData & {
   userShares: string;
   userPosition: string;
   ethBalance: string;
+  tvl: string;
 };
 
 export function useVaultData() {
