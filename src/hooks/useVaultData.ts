@@ -93,6 +93,7 @@ export function useVaultData() {
                   : `${Number(ethBalance.formatted).toFixed(4)} ${ethBalance.symbol}`
                 : "0 ETH",
             };
+            return result;
           } catch (error) {
             return Promise.reject(error);
           }
