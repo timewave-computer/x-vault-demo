@@ -75,7 +75,7 @@ export function useVaultData() {
               });
             }
 
-            return {
+            const result: VaultData = {
               ...vault,
               tvl: formatTokenAmount(tvl, vault.token, {
                 formatUnits: decimals,
@@ -87,7 +87,6 @@ export function useVaultData() {
                 formatUnits: decimals,
               }),
               apr: vault.apr,
-              userVaultBalance: 0,
               ethBalance: ethBalance
                 ? Number(ethBalance.formatted) === 0
                   ? `0 ${ethBalance.symbol}`
