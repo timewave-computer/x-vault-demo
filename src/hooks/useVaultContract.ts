@@ -4,7 +4,13 @@ import {
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import { parseUnits, formatUnits, erc20Abi } from "viem";
+import {
+  parseUnits,
+  formatUnits,
+  erc20Abi,
+  ContractFunctionRevertedError,
+  BaseError,
+} from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
 
@@ -70,6 +76,26 @@ export function useVaultContract(
         args: [vaultProxyAddress as Address, parsedAmount],
       });
 
+      try {
+        await publicClient.simulateContract({
+          address: vaultProxyAddress as Address,
+          abi: valenceVaultABI,
+          functionName: "deposit",
+          args: [parsedAmount, address],
+          account: address,
+        });
+      } catch (err) {
+        if (err instanceof ContractFunctionRevertedError) {
+          throw new Error(err.reason);
+        } else if (err instanceof BaseError) {
+          throw new Error(err.shortMessage);
+        } else {
+          throw new Error(
+            `Transaction simulation failed. ${JSON.stringify(err)}`,
+          );
+        }
+      }
+
       // Wait for approval to be mined
       await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
@@ -82,7 +108,14 @@ export function useVaultContract(
       });
 
       // Wait for deposit to be mined
-      await publicClient.waitForTransactionReceipt({ hash: depositHash });
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: depositHash,
+      });
+
+      if (receipt.status !== "success") {
+        console.error("Transaction reciept:", receipt);
+        throw new Error(`Transaction reciept status: ${receipt.status}`);
+      }
 
       return depositHash;
     } catch (error) {

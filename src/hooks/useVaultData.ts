@@ -88,7 +88,7 @@ export function useVaultData() {
 
                 vaultPosition = _vaultPosition;
               } catch (error) {
-                console.error("Error fetching user shares:", error);
+                console.error("Error fetching vault position:", error);
               }
             }
           }
