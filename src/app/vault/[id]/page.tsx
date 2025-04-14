@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
+import { isValidNumberInput } from "@/const";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
@@ -211,20 +212,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 onChange={(e) => {
                   setError(null);
                   const value = e.target.value;
-                  // Only allow positive numbers and format using US locale
-                  if (value === "" || parseFloat(value) >= 0) {
-                    const number = parseFloat(value);
-                    if (isNaN(number)) {
-                      setDepositAmount("");
-                    } else {
-                      setDepositAmount(
-                        number.toLocaleString(locale, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 18,
-                          useGrouping: false,
-                        }),
-                      );
-                    }
+                  // Only allow positive numbers
+                  if (isValidNumberInput(value) && parseFloat(value) >= 0) {
+                    setDepositAmount(value);
                   }
                 }}
                 min="0"
@@ -331,20 +321,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 onChange={(e) => {
                   setError(null);
                   const value = e.target.value;
-                  // Only allow positive numbers and format using US locale
-                  if (value === "" || parseFloat(value) >= 0) {
-                    const number = parseFloat(value);
-                    if (isNaN(number)) {
-                      setWithdrawShares("");
-                    } else {
-                      setWithdrawShares(
-                        number.toLocaleString(locale, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 18,
-                          useGrouping: false,
-                        }),
-                      );
-                    }
+                  // Only allow positive numbers
+                  if (isValidNumberInput(value) && parseFloat(value) >= 0) {
+                    setWithdrawShares(value);
                   }
                 }}
                 min="0"
