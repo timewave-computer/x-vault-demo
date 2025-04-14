@@ -56,7 +56,7 @@ export function useVaultData() {
           try {
             tvl = await readContract(config, {
               abi: valenceVaultABI,
-              address: vault.vaultAddress,
+              address: vault.vaultProxyAddress,
               functionName: "totalAssets",
               args: [],
             });
@@ -68,7 +68,7 @@ export function useVaultData() {
             try {
               const _userShares = await readContract(config, {
                 abi: valenceVaultABI,
-                address: vault.vaultAddress,
+                address: vault.vaultProxyAddress,
                 functionName: "balanceOf",
                 args: [address],
               });
@@ -81,7 +81,7 @@ export function useVaultData() {
               try {
                 const _vaultPosition = await readContract(config, {
                   abi: valenceVaultABI,
-                  address: vault.vaultAddress,
+                  address: vault.vaultProxyAddress,
                   functionName: "convertToAssets",
                   args: [userShares],
                 });

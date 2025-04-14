@@ -26,7 +26,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     maxWithdraw,
     balance,
   } = useVaultContract(
-    vaultData?.vaultAddress ?? "",
+    vaultData?.vaultProxyAddress ?? "",
     vaultData?.tokenAddress ?? "",
   );
 
