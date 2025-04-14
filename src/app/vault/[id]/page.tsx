@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useVaultData } from "@/hooks/useVaultData";
+import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
-import { useVaultContract } from "@/hooks/useVaultContract";
-import { useBalances } from "@/hooks/useTokenBalances";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
@@ -30,7 +28,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     vaultData?.tokenAddress ?? "",
   );
 
-  const { tokenBalances } = useBalances({
+  const { tokenBalances, ethBalance } = useTokenBalances({
     address,
     tokenAddresses: vaultData ? [vaultData.tokenAddress] : [],
   });
@@ -68,6 +66,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       console.error("Deposit failed:", err);
     } finally {
       setIsDepositing(false);
+      tokenBalances.refetch(vaultData?.tokenAddress);
+      ethBalance.refetch();
     }
   };
 
