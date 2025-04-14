@@ -149,7 +149,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           </div>
 
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
-            <dt className="text-base text-black">TVL</dt>
+            <dt className="text-base text-black">Vault TVL</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
               {vaultData.tvl}
             </dd>
