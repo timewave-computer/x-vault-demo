@@ -137,9 +137,7 @@ function formatTokenAmount(
   }
 
   let formattedValue: number;
-  if (!_value || _value === BigInt(0)) {
-    formattedValue = 0;
-  }
+
   if (options.formatUnits) {
     formattedValue = Number(formatUnits(_value, options.formatUnits));
   } else formattedValue = Number(_value);
