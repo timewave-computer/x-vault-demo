@@ -68,8 +68,8 @@ export function useTokenBalances({
         isLoading: results.some((result) => result.isLoading),
         isError: results.some((result) => result.isPending),
         error: results.map((result) => result.error),
-        refetch: (tokenAddress: `0x${string}`) => {
-          if (!address) return;
+        refetch: (tokenAddress?: `0x${string}`) => {
+          if (!address || !tokenAddress) return;
           return queryClient.invalidateQueries({
             queryKey: [QUERY_KEYS.TOKEN_BALANCE, address, tokenAddress],
           });
