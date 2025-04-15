@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
-import { isValidNumberInput } from "@/const";
+import { isValidNumberInput } from "@/lib";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
