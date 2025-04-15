@@ -4,4 +4,4 @@ export * from "./Footer";
 export * from "./Header";
 export * from "./Providers";
 export * from "./VaultCard";
-export * from "./ToastProvider";
+export * from "./Toast";

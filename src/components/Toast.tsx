@@ -6,7 +6,12 @@ import { cn } from "@/lib";
 type ToastType = "success" | "error" | "info";
 
 interface ToastContextType {
-  showToast: (title: string, body: string, type?: ToastType) => void;
+  showToast: (inputs: {
+    title: string;
+    description?: React.ReactNode;
+    type?: ToastType;
+    txHash?: string;
+  }) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -25,23 +30,22 @@ interface ToastProviderProps {
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [open, setOpen] = useState(false);
-  const [toast, setToast] = useState<
-    | {
-        title: string;
-        body?: string;
-        type: ToastType;
-      }
-    | undefined
-  >();
   const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState<React.ReactNode>("");
   const [type, setType] = useState<ToastType>("info");
+  const [txHash, setTxHash] = useState<string | undefined>(undefined);
 
   const showToast = useCallback(
-    (title: string, body: string, type: ToastType = "info") => {
+    (
+      title: string,
+      body: React.ReactNode,
+      type: ToastType = "info",
+      txHash?: string,
+    ) => {
       setTitle(title);
       setBody(body);
       setType(type);
+      setTxHash(txHash);
       setOpen(true);
     },
     [],
@@ -60,7 +64,12 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   };
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider
+      value={{
+        showToast: ({ title, description, type, txHash }) =>
+          showToast(title, description, type, txHash),
+      }}
+    >
       <Toast.Provider>
         {children}
         <Toast.Root
@@ -73,9 +82,22 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         >
           <div className="flex flex-col gap-1">
             <Toast.Title className="font-medium">{title}</Toast.Title>
-            <Toast.Description className="text-sm opacity-90">
-              {body}
-            </Toast.Description>
+            {body && (
+              <Toast.Description className="text-sm opacity-90">
+                {body}
+              </Toast.Description>
+            )}
+
+            {txHash && (
+              <a
+                href={`https://etherscan.io/8545/tx/${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm opacity-90 hover:underline mt-1"
+              >
+                View Transaction Details ↗
+              </a>
+            )}
           </div>
           <Toast.Close className="ml-4 rounded-full p-1 hover:bg-black/5">
             <svg

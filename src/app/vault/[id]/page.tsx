@@ -5,7 +5,7 @@ import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
 import { isValidNumberInput } from "@/lib";
-import { useToast } from "@/components/ToastProvider";
+import { useToast } from "@/components";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
@@ -15,9 +15,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const [withdrawShares, setWithdrawShares] = useState("");
   const [isDepositing, setIsDepositing] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [successTxHash, setSuccessTxHash] = useState<string | null>(null);
   const locale = "en-US";
   const { showToast } = useToast();
 
@@ -39,34 +36,33 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const tokenBalance = vaultTokenBalance?.balance.formatted ?? "0";
   const tokenSymbol = vaultTokenBalance?.symbol;
 
-  const dismissSuccess = () => {
-    setIsSuccess(false);
-    setSuccessTxHash(null);
-  };
-
   const handleDeposit = async () => {
     if (!depositAmount || !isConnected || !vaultData) return;
     setIsDepositing(true);
-    setError(null);
-    setIsSuccess(false);
-    setSuccessTxHash(null);
 
     try {
       const hash = await depositWithAmount(depositAmount);
       setDepositAmount("");
-      setIsSuccess(true);
-      setSuccessTxHash(hash);
+      showToast({
+        title: "Deposit successful",
+        description: "Your deposit has been processed successfully.",
+        type: "success",
+        txHash: hash,
+      });
     } catch (err) {
       if (err instanceof Error) {
-        if (err.message.includes("rejected")) {
-          setError("Transaction rejected");
-        } else {
-          setError(err.message);
-        }
+        showToast({
+          title: "Transaction failed",
+          description: err.message,
+          type: "error",
+        });
       } else {
-        setError("Failed to deposit");
+        console.error("Failed to deposit", err);
+        showToast({
+          title: "Failed to deposit",
+          type: "error",
+        });
       }
-      console.error("Deposit failed:", err);
     } finally {
       setIsDepositing(false);
       tokenBalances.refetch(vaultData?.tokenAddress);
@@ -77,26 +73,30 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const handleWithdraw = async () => {
     if (!withdrawShares || !isConnected || !vaultData) return;
     setIsWithdrawing(true);
-    setError(null);
-    setIsSuccess(false);
-    setSuccessTxHash(null);
 
     try {
       const hash = await withdrawSharesFromVault(withdrawShares);
       setWithdrawShares("");
-      setIsSuccess(true);
-      setSuccessTxHash(hash);
+      showToast({
+        title: "Withdrawal successful",
+        description: "Your withdrawal has been processed successfully.",
+        type: "success",
+        txHash: hash,
+      });
     } catch (err) {
       if (err instanceof Error) {
-        if (err.message.includes("rejected")) {
-          setError("Transaction rejected");
-        } else {
-          setError(err.message);
-        }
+        showToast({
+          title: "Transaction failed",
+          description: err.message,
+          type: "error",
+        });
       } else {
-        setError("Failed to withdraw");
+        console.error("Failed to withdraw", err);
+        showToast({
+          title: "Failed to withdraw",
+          type: "error",
+        });
       }
-      console.error("Withdrawal failed:", err);
     } finally {
       setIsWithdrawing(false);
     }
@@ -212,7 +212,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 placeholder="0.0"
                 value={depositAmount}
                 onChange={(e) => {
-                  setError(null);
                   const value = e.target.value;
                   // Only allow positive numbers
                   if (isValidNumberInput(value) && parseFloat(value) >= 0) {
@@ -230,10 +229,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </div>
 
             <button
-              onClick={() =>
-                showToast("Deposit successful", "Deposit successful", "success")
-              }
-              // onClick={handleDeposit}
+              onClick={handleDeposit}
               disabled={
                 !isConnected ||
                 !depositAmount ||
@@ -274,8 +270,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   </p>
                 )}
             </div>
-
-            {error && <p className="mt-4 text-sm text-secondary">{error}</p>}
           </div>
 
           {/* Withdraw Section */}
@@ -324,7 +318,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 placeholder="0.0"
                 value={withdrawShares}
                 onChange={(e) => {
-                  setError(null);
                   const value = e.target.value;
                   // Only allow positive numbers
                   if (isValidNumberInput(value) && parseFloat(value) >= 0) {
@@ -378,34 +371,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   </p>
                 )}
             </div>
-
-            {error && <p className="mt-4 text-sm text-secondary">{error}</p>}
           </div>
         </div>
-
-        {/* Success message */}
-        {isSuccess && successTxHash && (
-          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 text-center bg-accent-purple rounded-lg px-10 py-4 shadow-lg min-w-[480px]">
-            <button
-              onClick={dismissSuccess}
-              className="absolute top-2 right-4 text-white hover:text-accent-purple-light transition-colors"
-              aria-label="Dismiss message"
-            >
-              ✕
-            </button>
-            <p className="text-sm text-white mb-2">
-              Transaction successful! Your position will update shortly.
-            </p>
-            <a
-              href={`https://etherscan.io/8545/tx/${successTxHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-white hover:text-accent-purple-light transition-colors"
-            >
-              View Transaction Details ↗
-            </a>
-          </div>
-        )}
       </div>
     </div>
   );
