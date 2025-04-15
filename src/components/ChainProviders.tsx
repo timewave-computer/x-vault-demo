@@ -45,7 +45,7 @@ const wagmiConfig = createConfig({
  * - React Query for data fetching
  * - AppKit for wallet connection and UI
  */
-export function Providers({ children }: { children: ReactNode }) {
+export function ChainProviders({ children }: { children: ReactNode }) {
   // Create a new QueryClient instance for each request
   const queryClient = new QueryClient({
     defaultOptions: {

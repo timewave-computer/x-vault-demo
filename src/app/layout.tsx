@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Header, Footer, ToastProvider, Providers } from "@/components";
+import { Header, Footer, ToastProvider, ChainProviders } from "@/components";
 import { Recursive } from "next/font/google";
 
 const recursive = Recursive({
@@ -89,7 +89,7 @@ export default function RootLayout({
           </div>
         </div>
 
-        <Providers>
+        <ChainProviders>
           <ToastProvider>
             <div className="flex flex-col min-h-screen relative">
               <Header />
@@ -101,7 +101,7 @@ export default function RootLayout({
               <Footer />
             </div>
           </ToastProvider>
-        </Providers>
+        </ChainProviders>
       </body>
     </html>
   );
