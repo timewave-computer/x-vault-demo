@@ -6,6 +6,7 @@ import { useAccount } from "wagmi";
 import { useState } from "react";
 import { isValidNumberInput } from "@/lib";
 import { useToast } from "@/components";
+import { useMutation } from "@tanstack/react-query";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
@@ -13,8 +14,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const vaultData = vaults?.find((v) => v.id === params.id);
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawShares, setWithdrawShares] = useState("");
-  const [isDepositing, setIsDepositing] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
   const locale = "en-US";
   const { showToast } = useToast();
 
@@ -36,20 +35,25 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const tokenBalance = vaultTokenBalance?.balance.formatted ?? "0";
   const tokenSymbol = vaultTokenBalance?.symbol;
 
-  const handleDeposit = async () => {
-    if (!depositAmount || !isConnected || !vaultData) return;
-    setIsDepositing(true);
-
-    try {
-      const hash = await depositWithAmount(depositAmount);
+  const { mutate: handleDeposit, isPending: isDepositing } = useMutation({
+    mutationFn: async () => {
+      if (!depositAmount || !isConnected || !vaultData)
+        throw new Error("Invalid input");
+      return depositWithAmount(depositAmount);
+    },
+    onSuccess: (hash) => {
       setDepositAmount("");
+
       showToast({
         title: "Deposit successful",
         description: "Your deposit has been processed successfully.",
         type: "success",
         txHash: hash,
       });
-    } catch (err) {
+      tokenBalances.refetch(vaultData?.tokenAddress);
+      ethBalance.refetch();
+    },
+    onError: (err) => {
       if (err instanceof Error) {
         showToast({
           title: "Transaction failed",
@@ -63,19 +67,16 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           type: "error",
         });
       }
-    } finally {
-      setIsDepositing(false);
-      tokenBalances.refetch(vaultData?.tokenAddress);
-      ethBalance.refetch();
-    }
-  };
+    },
+  });
 
-  const handleWithdraw = async () => {
-    if (!withdrawShares || !isConnected || !vaultData) return;
-    setIsWithdrawing(true);
-
-    try {
-      const hash = await withdrawSharesFromVault(withdrawShares);
+  const { mutate: handleWithdraw, isPending: isWithdrawing } = useMutation({
+    mutationFn: async () => {
+      if (!withdrawShares || !isConnected || !vaultData)
+        throw new Error("Invalid input");
+      return withdrawSharesFromVault(withdrawShares);
+    },
+    onSuccess: (hash) => {
       setWithdrawShares("");
       showToast({
         title: "Withdrawal successful",
@@ -83,7 +84,10 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         type: "success",
         txHash: hash,
       });
-    } catch (err) {
+      tokenBalances.refetch(vaultData?.tokenAddress);
+      ethBalance.refetch();
+    },
+    onError: (err) => {
       if (err instanceof Error) {
         showToast({
           title: "Transaction failed",
@@ -97,10 +101,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           type: "error",
         });
       }
-    } finally {
-      setIsWithdrawing(false);
-    }
-  };
+    },
+  });
 
   if (!vaultData) {
     return (
@@ -229,7 +231,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </div>
 
             <button
-              onClick={handleDeposit}
+              onClick={() => handleDeposit()}
               disabled={
                 !isConnected ||
                 !depositAmount ||
@@ -335,7 +337,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </div>
 
             <button
-              onClick={handleWithdraw}
+              onClick={() => handleWithdraw()}
               disabled={
                 !isConnected ||
                 !withdrawShares ||
