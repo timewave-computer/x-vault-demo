@@ -5,6 +5,7 @@ import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
 import { isValidNumberInput } from "@/lib";
+import { useToast } from "@/components/ToastProvider";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
@@ -18,6 +19,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [successTxHash, setSuccessTxHash] = useState<string | null>(null);
   const locale = "en-US";
+  const { showToast } = useToast();
 
   const {
     depositWithAmount,
@@ -228,7 +230,10 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </div>
 
             <button
-              onClick={handleDeposit}
+              onClick={() =>
+                showToast("Deposit successful", "Deposit successful", "success")
+              }
+              // onClick={handleDeposit}
               disabled={
                 !isConnected ||
                 !depositAmount ||
