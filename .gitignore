@@ -10,6 +10,8 @@ deployed-addresses.txt
 # Dependencies
 node_modules/
 lib/
+# Include utils in source code
+!src/lib/ 
 
 # Environment
 .env

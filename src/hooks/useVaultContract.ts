@@ -120,7 +120,11 @@ export function useVaultContract(
       return depositHash;
     } catch (error) {
       console.error("Transaction failed:", error);
-      throw new Error("Transaction failed");
+      if (error instanceof Error) {
+        throw new Error(error.message);
+      } else {
+        throw new Error("Transaction failed");
+      }
     }
   };
 
