@@ -32,13 +32,6 @@ export function useVaultContract(vaultData?: VaultData) {
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
 
-  // Query token decimals for formatting
-  const { data: decimals } = useReadContract({
-    abi: erc20Abi,
-    functionName: "decimals",
-    address: tokenAddress as Address,
-  });
-
   // Query user's token balance
   const { data: balance } = useReadContract({
     abi: erc20Abi,
@@ -70,18 +63,32 @@ export function useVaultContract(vaultData?: VaultData) {
 
     const parsedAmount = parseUnits(amount, Number(decimals));
 
-    console.log("parsedAmount", parsedAmount);
+    console.log(
+      "waiting for approval",
+      vaultProxyAddress,
+      tokenAddress,
+      parsedAmount,
+    );
+
+    // First approve the vault to spend tokens
+    const approveHash = await walletClient.writeContract({
+      address: tokenAddress as Address,
+      abi: erc20Abi,
+      functionName: "approve",
+      args: [vaultProxyAddress as Address, parsedAmount],
+    });
+    console.log("waiting for approve hash to be mine", approveHash);
+
+    const tx = await publicClient.getTransaction({ hash: approveHash });
+    console.log("approve tx", tx);
+
+    // Wait for approval to be mined
+    await publicClient.waitForTransactionReceipt({
+      hash: approveHash,
+    });
 
     try {
-      // First approve the vault to spend tokens
-      const approveHash = await walletClient.writeContract({
-        address: tokenAddress as Address,
-        abi: valenceVaultABI,
-        functionName: "approve",
-        args: [vaultProxyAddress as Address, parsedAmount],
-      });
-
-      console.log("silmulating", approveHash);
+      console.log("silmulating");
 
       try {
         await publicClient.simulateContract({
@@ -106,13 +113,6 @@ export function useVaultContract(vaultData?: VaultData) {
           );
         }
       }
-
-      console.log("waiting for approval", approveHash);
-      // Wait for approval to be mined
-      await publicClient.waitForTransactionReceipt({
-        hash: approveHash,
-        timeout: 30000, // 30 second timeout
-      });
 
       // Then deposit into the vault
       const depositHash = await walletClient.writeContract({
