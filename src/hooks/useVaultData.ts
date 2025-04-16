@@ -12,6 +12,7 @@ export type VaultData = BaseVaultData & {
   userPosition: string;
   ethBalance: string;
   tvl: string;
+  decimals: number;
 };
 
 export function useVaultData() {
@@ -76,6 +77,7 @@ export function useVaultData() {
             }
 
             const result: VaultData = {
+              decimals: Number(decimals),
               ...vault,
               tvl: formatTokenAmount(tvl, vault.token, {
                 formatUnits: decimals,

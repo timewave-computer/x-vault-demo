@@ -22,10 +22,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     maxWithdraw,
     balance,
     getPendingWithdrawals,
-  } = useVaultContract(
-    vaultData?.vaultProxyAddress ?? "",
-    vaultData?.tokenAddress ?? "",
-  );
+  } = useVaultContract(vaultData);
 
   const { tokenBalances, ethBalance } = useTokenBalances({
     address,
@@ -146,6 +143,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </h1>
             <p className="mt-1.5 text-base text-gray-500">
               {vaultData.description}
+            </p>
+            <p className="mt-1 text-sm text-gray-400 font-mono">
+              Contract: {vaultData.vaultProxyAddress}
             </p>
           </div>
         </div>

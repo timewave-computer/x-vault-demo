@@ -16,6 +16,7 @@ import {
 } from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
+import { VaultData } from "./useVaultData";
 
 /**
  * Hook for interacting with an ERC-4626 vault contract
@@ -25,10 +26,8 @@ import { valenceVaultABI } from "@/const";
  * - Depositing assets and withdrawing shares
  * - Viewing pending withdrawals
  */
-export function useVaultContract(
-  vaultProxyAddress: string,
-  tokenAddress: string,
-) {
+export function useVaultContract(vaultData?: VaultData) {
+  const { vaultProxyAddress, tokenAddress, decimals } = vaultData ?? {};
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
@@ -65,7 +64,7 @@ export function useVaultContract(
   });
 
   const depositWithAmount = async (amount: string) => {
-    if (!address || !decimals) throw new Error("Not connected");
+    if (!address) throw new Error("Not connected");
     if (!walletClient) throw new Error("Wallet not connected");
     if (!publicClient) throw new Error("Public client not initialized");
 
