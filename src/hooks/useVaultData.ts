@@ -80,7 +80,7 @@ export function useVaultData() {
               tvl: formatTokenAmount(tvl, vault.token, {
                 formatUnits: decimals,
               }),
-              userShares: formatTokenAmount(userShares, vault.token, {
+              userShares: formatTokenAmount(userShares, "shares", {
                 formatUnits: decimals,
               }),
               userPosition: formatTokenAmount(vaultPosition, vault.token, {

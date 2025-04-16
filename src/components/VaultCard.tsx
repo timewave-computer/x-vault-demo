@@ -12,6 +12,7 @@ export function VaultCard({
   tvl,
   apr,
   userShares,
+  userPosition,
   isConnected,
 }: VaultCardProps) {
   return (
@@ -52,7 +53,7 @@ export function VaultCard({
                 <div className="mt-1.5 sm:mt-0">
                   <p className="text-black">Your Deposit</p>
                   <p className="text-xl font-beast text-accent-purple">
-                    {userShares}
+                    {userPosition}
                   </p>
                 </div>
               </div>

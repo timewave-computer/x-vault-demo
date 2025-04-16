@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
-import { isValidNumberInput } from "@/lib";
+import { formatHoursToDays, isValidNumberInput } from "@/lib";
 import { useToast } from "@/components";
 import { useMutation } from "@tanstack/react-query";
 
@@ -73,14 +73,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const { mutate: handleWithdraw, isPending: isWithdrawing } = useMutation({
     mutationFn: async () => {
       if (!withdrawShares || !isConnected || !vaultData)
-        throw new Error("Invalid input");
+        throw new Error("Unable to initiate withdrawal");
       return withdrawSharesFromVault(withdrawShares);
     },
     onSuccess: (hash) => {
       setWithdrawShares("");
       showToast({
-        title: "Withdrawal successful",
-        description: "Your withdrawal has been processed successfully.",
+        title: "Withdraw initiation submitted",
+        description: `This vault has a withdraw fullfillment period of ${formatHoursToDays(vaultData?.withdrawalLockup ?? 0)} days. After this time, you can claim your tokens.`,
         type: "success",
         txHash: hash,
       });
@@ -142,14 +142,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
             <dt className="text-base text-black">Your Balance</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {isConnected ? `${tokenBalance} ${tokenSymbol}` : "-"}
+              {isConnected ? vaultData.userShares : "-"}
             </dd>
           </div>
 
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
-            <dt className="text-base text-black">Your Vault Position</dt>
+            <dt className="text-base text-black">Your Position</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {isConnected ? vaultData.userShares : "-"}
+              {isConnected ? vaultData.userPosition : "-"}
             </dd>
           </div>
 
@@ -216,6 +216,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 onChange={(e) => {
                   const value = e.target.value;
                   // Only allow positive numbers
+                  if (value === "") {
+                    setDepositAmount("");
+                  }
                   if (isValidNumberInput(value) && parseFloat(value) >= 0) {
                     setDepositAmount(value);
                   }
@@ -322,6 +325,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 onChange={(e) => {
                   const value = e.target.value;
                   // Only allow positive numbers
+                  if (value === "") {
+                    setWithdrawShares("");
+                  }
                   if (isValidNumberInput(value) && parseFloat(value) >= 0) {
                     setWithdrawShares(value);
                   }
@@ -355,7 +361,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   : "bg-accent-purple text-white hover:scale-110 hover:shadow-xl hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all"
               }`}
             >
-              {isWithdrawing ? "Confirm in Wallet..." : "Withdraw"}
+              {isWithdrawing ? "Confirm in Wallet..." : "Initiate Withdraw"}
             </button>
 
             {/* Withdraw estimate and warning display */}
