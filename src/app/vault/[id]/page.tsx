@@ -6,7 +6,7 @@ import { useAccount } from "wagmi";
 import { useState } from "react";
 import { formatHoursToDays, isValidNumberInput } from "@/lib";
 import { useToast } from "@/components";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
@@ -22,6 +22,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     withdrawShares: withdrawSharesFromVault,
     maxWithdraw,
     balance,
+    getPendingWithdrawals,
   } = useVaultContract(
     vaultData?.vaultProxyAddress ?? "",
     vaultData?.tokenAddress ?? "",
@@ -35,10 +36,23 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const tokenBalance = vaultTokenBalance?.balance.formatted ?? "0";
   const tokenSymbol = vaultTokenBalance?.symbol;
 
+  const { data: pendingWithdrawals } = useQuery({
+    enabled: !!vaultData?.vaultProxyAddress && !!address,
+    queryKey: ["pendingWithdrawals", vaultData?.vaultProxyAddress, address],
+    refetchInterval: 30 * 1000,
+    queryFn: async () => {
+      const pendingWithdrawals = await getPendingWithdrawals();
+      // console.log(
+      //   "pending withdrawals",
+      //   pendingWithdrawals)
+      return pendingWithdrawals;
+    },
+  });
+
   const { mutate: handleDeposit, isPending: isDepositing } = useMutation({
     mutationFn: async () => {
       if (!depositAmount || !isConnected || !vaultData)
-        throw new Error("Invalid input");
+        throw new Error("Unable to initiate deposit");
       return depositWithAmount(depositAmount);
     },
     onSuccess: (hash) => {
