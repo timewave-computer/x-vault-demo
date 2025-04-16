@@ -14,7 +14,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const vaultData = vaults?.find((v) => v.id === params.id);
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawShares, setWithdrawShares] = useState("");
-  const locale = "en-US";
   const { showToast } = useToast();
 
   const {
@@ -57,7 +56,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     },
     onSuccess: (hash) => {
       setDepositAmount("");
-
       showToast({
         title: "Deposit successful",
         description: "Your deposit has been processed successfully.",
