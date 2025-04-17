@@ -7,7 +7,8 @@ import {
 import { parseUnits, formatUnits, erc20Abi, BaseError } from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
-import { VaultData } from "./useVaultData";
+import { VaultData } from "@/hooks";
+import { formatTimestampToUTC } from "@/lib";
 
 /**
  * Hook for interacting with an ERC-4626 vault contract
@@ -23,11 +24,64 @@ export function useVaultContract(vaultData?: VaultData) {
     tokenAddress,
     decimals,
     transactionConfirmationTimeout,
-    startBlock: vaultStartBlock,
   } = vaultData ?? {};
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
+
+  const { data: hasActiveWithdraw } = useReadContract({
+    abi: valenceVaultABI,
+    functionName: "hasActiveWithdraw",
+    address: vaultProxyAddress as Address,
+    args: [address as Address],
+  });
+
+  const { data: withdrawRequest, refetch: refetchWithdrawRequest } =
+    useReadContract({
+      abi: valenceVaultABI,
+      functionName: "userWithdrawRequest",
+      address: vaultProxyAddress as Address,
+      args: [address as Address],
+    });
+  let withdrawData = null;
+  if (withdrawRequest?.length === 7) {
+    const [
+      owner,
+      claimTime,
+      maxLossBps,
+      receiver,
+      updateId,
+      solverFee,
+      sharesAmount,
+    ] = withdrawRequest;
+    withdrawData = {
+      owner,
+      claimTime: claimTime ? formatTimestampToUTC(claimTime) : "N/A",
+      maxLossBps,
+      receiver,
+      updateId,
+      solverFee,
+      sharesAmount: formatUnits(sharesAmount ?? BigInt(0), decimals ?? 18),
+      hasActiveWithdraw,
+    };
+  }
+
+  const { data: updateInfoRequest, refetch: refetchUpdateInfo } =
+    useReadContract({
+      abi: valenceVaultABI,
+      functionName: "updateInfos",
+      address: vaultProxyAddress as Address,
+      args: [BigInt(withdrawData?.updateId ?? 0)],
+    });
+  let updateData = null;
+  if (updateInfoRequest?.length === 3) {
+    const [updateId, withdrawRate, totalAssetsToWithdraw] = updateInfoRequest;
+    updateData = {
+      updateId,
+      withdrawRate: formatUnits(withdrawRate, decimals ?? 18),
+      totalAssetsToWithdraw: totalAssetsToWithdraw.toString(),
+    };
+  }
 
   // Query user's token balance
   const { data: balance } = useReadContract({
@@ -43,15 +97,15 @@ export function useVaultContract(vaultData?: VaultData) {
     functionName: "balanceOf",
     address: vaultProxyAddress as Address,
     args: address ? [address] : undefined,
-  }) as { data: bigint | undefined };
+  });
 
   // Query maximum withdrawable amount
   const { data: maxWithdraw } = useReadContract({
     abi: valenceVaultABI,
     functionName: "maxWithdraw",
     address: vaultProxyAddress as Address,
-    args: [address],
-  }) as { data: bigint | undefined };
+    args: [address as Address],
+  });
 
   const depositWithAmount = async (amount: string) => {
     if (!vaultData) throw new Error("Failed to initiate deposit");
@@ -176,69 +230,6 @@ export function useVaultContract(vaultData?: VaultData) {
   };
 
   /**
-   * Retrieves pending withdrawals for the current user from the vault
-   * @returns An array of pending withdrawal objects with details
-   */
-  const getPendingWithdrawals = async () => {
-    if (!address || !publicClient) throw new Error("Not connected");
-    if (!vaultProxyAddress) throw new Error("Vault address not provided");
-
-    try {
-      // Get logs for Withdraw events
-      const logs = await publicClient.getLogs({
-        address: vaultProxyAddress as Address,
-        event: {
-          type: "event",
-          name: "WithdrawRequested",
-          inputs: [
-            { type: "address", name: "owner", indexed: true },
-            { type: "address", name: "receiver", indexed: true },
-            { type: "uint256", name: "shares", indexed: false },
-            { type: "uint256", name: "maxLossBps", indexed: false },
-            { type: "bool", name: "solverEnabled", indexed: false },
-            { type: "uint64", name: "updateId", indexed: false },
-          ],
-        },
-        fromBlock: vaultStartBlock,
-        toBlock: "latest",
-        args: {
-          owner: address,
-        },
-      });
-
-      // Process the logs to extract withdrawal information
-      const pendingWithdrawals = logs.map((log) => {
-        const { shares, maxLossBps, solverEnabled, updateId } = log.args as {
-          shares: bigint;
-          maxLossBps: bigint;
-          solverEnabled: boolean;
-          updateId: bigint;
-        };
-        const formattedShares = Number(
-          formatUnits(shares, Number(decimals ?? 18)),
-        ).toFixed(4);
-        const formattedMaxLossBps = Number(maxLossBps).toString();
-
-        return {
-          shares: formattedShares,
-          maxLossBps: formattedMaxLossBps,
-          solverEnabled,
-          updateId: Number(updateId),
-          owner: log.args.owner,
-          receiver: log.args.receiver,
-          transactionHash: log.transactionHash,
-          blockNumber: log.blockNumber,
-        };
-      });
-
-      return pendingWithdrawals;
-    } catch (error) {
-      console.error("Failed to fetch pending withdrawals:", error);
-      throw new Error("Failed to fetch pending withdrawals");
-    }
-  };
-
-  /**
    * Completes a withdrawal for the current user
    * @returns Transaction hash
    */
@@ -253,7 +244,7 @@ export function useVaultContract(vaultData?: VaultData) {
         address: vaultProxyAddress as Address,
         abi: valenceVaultABI,
         functionName: "completeWithdraw",
-        args: [BigInt(0), address, address],
+        args: [address],
         account: address,
       });
 
@@ -278,8 +269,15 @@ export function useVaultContract(vaultData?: VaultData) {
   return {
     depositWithAmount,
     withdrawShares,
-    getPendingWithdrawals,
     completeWithdraw,
+    userWithdrawRequest: {
+      withdrawData,
+      updateData,
+      refetch: () => {
+        refetchWithdrawRequest();
+        refetchUpdateInfo();
+      },
+    },
     maxWithdraw: maxWithdraw
       ? Number(formatUnits(maxWithdraw, Number(decimals ?? 18))).toFixed(4)
       : "0",
