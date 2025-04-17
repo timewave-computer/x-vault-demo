@@ -1,1 +1,1 @@
-export * from "./valenceVaultAbi";
+export * from "./valenceVault.abi";
