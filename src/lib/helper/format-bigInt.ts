@@ -11,7 +11,8 @@ export function formatBigInt(
   },
 ): string {
   const value = !_value || _value === BigInt(0) ? BigInt(0) : _value;
-  const float = parseFloat(formatUnits(value, decimals));
+
+  const float = parseFloat(formatUnits(value, decimals)); // WARNING: this will truncate to 15 significant figures. Needs to be revisited.
   const formattedValue = float.toFixed(
     options.displayDecimals ?? defaultDisplayDecimals,
   );
