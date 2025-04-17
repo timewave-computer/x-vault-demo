@@ -2,23 +2,23 @@ import { formatUnits } from "viem";
 
 const defaultDisplayDecimals = 4;
 
-export function formatTokenAmount(
+export function formatBigInt(
   _value: bigint | undefined,
+  decimals: number,
   symbol: string,
   options: {
     displayDecimals?: number; // fraction precision
-    formatUnits?: number; // wei -> eth
   },
 ): string {
-  if (!_value || _value === BigInt(0)) {
-    return `0 ${symbol}`;
+  const value = !_value || _value === BigInt(0) ? BigInt(0) : _value;
+  const float = parseFloat(formatUnits(value, decimals));
+  const formattedValue = float.toFixed(
+    options.displayDecimals ?? defaultDisplayDecimals,
+  );
+
+  if (symbol === "") {
+    return formattedValue;
   }
 
-  let formattedValue: number;
-
-  if (options.formatUnits) {
-    formattedValue = Number(formatUnits(_value, options.formatUnits));
-  } else formattedValue = Number(_value);
-
-  return `${formattedValue.toFixed(options.displayDecimals ?? defaultDisplayDecimals)} ${symbol}`;
+  return `${formattedValue} ${symbol}`;
 }

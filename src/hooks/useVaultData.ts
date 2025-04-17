@@ -6,6 +6,7 @@ import { type BaseVaultData, BASE_VAULTS, defaultChainId } from "@/config";
 import { valenceVaultABI } from "@/const";
 import { readContract } from "@wagmi/core";
 import { erc20Abi, formatUnits } from "viem";
+import { formatBigInt } from "@/lib";
 
 export type VaultData = BaseVaultData & {
   decimals: number;
@@ -114,32 +115,32 @@ export function useVaultData() {
                 ethBalance: ethBalance?.value ?? BigInt(0),
               },
               formatted: {
-                totalShares: formatTokenAmount(totalShares, "shares", {
+                totalShares: formatBigInt(totalShares, decimals, "shares", {
                   displayDecimals: 4,
-                  formatUnits: decimals,
                 }),
-                tvl: formatTokenAmount(tvl, vault.token, {
+                tvl: formatBigInt(tvl, decimals, vault.token, {
                   displayDecimals: 4,
-                  formatUnits: decimals,
                 }),
-                userShares: formatTokenAmount(userShares, "shares", {
+                userShares: formatBigInt(userShares, decimals, "shares", {
                   displayDecimals: 4,
-                  formatUnits: decimals,
                 }),
-                userPosition: formatTokenAmount(userPosition, vault.token, {
-                  displayDecimals: 4,
-                  formatUnits: decimals,
-                }),
-                redemptionRate: formatTokenAmount(redemptionRate, "%", {
+                userPosition: formatBigInt(
+                  userPosition,
+                  decimals,
+                  vault.token,
+                  {
+                    displayDecimals: 4,
+                  },
+                ),
+                redemptionRate: formatBigInt(redemptionRate, decimals, "%", {
                   displayDecimals: 2,
-                  formatUnits: decimals,
                 }),
-                ethBalance: formatTokenAmount(
+                ethBalance: formatBigInt(
                   ethBalance?.value ?? BigInt(0),
+                  18,
                   "ETH",
                   {
                     displayDecimals: 4,
-                    formatUnits: 18,
                   },
                 ),
               },
@@ -174,24 +175,3 @@ export function useVaultData() {
 }
 
 const defaultDisplayDecimals = 4;
-
-function formatTokenAmount(
-  _value: bigint | undefined,
-  symbol: string,
-  options: {
-    displayDecimals?: number; // fraction precision
-    formatUnits?: number; // wei -> eth
-  },
-): string {
-  if (!_value || _value === BigInt(0)) {
-    return `0 ${symbol}`;
-  }
-
-  let formattedValue: number;
-
-  if (options.formatUnits) {
-    formattedValue = Number(formatUnits(_value, options.formatUnits));
-  } else formattedValue = Number(_value);
-
-  return `${formattedValue.toFixed(options.displayDecimals ?? defaultDisplayDecimals)} ${symbol}`;
-}

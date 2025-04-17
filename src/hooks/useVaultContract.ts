@@ -9,7 +9,7 @@ import { parseUnits, formatUnits, erc20Abi, BaseError } from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
 import { VaultData } from "@/hooks";
-import { formatTokenAmount, formatTimestampToUTC } from "@/lib";
+import { formatBigInt, formatTimestampToUTC } from "@/lib";
 import { readContract } from "@wagmi/core";
 
 /**
@@ -285,9 +285,8 @@ export function useVaultContract(vaultData?: VaultData) {
       args: [parsedShares],
     });
 
-    return formatTokenAmount(previewAmount, vaultData.token, {
+    return formatBigInt(previewAmount, vaultData.decimals, vaultData.token, {
       displayDecimals: 4,
-      formatUnits: decimals,
     });
   };
 
@@ -305,9 +304,8 @@ export function useVaultContract(vaultData?: VaultData) {
       args: [parsedAmount],
     });
 
-    return formatTokenAmount(previewAmount, "shares", {
+    return formatBigInt(previewAmount, vaultData.decimals, "shares", {
       displayDecimals: 4,
-      formatUnits: decimals,
     });
   };
 
