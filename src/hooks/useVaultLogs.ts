@@ -39,7 +39,6 @@ export function useVaultLogs(vaultData?: VaultData) {
         fromBlock: vaultStartBlock,
         toBlock: "latest",
       });
-      console.log("processedUpdates", processedUpdates);
 
       const logs = await publicClient.getLogs({
         address: vaultProxyAddress as Address,

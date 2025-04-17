@@ -21,8 +21,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     },
   });
   const { withdrawRequests, processedUpdates } = logs ?? {};
-  console.log("processedUpdates", processedUpdates);
-  console.log("pendingWithdrawals", withdrawRequests);
 
   if (!vaultData) {
     return (
