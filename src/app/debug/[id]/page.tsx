@@ -86,10 +86,10 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                     </h3>
                   </div>
                   <div className="space-y-4">
-                    {withdrawRequests.map((withdrawal, index) => {
+                    {withdrawRequests.map((withdrawal) => {
                       return (
                         <div
-                          key={index}
+                          key={withdrawal.transactionHash}
                           className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
                         >
                           <div className="mb-4 sm:mb-0">
@@ -141,10 +141,10 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                     </h3>
                   </div>
                   <div className="space-y-4">
-                    {processedUpdates.map((update, index) => {
+                    {processedUpdates.map((update) => {
                       return (
                         <div
-                          key={index}
+                          key={update.transactionHash}
                           className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
                         >
                           <div className="mb-4 sm:mb-0">

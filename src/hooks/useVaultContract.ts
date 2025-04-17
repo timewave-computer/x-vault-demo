@@ -43,6 +43,7 @@ export function useVaultContract(vaultData?: VaultData) {
       address: vaultProxyAddress as Address,
       args: [address as Address],
     });
+  withdrawRequest;
   let withdrawData = null;
   if (withdrawRequest?.length === 7) {
     const [
@@ -75,11 +76,11 @@ export function useVaultContract(vaultData?: VaultData) {
     });
   let updateData = null;
   if (updateInfoRequest?.length === 3) {
-    const [updateId, withdrawRate, totalAssetsToWithdraw] = updateInfoRequest;
+    const [withdrawRate, timestamp, withdrawFee] = updateInfoRequest;
     updateData = {
-      updateId,
       withdrawRate: formatUnits(withdrawRate, decimals ?? 18),
-      totalAssetsToWithdraw: totalAssetsToWithdraw.toString(),
+      timestamp: formatTimestampToUTC(timestamp),
+      withdrawFee: withdrawFee.toString(),
     };
   }
 
