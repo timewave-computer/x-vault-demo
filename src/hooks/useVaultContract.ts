@@ -61,6 +61,7 @@ export function useVaultContract(vaultData?: VaultData) {
     try {
       const parsedAmount = parseUnits(amount, Number(decimals));
 
+      // approve vault to spend tokens
       const { request: approveRequest } = await publicClient.simulateContract({
         address: tokenAddress as Address,
         account: address,
@@ -69,7 +70,6 @@ export function useVaultContract(vaultData?: VaultData) {
         args: [vaultProxyAddress as Address, parsedAmount],
       });
 
-      // First approve the vault to spend tokens
       const approveHash = await walletClient.writeContract(approveRequest);
 
       // Wait for approval to be mined
@@ -78,6 +78,7 @@ export function useVaultContract(vaultData?: VaultData) {
         timeout: transactionConfirmationTimeout,
       });
 
+      // deposit tokens into vault
       const { request: depositRequest } = await publicClient.simulateContract({
         address: vaultProxyAddress as Address,
         abi: valenceVaultABI,
@@ -121,7 +122,7 @@ export function useVaultContract(vaultData?: VaultData) {
     try {
       const parsedShares = parseUnits(shares, Number(decimals));
 
-      // First approve the vault to spend shares
+      // approve the vault to spend vault shares (shares owned by user)
       const { request: approveRequest } = await publicClient.simulateContract({
         address: vaultProxyAddress as Address,
         account: address,
@@ -132,11 +133,13 @@ export function useVaultContract(vaultData?: VaultData) {
 
       const approveHash = await walletClient.writeContract(approveRequest);
 
+      // wait for approval to be mined
       await publicClient.waitForTransactionReceipt({
         hash: approveHash,
         timeout: transactionConfirmationTimeout,
       });
 
+      // redeem shares for tokens
       const { request: redeemRequest } = await publicClient.simulateContract({
         account: address,
         address: vaultProxyAddress as Address,
@@ -153,7 +156,7 @@ export function useVaultContract(vaultData?: VaultData) {
 
       const redeemHash = await walletClient.writeContract(redeemRequest);
 
-      // Wait for withdrawal to be mined with timeout
+      // Wait for withdrawal to be mined
       const withdrawalReceipt = await publicClient.waitForTransactionReceipt({
         hash: redeemHash,
         timeout: transactionConfirmationTimeout,
