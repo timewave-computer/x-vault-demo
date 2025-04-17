@@ -255,7 +255,7 @@ export function useVaultContract(vaultData?: VaultData) {
     if (!publicClient) throw new Error("Public client not initialized");
 
     try {
-      await publicClient.simulateContract({
+      const { request } = await publicClient.simulateContract({
         address: vaultProxyAddress as Address,
         abi: valenceVaultABI,
         functionName: "completeWithdraw",
@@ -264,12 +264,7 @@ export function useVaultContract(vaultData?: VaultData) {
       });
 
       // Execute the transaction
-      const completeHash = await walletClient.writeContract({
-        address: vaultProxyAddress as Address,
-        abi: valenceVaultABI,
-        functionName: "withdraw",
-        args: [BigInt(0), address, address],
-      });
+      const completeHash = await walletClient.writeContract(request);
       // Wait for transaction to be mined
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: completeHash,
@@ -303,6 +298,11 @@ export function useVaultContract(vaultData?: VaultData) {
   };
 }
 
+/***
+ * Resuable error handling function for contract operations
+ * @param error - The error to handle
+ * @param defaultMessage - The default message to throw
+ */
 const handleAndThrowError = (error: unknown, defaultMessage: string) => {
   console.error(defaultMessage, error);
   if (error instanceof BaseError) {

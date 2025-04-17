@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
-import { formatHoursToDays, isValidNumberInput, jsonStringify } from "@/lib";
+import { formatHoursToDays, isValidNumberInput } from "@/lib";
 import { useToast } from "@/components";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/const";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
@@ -35,7 +36,11 @@ export default function VaultPage({ params }: { params: { id: string } }) {
 
   const pendingWithdrawals = useQuery({
     enabled: !!vaultData?.vaultProxyAddress && !!address,
-    queryKey: ["pendingWithdrawals", vaultData?.vaultProxyAddress, address],
+    queryKey: [
+      QUERY_KEYS.PENDING_WITHDRAWALS,
+      vaultData?.vaultProxyAddress,
+      address,
+    ],
     refetchInterval: 60000,
     queryFn: async () => {
       return getPendingWithdrawals();
@@ -127,6 +132,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         });
         tokenBalances.refetch(vaultData?.tokenAddress);
         ethBalance.refetch();
+        pendingWithdrawals.refetch();
       },
       onError: (err) => {
         if (err instanceof Error) {
@@ -259,13 +265,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 value={depositAmount}
                 onChange={(e) => {
                   const value = e.target.value;
-                  // Only allow positive numbers
-                  if (value === "") {
-                    setDepositAmount("");
-                  }
-                  if (isValidNumberInput(value) && parseFloat(value) >= 0) {
-                    setDepositAmount(value);
-                  }
+                  handleNumberInput(value, setDepositAmount);
                 }}
                 min="0"
                 step="any"
@@ -368,13 +368,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 value={withdrawShares}
                 onChange={(e) => {
                   const value = e.target.value;
-                  // Only allow positive numbers
-                  if (value === "") {
-                    setWithdrawShares("");
-                  }
-                  if (isValidNumberInput(value) && parseFloat(value) >= 0) {
-                    setWithdrawShares(value);
-                  }
+                  handleNumberInput(value, setWithdrawShares);
                 }}
                 min="0"
                 step="any"
@@ -491,3 +485,21 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     </div>
   );
 }
+
+/***
+ * Reusable function to validate number input
+ * @param value - The value to handle
+ * @param setValue - The function to set the value
+ */
+const handleNumberInput = (
+  value: string,
+  setValue: (value: string) => void,
+) => {
+  if (value === "") {
+    setValue("");
+  }
+  // Only allow positive numbers
+  if (isValidNumberInput(value) && parseFloat(value) >= 0) {
+    setValue(value);
+  }
+};
