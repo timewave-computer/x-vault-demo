@@ -6,8 +6,7 @@ import { useAccount } from "wagmi";
 import { useState } from "react";
 import { formatHoursToDays, isValidNumberInput } from "@/lib";
 import { useToast } from "@/components";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { QUERY_KEYS } from "@/const";
+import { useMutation } from "@tanstack/react-query";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
@@ -22,7 +21,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     withdrawShares: withdrawSharesFromVault,
     maxWithdraw,
     balance,
-    getPendingWithdrawals,
+    userWithdrawRequest,
     completeWithdraw,
   } = useVaultContract(vaultData);
 
@@ -33,19 +32,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const vaultTokenBalance = tokenBalances.data?.[0] ?? undefined;
   const tokenBalance = vaultTokenBalance?.balance.formatted ?? "0";
   const tokenSymbol = vaultTokenBalance?.symbol;
-
-  const pendingWithdrawals = useQuery({
-    enabled: !!vaultData?.vaultProxyAddress && !!address,
-    queryKey: [
-      QUERY_KEYS.PENDING_WITHDRAWALS,
-      vaultData?.vaultProxyAddress,
-      address,
-    ],
-    refetchInterval: 60000,
-    queryFn: async () => {
-      return getPendingWithdrawals();
-    },
-  });
 
   const { mutate: handleDeposit, isPending: isDepositing } = useMutation({
     mutationFn: async () => {
@@ -97,7 +83,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       });
       tokenBalances.refetch(vaultData?.tokenAddress);
       ethBalance.refetch();
-      pendingWithdrawals.refetch();
+      userWithdrawRequest.refetch();
     },
     onError: (err) => {
       if (err instanceof Error) {
@@ -132,7 +118,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         });
         tokenBalances.refetch(vaultData?.tokenAddress);
         ethBalance.refetch();
-        pendingWithdrawals.refetch();
+        userWithdrawRequest.refetch();
       },
       onError: (err) => {
         if (err instanceof Error) {
@@ -420,67 +406,65 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           </div>
         </div>
 
-        {pendingWithdrawals.data && pendingWithdrawals.data.length > 0 && (
-          <div className="mt-8">
-            <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
-              <div className="mb-6">
-                <h3 className="text-lg font-beast text-accent-purple mb-1">
-                  Pending Withdrawals
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Complete your pending withdrawals to receive your tokens.
-                </p>
-                <p className="text-sm text-gray-500">
-                  This vault has a withdrawal fulfillment period of{" "}
-                  {formatHoursToDays(vaultData?.withdrawalLockup ?? 0)} days.
-                  You must wait this period after initiating a withdrawal before
-                  you can complete it.
-                </p>
-              </div>
+        {userWithdrawRequest.withdrawData &&
+          userWithdrawRequest.withdrawData.hasActiveWithdraw && (
+            <div className="mt-8">
+              <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
+                <div className="mb-6">
+                  <h3 className="text-lg font-beast text-accent-purple mb-1">
+                    Pending Withdrawal
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Complete your pending withdrawal to receive your tokens.
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    This vault has a withdrawal fulfillment period of{" "}
+                    {formatHoursToDays(vaultData?.withdrawalLockup ?? 0)} days.
+                    You must wait this period after initiating a withdrawal
+                    before you can complete it.
+                  </p>
+                </div>
 
-              <div className="space-y-4">
-                {pendingWithdrawals.data.map((withdrawal, index) => {
-                  return (
-                    <div
-                      key={index}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
-                    >
-                      <div className="mb-4 sm:mb-0">
-                        <p className="text-base font-medium text-gray-900">
-                          {withdrawal.shares} shares
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          Initated on block:{" "}
-                          <a
-                            href={`https://etherscan.io/block/${withdrawal.blockNumber}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm opacity-90 hover:underline mt-1"
-                          >
-                            {withdrawal.blockNumber.toString()}
-                          </a>
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleCompleteWithdraw()}
-                        disabled={!isConnected || isCompletingWithdraw}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                          !isConnected || isCompletingWithdraw
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : "bg-accent-purple text-white hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all"
-                        }`}
-                      >
-                        {isCompletingWithdraw
-                          ? "Processing..."
-                          : "Complete Withdraw"}
-                      </button>
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+                    <div className="mb-4 sm:mb-0">
+                      <p className="text-base font-medium text-gray-900">
+                        {userWithdrawRequest.withdrawData.sharesAmount} shares
+                      </p>
+
+                      <p className="text-sm text-gray-500">
+                        Owner: {userWithdrawRequest.withdrawData.owner}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Update ID: {userWithdrawRequest.withdrawData.updateId}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Withdraw rate:{" "}
+                        {userWithdrawRequest.updateData?.withdrawRate}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Claimable after:{" "}
+                        {userWithdrawRequest.withdrawData.claimTime}
+                      </p>
                     </div>
-                  );
-                })}
+                    <button
+                      onClick={() => handleCompleteWithdraw()}
+                      disabled={!isConnected || isCompletingWithdraw}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                        !isConnected || isCompletingWithdraw
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-accent-purple text-white hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all"
+                      }`}
+                    >
+                      {isCompletingWithdraw
+                        ? "Processing..."
+                        : "Complete Withdraw"}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </div>
   );
