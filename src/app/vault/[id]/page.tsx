@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
-import { formatHoursToDays, isValidNumberInput } from "@/lib";
+import { formatHoursToDays, isValidNumberInput, jsonStringify } from "@/lib";
 import { useToast } from "@/components";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
@@ -22,6 +22,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     maxWithdraw,
     balance,
     getPendingWithdrawals,
+    completeWithdraw,
   } = useVaultContract(vaultData);
 
   const { tokenBalances, ethBalance } = useTokenBalances({
@@ -32,18 +33,15 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const tokenBalance = vaultTokenBalance?.balance.formatted ?? "0";
   const tokenSymbol = vaultTokenBalance?.symbol;
 
-  const { data: pendingWithdrawals } = useQuery({
-    enabled: !!vaultData?.vaultProxyAddress && !!address,
-    queryKey: ["pendingWithdrawals", vaultData?.vaultProxyAddress, address],
-    refetchInterval: 30 * 1000,
-    queryFn: async () => {
-      const pendingWithdrawals = await getPendingWithdrawals();
-      // console.log(
-      //   "pending withdrawals",
-      //   pendingWithdrawals)
-      return pendingWithdrawals;
-    },
-  });
+  const { data: pendingWithdrawals, refetch: refetchPendingWithdrawals } =
+    useQuery({
+      enabled: !!vaultData?.vaultProxyAddress && !!address,
+      queryKey: ["pendingWithdrawals", vaultData?.vaultProxyAddress, address],
+      refetchInterval: 60000,
+      queryFn: async () => {
+        return getPendingWithdrawals();
+      },
+    });
 
   const { mutate: handleDeposit, isPending: isDepositing } = useMutation({
     mutationFn: async () => {
@@ -95,6 +93,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       });
       tokenBalances.refetch(vaultData?.tokenAddress);
       ethBalance.refetch();
+      refetchPendingWithdrawals();
     },
     onError: (err) => {
       if (err instanceof Error) {
@@ -112,6 +111,40 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       }
     },
   });
+
+  const { mutate: handleCompleteWithdraw, isPending: isCompletingWithdraw } =
+    useMutation({
+      mutationFn: async () => {
+        if (!isConnected || !vaultData)
+          throw new Error("Unable to complete withdrawal");
+        return completeWithdraw();
+      },
+      onSuccess: (hash) => {
+        showToast({
+          title: "Withdrawal completed",
+          description: "Your withdrawal has been completed successfully.",
+          type: "success",
+          txHash: hash,
+        });
+        tokenBalances.refetch(vaultData?.tokenAddress);
+        ethBalance.refetch();
+      },
+      onError: (err) => {
+        if (err instanceof Error) {
+          showToast({
+            title: "Transaction failed",
+            description: err.message,
+            type: "error",
+          });
+        } else {
+          console.error("Failed to complete withdrawal", err);
+          showToast({
+            title: "Failed to complete withdrawal",
+            type: "error",
+          });
+        }
+      },
+    });
 
   if (!vaultData) {
     return (
@@ -393,6 +426,68 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </div>
           </div>
         </div>
+
+        {pendingWithdrawals && pendingWithdrawals.length > 0 && (
+          <div className="mt-8">
+            <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
+              <div className="mb-6">
+                <h3 className="text-lg font-beast text-accent-purple mb-1">
+                  Pending Withdrawals
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Complete your pending withdrawals to receive your tokens.
+                </p>
+                <p className="text-sm text-gray-500">
+                  This vault has a withdrawal fulfillment period of{" "}
+                  {formatHoursToDays(vaultData?.withdrawalLockup ?? 0)} days.
+                  You must wait this period after initiating a withdrawal before
+                  you can complete it.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {pendingWithdrawals.map((withdrawal, index) => {
+                  return (
+                    <div
+                      key={index}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
+                    >
+                      <div className="mb-4 sm:mb-0">
+                        <p className="text-base font-medium text-gray-900">
+                          {withdrawal.shares} shares
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Initated on block:{" "}
+                          <a
+                            href={`https://etherscan.io/block/${withdrawal.blockNumber}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm opacity-90 hover:underline mt-1"
+                          >
+                            {withdrawal.blockNumber.toString()}
+                          </a>
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleCompleteWithdraw()}
+                        disabled={!isConnected || isCompletingWithdraw}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                          !isConnected || isCompletingWithdraw
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : "bg-accent-purple text-white hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all"
+                        }`}
+                      >
+                        {isCompletingWithdraw
+                          ? "Processing..."
+                          : "Complete Withdraw"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
