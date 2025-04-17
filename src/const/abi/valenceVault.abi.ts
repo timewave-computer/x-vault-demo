@@ -1,6 +1,6 @@
 import { type Abi } from "viem";
 
-const _valenceVaultABI: Abi = [
+export const valenceVaultABI: Abi = [
   {
     type: "constructor",
     inputs: [],
@@ -2150,5 +2150,3 @@ const _valenceVaultABI: Abi = [
     inputs: [],
   },
 ] as const;
-
-export const valenceVaultABI = [..._valenceVaultABI] as const;

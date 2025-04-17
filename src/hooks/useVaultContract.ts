@@ -42,15 +42,15 @@ export function useVaultContract(vaultData?: VaultData) {
     functionName: "balanceOf",
     address: vaultProxyAddress as Address,
     args: address ? [address] : undefined,
-  });
+  }) as { data: bigint | undefined };
 
   // Query maximum withdrawable amount
   const { data: maxWithdraw } = useReadContract({
     abi: valenceVaultABI,
     functionName: "maxWithdraw",
     address: vaultProxyAddress as Address,
-    args: address ? [address] : undefined,
-  });
+    args: [address],
+  }) as { data: bigint | undefined };
 
   const depositWithAmount = async (amount: string) => {
     if (!vaultData) throw new Error("Failed to initiate deposit");
