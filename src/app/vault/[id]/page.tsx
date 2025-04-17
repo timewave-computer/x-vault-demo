@@ -187,11 +187,11 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               <h3 className="text-lg font-beast text-accent-purple">Deposit</h3>
               <div className="flex justify-between items-center mt-2">
                 <p className="text-sm text-gray-500">
-                  Add tokens to start earning yield
+                  Deposit tokens to start earning yield
                 </p>
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-gray-500">
-                    Available: {tokenBalance ?? "0"} {tokenSymbol}
+                    Available: {`${tokenBalance ?? 0} ${tokenSymbol}`}
                   </p>
                   <button
                     onClick={() =>
@@ -297,11 +297,11 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               </h3>
               <div className="flex justify-between items-center mt-2">
                 <p className="text-sm text-gray-500">
-                  Convert your shares to tokens
+                  Convert shares back to tokens
                 </p>
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-gray-500">
-                    Available: {maxWithdraw} shares
+                    Available: {vaultData.userShares ?? `0 shares`}
                   </p>
                   <button
                     onClick={() => setWithdrawShares(maxWithdraw ?? "0")}
