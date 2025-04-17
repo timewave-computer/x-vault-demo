@@ -4,15 +4,7 @@ import {
   usePublicClient,
   useWalletClient,
 } from "wagmi";
-import {
-  parseUnits,
-  formatUnits,
-  erc20Abi,
-  ContractFunctionRevertedError,
-  ContractFunctionExecutionError,
-  BaseError,
-  WaitForTransactionReceiptTimeoutError,
-} from "viem";
+import { parseUnits, formatUnits, erc20Abi, BaseError } from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
 import { VaultData } from "./useVaultData";
@@ -26,7 +18,12 @@ import { VaultData } from "./useVaultData";
  * - Viewing pending withdrawals
  */
 export function useVaultContract(vaultData?: VaultData) {
-  const { vaultProxyAddress, tokenAddress, decimals } = vaultData ?? {};
+  const {
+    vaultProxyAddress,
+    tokenAddress,
+    decimals,
+    transactionConfirmationTimeout,
+  } = vaultData ?? {};
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
@@ -61,58 +58,41 @@ export function useVaultContract(vaultData?: VaultData) {
     if (!walletClient) throw new Error("Wallet not connected");
     if (!publicClient) throw new Error("Public client not initialized");
 
-    const parsedAmount = parseUnits(amount, Number(decimals));
-
-    // First approve the vault to spend tokens
-    const approveHash = await walletClient.writeContract({
-      address: tokenAddress as Address,
-      abi: erc20Abi,
-      functionName: "approve",
-      args: [vaultProxyAddress as Address, parsedAmount],
-    });
-
-    // Wait for approval to be mined
-    await publicClient.waitForTransactionReceipt({
-      hash: approveHash,
-    });
-
     try {
-      try {
-        await publicClient.simulateContract({
-          address: vaultProxyAddress as Address,
-          abi: valenceVaultABI,
-          functionName: "deposit",
-          args: [parsedAmount, address],
-          account: address,
-        });
-      } catch (err) {
-        if (
-          err instanceof ContractFunctionRevertedError ||
-          err instanceof ContractFunctionExecutionError ||
-          err instanceof WaitForTransactionReceiptTimeoutError
-        ) {
-          throw new Error(err.shortMessage);
-        } else if (err instanceof BaseError) {
-          throw new Error(err.shortMessage);
-        } else {
-          throw new Error(
-            `Transaction simulation failed. ${JSON.stringify(err)}`,
-          );
-        }
-      }
+      const parsedAmount = parseUnits(amount, Number(decimals));
 
-      // Then deposit into the vault
-      const depositHash = await walletClient.writeContract({
+      const { request: approveRequest } = await publicClient.simulateContract({
+        address: tokenAddress as Address,
+        account: address,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [vaultProxyAddress as Address, parsedAmount],
+      });
+
+      // First approve the vault to spend tokens
+      const approveHash = await walletClient.writeContract(approveRequest);
+
+      // Wait for approval to be mined
+      await publicClient.waitForTransactionReceipt({
+        hash: approveHash,
+        timeout: transactionConfirmationTimeout,
+      });
+
+      const { request: depositRequest } = await publicClient.simulateContract({
         address: vaultProxyAddress as Address,
         abi: valenceVaultABI,
         functionName: "deposit",
         args: [parsedAmount, address],
+        account: address,
       });
+
+      // Then deposit into the vault
+      const depositHash = await walletClient.writeContract(depositRequest);
 
       // Wait for deposit to be mined
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: depositHash,
-        timeout: 60000, // 60 second timeout
+        timeout: transactionConfirmationTimeout,
       });
 
       if (receipt.status !== "success") {
@@ -121,17 +101,7 @@ export function useVaultContract(vaultData?: VaultData) {
       }
       return depositHash;
     } catch (error) {
-      console.error("Transaction failed:", error);
-      if (
-        error instanceof ContractFunctionExecutionError ||
-        error instanceof WaitForTransactionReceiptTimeoutError
-      ) {
-        throw new Error(error.details);
-      } else if (error instanceof Error) {
-        throw new Error(error.message);
-      } else {
-        throw new Error("Transaction failed");
-      }
+      handleAndThrowError(error, "Deposit failed");
     }
   };
 
@@ -148,9 +118,9 @@ export function useVaultContract(vaultData?: VaultData) {
     // Validate share balance
     if (!shareBalance) throw new Error("No shares to withdraw");
 
-    const parsedShares = parseUnits(shares, Number(decimals));
-
     try {
+      const parsedShares = parseUnits(shares, Number(decimals));
+
       // First approve the vault to spend shares
       const { request: approveRequest } = await publicClient.simulateContract({
         address: vaultProxyAddress as Address,
@@ -164,7 +134,7 @@ export function useVaultContract(vaultData?: VaultData) {
 
       await publicClient.waitForTransactionReceipt({
         hash: approveHash,
-        timeout: 30000, // 30 second timeout
+        timeout: transactionConfirmationTimeout,
       });
 
       const { request: redeemRequest } = await publicClient.simulateContract({
@@ -172,7 +142,6 @@ export function useVaultContract(vaultData?: VaultData) {
         address: vaultProxyAddress as Address,
         abi: valenceVaultABI,
         functionName: "redeem",
-        // @ts-ignore TS bug. viem expects 3 args, 5 are supplied in ABI
         args: [
           parsedShares,
           address,
@@ -187,7 +156,7 @@ export function useVaultContract(vaultData?: VaultData) {
       // Wait for withdrawal to be mined with timeout
       const withdrawalReceipt = await publicClient.waitForTransactionReceipt({
         hash: redeemHash,
-        timeout: 30000, // 30 second timeout
+        timeout: transactionConfirmationTimeout,
       });
 
       if (withdrawalReceipt.status !== "success") {
@@ -199,23 +168,7 @@ export function useVaultContract(vaultData?: VaultData) {
 
       return redeemHash;
     } catch (error) {
-      console.log("Withdraw failed:", error);
-      if (error instanceof BaseError) {
-        // @ts-ignore
-        // attempt to extract meaningful error message
-        const errorName = error.cause?.data?.abiItem?.name;
-
-        const errorMessage =
-          errorName && typeof errorName === "string"
-            ? `${errorName}. ${error.shortMessage}`
-            : error.shortMessage;
-
-        throw new Error(errorMessage);
-      } else if (error instanceof Error) {
-        throw new Error(error.message);
-      } else {
-        throw new Error("Transaction failed");
-      }
+      handleAndThrowError(error, "Withdraw failed");
     }
   };
 
@@ -302,30 +255,13 @@ export function useVaultContract(vaultData?: VaultData) {
     if (!publicClient) throw new Error("Public client not initialized");
 
     try {
-      // Simulate the transaction first
-      try {
-        await publicClient.simulateContract({
-          address: vaultProxyAddress as Address,
-          abi: valenceVaultABI,
-          functionName: "withdraw",
-          args: [BigInt(0), address, address],
-          account: address,
-        });
-      } catch (err) {
-        if (
-          err instanceof ContractFunctionRevertedError ||
-          err instanceof ContractFunctionExecutionError ||
-          err instanceof WaitForTransactionReceiptTimeoutError
-        ) {
-          throw new Error(err.shortMessage);
-        } else if (err instanceof BaseError) {
-          throw new Error(err.shortMessage);
-        } else {
-          throw new Error(
-            `Transaction simulation failed. ${JSON.stringify(err)}`,
-          );
-        }
-      }
+      await publicClient.simulateContract({
+        address: vaultProxyAddress as Address,
+        abi: valenceVaultABI,
+        functionName: "completeWithdraw",
+        args: [BigInt(0), address, address],
+        account: address,
+      });
 
       // Execute the transaction
       const completeHash = await walletClient.writeContract({
@@ -334,31 +270,19 @@ export function useVaultContract(vaultData?: VaultData) {
         functionName: "withdraw",
         args: [BigInt(0), address, address],
       });
-
       // Wait for transaction to be mined
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: completeHash,
-        timeout: 30000, // 30 second timeout
+        timeout: transactionConfirmationTimeout,
       });
 
       if (receipt.status !== "success") {
         console.error("Transaction receipt:", receipt);
         throw new Error(`Transaction receipt status: ${receipt.status}`);
       }
-
       return completeHash;
     } catch (error) {
-      console.error("Transaction failed:", error);
-      if (
-        error instanceof ContractFunctionExecutionError ||
-        error instanceof WaitForTransactionReceiptTimeoutError
-      ) {
-        throw new Error(error.details);
-      } else if (error instanceof Error) {
-        throw new Error(error.message);
-      } else {
-        throw new Error("Transaction failed");
-      }
+      handleAndThrowError(error, "Complete Withdraw failed");
     }
   };
 
@@ -378,3 +302,23 @@ export function useVaultContract(vaultData?: VaultData) {
       : undefined,
   };
 }
+
+const handleAndThrowError = (error: unknown, defaultMessage: string) => {
+  console.error(defaultMessage, error);
+  if (error instanceof BaseError) {
+    // @ts-ignore
+    // attempt to extract meaningful error message
+    const errorName = error.cause?.data?.abiItem?.name;
+
+    const errorMessage =
+      errorName && typeof errorName === "string"
+        ? `${errorName}. ${error.shortMessage}`
+        : error.shortMessage;
+
+    throw new Error(errorMessage);
+  } else if (error instanceof Error) {
+    throw new Error(error.message);
+  } else {
+    throw new Error(defaultMessage);
+  }
+};

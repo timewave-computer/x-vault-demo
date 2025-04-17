@@ -1,4 +1,4 @@
-import { type Abi, erc4626Abi } from "viem";
+import { type Abi } from "viem";
 
 const _valenceVaultABI: Abi = [
   {
@@ -2151,4 +2151,4 @@ const _valenceVaultABI: Abi = [
   },
 ] as const;
 
-export const valenceVaultABI = [..._valenceVaultABI, ...erc4626Abi] as const;
+export const valenceVaultABI = [..._valenceVaultABI] as const;

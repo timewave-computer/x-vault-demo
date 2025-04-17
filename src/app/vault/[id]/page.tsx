@@ -33,15 +33,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const tokenBalance = vaultTokenBalance?.balance.formatted ?? "0";
   const tokenSymbol = vaultTokenBalance?.symbol;
 
-  const { data: pendingWithdrawals, refetch: refetchPendingWithdrawals } =
-    useQuery({
-      enabled: !!vaultData?.vaultProxyAddress && !!address,
-      queryKey: ["pendingWithdrawals", vaultData?.vaultProxyAddress, address],
-      refetchInterval: 60000,
-      queryFn: async () => {
-        return getPendingWithdrawals();
-      },
-    });
+  const pendingWithdrawals = useQuery({
+    enabled: !!vaultData?.vaultProxyAddress && !!address,
+    queryKey: ["pendingWithdrawals", vaultData?.vaultProxyAddress, address],
+    refetchInterval: 60000,
+    queryFn: async () => {
+      return getPendingWithdrawals();
+    },
+  });
 
   const { mutate: handleDeposit, isPending: isDepositing } = useMutation({
     mutationFn: async () => {
@@ -93,7 +92,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       });
       tokenBalances.refetch(vaultData?.tokenAddress);
       ethBalance.refetch();
-      refetchPendingWithdrawals();
+      pendingWithdrawals.refetch();
     },
     onError: (err) => {
       if (err instanceof Error) {
@@ -427,7 +426,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           </div>
         </div>
 
-        {pendingWithdrawals && pendingWithdrawals.length > 0 && (
+        {pendingWithdrawals.data && pendingWithdrawals.data.length > 0 && (
           <div className="mt-8">
             <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
               <div className="mb-6">
@@ -446,7 +445,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               </div>
 
               <div className="space-y-4">
-                {pendingWithdrawals.map((withdrawal, index) => {
+                {pendingWithdrawals.data.map((withdrawal, index) => {
                   return (
                     <div
                       key={index}
