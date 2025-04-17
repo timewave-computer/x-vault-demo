@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
-import { isValidNumberInput } from "@/lib";
+import { formatHoursToDays, isValidNumberInput } from "@/lib";
 import { useToast } from "@/components";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/const";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
@@ -14,7 +15,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const vaultData = vaults?.find((v) => v.id === params.id);
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawShares, setWithdrawShares] = useState("");
-  const locale = "en-US";
   const { showToast } = useToast();
 
   const {
@@ -22,10 +22,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     withdrawShares: withdrawSharesFromVault,
     maxWithdraw,
     balance,
-  } = useVaultContract(
-    vaultData?.vaultProxyAddress ?? "",
-    vaultData?.tokenAddress ?? "",
-  );
+    getPendingWithdrawals,
+    completeWithdraw,
+  } = useVaultContract(vaultData);
 
   const { tokenBalances, ethBalance } = useTokenBalances({
     address,
@@ -35,15 +34,27 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const tokenBalance = vaultTokenBalance?.balance.formatted ?? "0";
   const tokenSymbol = vaultTokenBalance?.symbol;
 
+  const pendingWithdrawals = useQuery({
+    enabled: !!vaultData?.vaultProxyAddress && !!address,
+    queryKey: [
+      QUERY_KEYS.PENDING_WITHDRAWALS,
+      vaultData?.vaultProxyAddress,
+      address,
+    ],
+    refetchInterval: 60000,
+    queryFn: async () => {
+      return getPendingWithdrawals();
+    },
+  });
+
   const { mutate: handleDeposit, isPending: isDepositing } = useMutation({
     mutationFn: async () => {
       if (!depositAmount || !isConnected || !vaultData)
-        throw new Error("Invalid input");
+        throw new Error("Unable to initiate deposit");
       return depositWithAmount(depositAmount);
     },
     onSuccess: (hash) => {
       setDepositAmount("");
-
       showToast({
         title: "Deposit successful",
         description: "Your deposit has been processed successfully.",
@@ -73,19 +84,20 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const { mutate: handleWithdraw, isPending: isWithdrawing } = useMutation({
     mutationFn: async () => {
       if (!withdrawShares || !isConnected || !vaultData)
-        throw new Error("Invalid input");
+        throw new Error("Unable to initiate withdrawal");
       return withdrawSharesFromVault(withdrawShares);
     },
     onSuccess: (hash) => {
       setWithdrawShares("");
       showToast({
-        title: "Withdrawal successful",
-        description: "Your withdrawal has been processed successfully.",
+        title: "Withdraw initiation submitted",
+        description: `This vault has a withdraw fullfillment period of ${formatHoursToDays(vaultData?.withdrawalLockup ?? 0)} days. After this time, you can claim your tokens.`,
         type: "success",
         txHash: hash,
       });
       tokenBalances.refetch(vaultData?.tokenAddress);
       ethBalance.refetch();
+      pendingWithdrawals.refetch();
     },
     onError: (err) => {
       if (err instanceof Error) {
@@ -103,6 +115,41 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       }
     },
   });
+
+  const { mutate: handleCompleteWithdraw, isPending: isCompletingWithdraw } =
+    useMutation({
+      mutationFn: async () => {
+        if (!isConnected || !vaultData)
+          throw new Error("Unable to complete withdrawal");
+        return completeWithdraw();
+      },
+      onSuccess: (hash) => {
+        showToast({
+          title: "Withdrawal completed",
+          description: "Your withdrawal has been completed successfully.",
+          type: "success",
+          txHash: hash,
+        });
+        tokenBalances.refetch(vaultData?.tokenAddress);
+        ethBalance.refetch();
+        pendingWithdrawals.refetch();
+      },
+      onError: (err) => {
+        if (err instanceof Error) {
+          showToast({
+            title: "Transaction failed",
+            description: err.message,
+            type: "error",
+          });
+        } else {
+          console.error("Failed to complete withdrawal", err);
+          showToast({
+            title: "Failed to complete withdrawal",
+            type: "error",
+          });
+        }
+      },
+    });
 
   if (!vaultData) {
     return (
@@ -135,6 +182,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             <p className="mt-1.5 text-base text-gray-500">
               {vaultData.description}
             </p>
+            <p className="mt-1 text-sm text-gray-400 font-mono">
+              Contract: {vaultData.vaultProxyAddress}
+            </p>
           </div>
         </div>
 
@@ -142,14 +192,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
             <dt className="text-base text-black">Your Balance</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {isConnected ? `${tokenBalance} ${tokenSymbol}` : "-"}
+              {isConnected ? vaultData.userShares : "-"}
             </dd>
           </div>
 
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
-            <dt className="text-base text-black">Your Vault Position</dt>
+            <dt className="text-base text-black">Your Position</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {isConnected ? vaultData.userShares : "-"}
+              {isConnected ? vaultData.userPosition : "-"}
             </dd>
           </div>
 
@@ -175,11 +225,11 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               <h3 className="text-lg font-beast text-accent-purple">Deposit</h3>
               <div className="flex justify-between items-center mt-2">
                 <p className="text-sm text-gray-500">
-                  Add tokens to start earning yield
+                  Deposit tokens to start earning yield
                 </p>
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-gray-500">
-                    Available: {tokenBalance ?? "0"} {tokenSymbol}
+                    Available: {`${tokenBalance ?? 0} ${tokenSymbol}`}
                   </p>
                   <button
                     onClick={() =>
@@ -215,10 +265,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 value={depositAmount}
                 onChange={(e) => {
                   const value = e.target.value;
-                  // Only allow positive numbers
-                  if (isValidNumberInput(value) && parseFloat(value) >= 0) {
-                    setDepositAmount(value);
-                  }
+                  handleNumberInput(value, setDepositAmount);
                 }}
                 min="0"
                 step="any"
@@ -282,11 +329,11 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               </h3>
               <div className="flex justify-between items-center mt-2">
                 <p className="text-sm text-gray-500">
-                  Convert your shares to tokens
+                  Convert shares back to tokens
                 </p>
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-gray-500">
-                    Available: {maxWithdraw} shares
+                    Available: {vaultData.userShares ?? `0 shares`}
                   </p>
                   <button
                     onClick={() => setWithdrawShares(maxWithdraw ?? "0")}
@@ -321,10 +368,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 value={withdrawShares}
                 onChange={(e) => {
                   const value = e.target.value;
-                  // Only allow positive numbers
-                  if (isValidNumberInput(value) && parseFloat(value) >= 0) {
-                    setWithdrawShares(value);
-                  }
+                  handleNumberInput(value, setWithdrawShares);
                 }}
                 min="0"
                 step="any"
@@ -355,7 +399,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   : "bg-accent-purple text-white hover:scale-110 hover:shadow-xl hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all"
               }`}
             >
-              {isWithdrawing ? "Confirm in Wallet..." : "Withdraw"}
+              {isWithdrawing ? "Confirm in Wallet..." : "Initiate Withdraw"}
             </button>
 
             {/* Withdraw estimate and warning display */}
@@ -375,7 +419,87 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </div>
           </div>
         </div>
+
+        {pendingWithdrawals.data && pendingWithdrawals.data.length > 0 && (
+          <div className="mt-8">
+            <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
+              <div className="mb-6">
+                <h3 className="text-lg font-beast text-accent-purple mb-1">
+                  Pending Withdrawals
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Complete your pending withdrawals to receive your tokens.
+                </p>
+                <p className="text-sm text-gray-500">
+                  This vault has a withdrawal fulfillment period of{" "}
+                  {formatHoursToDays(vaultData?.withdrawalLockup ?? 0)} days.
+                  You must wait this period after initiating a withdrawal before
+                  you can complete it.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {pendingWithdrawals.data.map((withdrawal, index) => {
+                  return (
+                    <div
+                      key={index}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
+                    >
+                      <div className="mb-4 sm:mb-0">
+                        <p className="text-base font-medium text-gray-900">
+                          {withdrawal.shares} shares
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Initated on block:{" "}
+                          <a
+                            href={`https://etherscan.io/block/${withdrawal.blockNumber}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm opacity-90 hover:underline mt-1"
+                          >
+                            {withdrawal.blockNumber.toString()}
+                          </a>
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleCompleteWithdraw()}
+                        disabled={!isConnected || isCompletingWithdraw}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                          !isConnected || isCompletingWithdraw
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : "bg-accent-purple text-white hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all"
+                        }`}
+                      >
+                        {isCompletingWithdraw
+                          ? "Processing..."
+                          : "Complete Withdraw"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+/***
+ * Reusable function to validate number input
+ * @param value - The value to handle
+ * @param setValue - The function to set the value
+ */
+const handleNumberInput = (
+  value: string,
+  setValue: (value: string) => void,
+) => {
+  if (value === "") {
+    setValue("");
+  }
+  // Only allow positive numbers
+  if (isValidNumberInput(value) && parseFloat(value) >= 0) {
+    setValue(value);
+  }
+};
