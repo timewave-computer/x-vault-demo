@@ -61,16 +61,22 @@ export default function VaultPage({ params }: { params: { id: string } }) {
 
         <dl className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-4">
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
-            <dt className="text-base text-black">Vault TVL</dt>
+            <dt className="text-base text-black">TVL</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {vaultData.tvl}
+              {vaultData.formatted.tvl}
+            </dd>
+          </div>
+          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+            <dt className="text-base text-black">Total Shares</dt>
+            <dd className="mt-2 text-2xl font-beast text-accent-purple">
+              {vaultData.formatted.totalShares}
             </dd>
           </div>
 
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
-            <dt className="text-base text-black">APR</dt>
+            <dt className="text-base text-black">Redemption Rate</dt>
             <dd className="mt-2 text-2xl font-beast text-secondary">
-              {vaultData.apr}
+              {vaultData.formatted.redemptionRate}
             </dd>
           </div>
         </dl>

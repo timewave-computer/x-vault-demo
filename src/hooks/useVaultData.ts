@@ -6,13 +6,26 @@ import { type BaseVaultData, BASE_VAULTS, defaultChainId } from "@/config";
 import { valenceVaultABI } from "@/const";
 import { readContract } from "@wagmi/core";
 import { erc20Abi, formatUnits } from "viem";
+import { formatBigInt } from "@/lib";
 
 export type VaultData = BaseVaultData & {
-  userShares: string;
-  userPosition: string;
-  ethBalance: string;
-  tvl: string;
   decimals: number;
+  raw: {
+    totalShares: bigint;
+    userShares: bigint;
+    userPosition: bigint;
+    ethBalance: bigint;
+    tvl: bigint;
+    redemptionRate: bigint;
+  };
+  formatted: {
+    totalShares: string;
+    userShares: string;
+    userPosition: string;
+    ethBalance: string;
+    tvl: string;
+    redemptionRate: string;
+  };
 };
 
 export function useVaultData() {
@@ -58,8 +71,22 @@ export function useVaultData() {
               args: [],
             });
 
+            const totalShares = await readContract(config, {
+              abi: valenceVaultABI,
+              address: vault.vaultProxyAddress,
+              functionName: "totalSupply",
+              args: [],
+            });
+
+            const redemptionRate = await readContract(config, {
+              abi: valenceVaultABI,
+              address: vault.vaultProxyAddress,
+              functionName: "redemptionRate",
+              args: [],
+            });
+
             let userShares = BigInt(0),
-              vaultPosition = BigInt(0);
+              userPosition = BigInt(0);
             if (address) {
               userShares = await readContract(config, {
                 abi: valenceVaultABI,
@@ -68,7 +95,7 @@ export function useVaultData() {
                 args: [address],
               });
 
-              vaultPosition = await readContract(config, {
+              userPosition = await readContract(config, {
                 abi: valenceVaultABI,
                 address: vault.vaultProxyAddress,
                 functionName: "convertToAssets",
@@ -79,21 +106,44 @@ export function useVaultData() {
             const result: VaultData = {
               decimals: Number(decimals),
               ...vault,
-              tvl: formatTokenAmount(tvl, vault.token, {
-                formatUnits: decimals,
-              }),
-              userShares: formatTokenAmount(userShares, "shares", {
-                formatUnits: decimals,
-              }),
-              userPosition: formatTokenAmount(vaultPosition, vault.token, {
-                formatUnits: decimals,
-              }),
-              apr: vault.apr,
-              ethBalance: ethBalance
-                ? Number(ethBalance.formatted) === 0
-                  ? `0 ${ethBalance.symbol}`
-                  : `${Number(ethBalance.formatted).toFixed(4)} ${ethBalance.symbol}`
-                : "0 ETH",
+              raw: {
+                totalShares: totalShares,
+                tvl: tvl,
+                userShares: userShares,
+                userPosition: userPosition,
+                redemptionRate: redemptionRate,
+                ethBalance: ethBalance?.value ?? BigInt(0),
+              },
+              formatted: {
+                totalShares: formatBigInt(totalShares, decimals, "shares", {
+                  displayDecimals: 4,
+                }),
+                tvl: formatBigInt(tvl, decimals, vault.token, {
+                  displayDecimals: 4,
+                }),
+                userShares: formatBigInt(userShares, decimals, "shares", {
+                  displayDecimals: 4,
+                }),
+                userPosition: formatBigInt(
+                  userPosition,
+                  decimals,
+                  vault.token,
+                  {
+                    displayDecimals: 4,
+                  },
+                ),
+                redemptionRate: formatBigInt(redemptionRate, decimals, "%", {
+                  displayDecimals: 2,
+                }),
+                ethBalance: formatBigInt(
+                  ethBalance?.value ?? BigInt(0),
+                  18,
+                  "ETH",
+                  {
+                    displayDecimals: 4,
+                  },
+                ),
+              },
             };
             return result;
           } catch (error) {
@@ -125,24 +175,3 @@ export function useVaultData() {
 }
 
 const defaultDisplayDecimals = 4;
-
-function formatTokenAmount(
-  _value: bigint | undefined,
-  symbol: string,
-  options: {
-    displayDecimals?: number; // fraction precision
-    formatUnits?: number; // wei -> eth
-  },
-): string {
-  if (!_value || _value === BigInt(0)) {
-    return `0 ${symbol}`;
-  }
-
-  let formattedValue: number;
-
-  if (options.formatUnits) {
-    formattedValue = Number(formatUnits(_value, options.formatUnits));
-  } else formattedValue = Number(_value);
-
-  return `${formattedValue.toFixed(options.displayDecimals ?? defaultDisplayDecimals)} ${symbol}`;
-}
