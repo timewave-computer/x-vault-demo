@@ -8,11 +8,23 @@ import { readContract } from "@wagmi/core";
 import { erc20Abi, formatUnits } from "viem";
 
 export type VaultData = BaseVaultData & {
-  userShares: string;
-  userPosition: string;
-  ethBalance: string;
-  tvl: string;
   decimals: number;
+  raw: {
+    totalShares: bigint;
+    userShares: bigint;
+    userPosition: bigint;
+    ethBalance: bigint;
+    tvl: bigint;
+    redemptionRate: bigint;
+  };
+  formatted: {
+    totalShares: string;
+    userShares: string;
+    userPosition: string;
+    ethBalance: string;
+    tvl: string;
+    redemptionRate: string;
+  };
 };
 
 export function useVaultData() {
@@ -58,8 +70,22 @@ export function useVaultData() {
               args: [],
             });
 
+            const totalShares = await readContract(config, {
+              abi: valenceVaultABI,
+              address: vault.vaultProxyAddress,
+              functionName: "totalSupply",
+              args: [],
+            });
+
+            const redemptionRate = await readContract(config, {
+              abi: valenceVaultABI,
+              address: vault.vaultProxyAddress,
+              functionName: "redemptionRate",
+              args: [],
+            });
+
             let userShares = BigInt(0),
-              vaultPosition = BigInt(0);
+              userPosition = BigInt(0);
             if (address) {
               userShares = await readContract(config, {
                 abi: valenceVaultABI,
@@ -68,7 +94,7 @@ export function useVaultData() {
                 args: [address],
               });
 
-              vaultPosition = await readContract(config, {
+              userPosition = await readContract(config, {
                 abi: valenceVaultABI,
                 address: vault.vaultProxyAddress,
                 functionName: "convertToAssets",
@@ -79,21 +105,44 @@ export function useVaultData() {
             const result: VaultData = {
               decimals: Number(decimals),
               ...vault,
-              tvl: formatTokenAmount(tvl, vault.token, {
-                formatUnits: decimals,
-              }),
-              userShares: formatTokenAmount(userShares, "shares", {
-                formatUnits: decimals,
-              }),
-              userPosition: formatTokenAmount(vaultPosition, vault.token, {
-                formatUnits: decimals,
-              }),
-              apr: vault.apr,
-              ethBalance: ethBalance
-                ? Number(ethBalance.formatted) === 0
-                  ? `0 ${ethBalance.symbol}`
-                  : `${Number(ethBalance.formatted).toFixed(4)} ${ethBalance.symbol}`
-                : "0 ETH",
+              raw: {
+                totalShares: totalShares,
+                tvl: tvl,
+                userShares: userShares,
+                userPosition: userPosition,
+                redemptionRate: redemptionRate,
+                ethBalance: ethBalance?.value ?? BigInt(0),
+              },
+              formatted: {
+                totalShares: formatTokenAmount(totalShares, "shares", {
+                  displayDecimals: 4,
+                  formatUnits: decimals,
+                }),
+                tvl: formatTokenAmount(tvl, vault.token, {
+                  displayDecimals: 4,
+                  formatUnits: decimals,
+                }),
+                userShares: formatTokenAmount(userShares, "shares", {
+                  displayDecimals: 4,
+                  formatUnits: decimals,
+                }),
+                userPosition: formatTokenAmount(userPosition, vault.token, {
+                  displayDecimals: 4,
+                  formatUnits: decimals,
+                }),
+                redemptionRate: formatTokenAmount(redemptionRate, "%", {
+                  displayDecimals: 2,
+                  formatUnits: decimals,
+                }),
+                ethBalance: formatTokenAmount(
+                  ethBalance?.value ?? BigInt(0),
+                  "ETH",
+                  {
+                    displayDecimals: 4,
+                    formatUnits: 18,
+                  },
+                ),
+              },
             };
             return result;
           } catch (error) {

@@ -6,8 +6,9 @@ import { useAccount } from "wagmi";
 import { useState } from "react";
 import { formatHoursToDays, isValidNumberInput } from "@/lib";
 import { useToast } from "@/components";
-import { useMutation } from "@tanstack/react-query";
-
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { QUERY_KEYS } from "@/const";
+import { formatUnits } from "viem";
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { vaults } = useVaultData();
   const { isConnected, address } = useAccount();
@@ -19,11 +20,18 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const {
     depositWithAmount,
     withdrawShares: withdrawSharesFromVault,
-    maxWithdraw,
-    balance,
     userWithdrawRequest,
     completeWithdraw,
+    previewRedeem,
+    previewDeposit,
   } = useVaultContract(vaultData);
+
+  const maxWithdrawFormatted = parseFloat(
+    formatUnits(
+      vaultData?.raw.userShares ?? BigInt(0),
+      vaultData?.decimals ?? 18,
+    ),
+  );
 
   const { tokenBalances, ethBalance } = useTokenBalances({
     address,
@@ -32,6 +40,38 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const vaultTokenBalance = tokenBalances.data?.[0] ?? undefined;
   const tokenBalance = vaultTokenBalance?.balance.formatted ?? "0";
   const tokenSymbol = vaultTokenBalance?.symbol;
+
+  const { data: previewDepositAmount } = useQuery({
+    enabled:
+      !!vaultData?.vaultProxyAddress &&
+      parseFloat(depositAmount) > 0 &&
+      isConnected,
+    staleTime: 0,
+    queryKey: [
+      QUERY_KEYS.VAULT_PREVIEW_DEPOSIT,
+      vaultData?.vaultProxyAddress,
+      depositAmount,
+    ],
+    queryFn: () => {
+      return previewDeposit(depositAmount);
+    },
+  });
+
+  const { data: previewRedeemAmount } = useQuery({
+    enabled:
+      !!vaultData?.vaultProxyAddress &&
+      parseFloat(withdrawShares) > 0 &&
+      isConnected,
+    staleTime: 0,
+    queryKey: [
+      QUERY_KEYS.VAULT_PREVIEW_WITHDRAW,
+      vaultData?.vaultProxyAddress,
+      withdrawShares,
+    ],
+    queryFn: () => {
+      return previewRedeem(withdrawShares);
+    },
+  });
 
   const { mutate: handleDeposit, isPending: isDepositing } = useMutation({
     mutationFn: async () => {
@@ -137,6 +177,20 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       },
     });
 
+  const isWithdrawDisabled =
+    !isConnected ||
+    !withdrawShares ||
+    isWithdrawing ||
+    !maxWithdrawFormatted ||
+    maxWithdrawFormatted === 0 ||
+    parseFloat(withdrawShares) > maxWithdrawFormatted;
+  const isDepositDisabled =
+    !isConnected ||
+    !depositAmount ||
+    isDepositing ||
+    !tokenBalance ||
+    parseFloat(depositAmount) > parseFloat(tokenBalance);
+
   if (!vaultData) {
     return (
       <div className="text-center">
@@ -178,28 +232,28 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
             <dt className="text-base text-black">Your Balance</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {isConnected ? vaultData.userShares : "-"}
+              {isConnected ? vaultData.formatted.userShares : "-"}
             </dd>
           </div>
 
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
             <dt className="text-base text-black">Your Position</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {isConnected ? vaultData.userPosition : "-"}
+              {isConnected ? vaultData.formatted.userPosition : "-"}
             </dd>
           </div>
 
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
             <dt className="text-base text-black">Vault TVL</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {vaultData.tvl}
+              {vaultData.formatted.tvl}
             </dd>
           </div>
 
           <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
-            <dt className="text-base text-black">APR</dt>
+            <dt className="text-base text-black">Redemption Rate</dt>
             <dd className="mt-2 text-2xl font-beast text-secondary">
-              {vaultData.apr}
+              {vaultData.formatted.redemptionRate}
             </dd>
           </div>
         </dl>
@@ -242,8 +296,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 name="depositAmount"
                 aria-label={`Deposit amount in ${tokenSymbol}`}
                 className={`w-full px-4 py-3 text-base text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-0 [border-top-left-radius:0.4rem] [border-bottom-left-radius:0.4rem] transition-shadow ${
-                  depositAmount &&
-                  parseFloat(depositAmount) > parseFloat(tokenBalance || "0")
+                  depositAmount && isDepositDisabled
                     ? "shadow-[inset_0_1px_8px_rgba(255,0,0,0.25)]"
                     : "focus:shadow-[inset_0_1px_8px_rgba(0,145,255,0.25)]"
                 }`}
@@ -265,23 +318,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
 
             <button
               onClick={() => handleDeposit()}
-              disabled={
-                !isConnected ||
-                !depositAmount ||
-                parseFloat(depositAmount || "0") <= 0 ||
-                isDepositing ||
-                !tokenBalance ||
-                parseFloat(depositAmount || "0") >
-                  parseFloat(tokenBalance || "0")
-              }
+              disabled={isDepositDisabled}
               className={`w-full rounded-lg px-8 py-3 text-base font-beast focus:outline-none focus:ring mt-4 ${
-                !isConnected ||
-                !depositAmount ||
-                parseFloat(depositAmount || "0") <= 0 ||
-                isDepositing ||
-                !tokenBalance ||
-                parseFloat(depositAmount || "0") >
-                  parseFloat(tokenBalance || "0")
+                isDepositDisabled
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "bg-accent-purple text-white hover:scale-110 hover:shadow-xl hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all"
               }`}
@@ -291,11 +330,13 @@ export default function VaultPage({ params }: { params: { id: string } }) {
 
             {/* Deposit estimate and warning display */}
             <div className="h-6 mt-4 flex justify-between items-center">
-              {depositAmount && parseFloat(depositAmount) > 0 && (
-                <p className="text-sm text-gray-500">
-                  Balance: {tokenBalance ?? "0"} {tokenSymbol}
-                </p>
-              )}
+              {depositAmount &&
+                previewDepositAmount &&
+                parseFloat(depositAmount) > 0 && (
+                  <p className="text-sm text-gray-500">
+                    ≈ {previewDepositAmount}
+                  </p>
+                )}
               {isConnected &&
                 depositAmount &&
                 tokenBalance &&
@@ -319,10 +360,12 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 </p>
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-gray-500">
-                    Available: {vaultData.userShares ?? `0 shares`}
+                    Available: {vaultData.formatted.userShares ?? `0 shares`}
                   </p>
                   <button
-                    onClick={() => setWithdrawShares(maxWithdraw ?? "0")}
+                    onClick={() =>
+                      setWithdrawShares(maxWithdrawFormatted?.toString() ?? "0")
+                    }
                     disabled={!isConnected}
                     className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
                       isConnected
@@ -345,8 +388,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 aria-label="Withdraw shares amount"
                 className={`w-full px-4 py-3 text-base text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-0 [border-top-left-radius:0.4rem] [border-bottom-left-radius:0.4rem] transition-shadow ${
                   withdrawShares &&
-                  (!maxWithdraw ||
-                    parseFloat(withdrawShares) > parseFloat(maxWithdraw))
+                  parseFloat(withdrawShares) > 0 &&
+                  parseFloat(withdrawShares) > maxWithdrawFormatted
                     ? "shadow-[inset_0_1px_8px_rgba(255,0,0,0.25)]"
                     : "focus:shadow-[inset_0_1px_8px_rgba(0,145,255,0.25)]"
                 }`}
@@ -368,19 +411,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
 
             <button
               onClick={() => handleWithdraw()}
-              disabled={
-                !isConnected ||
-                !withdrawShares ||
-                isWithdrawing ||
-                !maxWithdraw ||
-                maxWithdraw === "0"
-              }
+              disabled={isWithdrawDisabled}
               className={`w-full rounded-lg px-8 py-3 text-base font-beast focus:outline-none focus:ring mt-4 ${
-                !isConnected ||
-                !withdrawShares ||
-                isWithdrawing ||
-                !maxWithdraw ||
-                maxWithdraw === "0"
+                isWithdrawDisabled
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "bg-accent-purple text-white hover:scale-110 hover:shadow-xl hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all"
               }`}
@@ -390,16 +423,25 @@ export default function VaultPage({ params }: { params: { id: string } }) {
 
             {/* Withdraw estimate and warning display */}
             <div className="h-6 mt-4 flex justify-between items-center">
-              {withdrawShares && (
-                <p className="text-sm text-gray-500">
-                  ≈ {balance} {vaultData.token}
-                </p>
-              )}
+              {withdrawShares &&
+                parseFloat(withdrawShares) > 0 &&
+                previewRedeemAmount && (
+                  <p className="text-sm text-gray-500">
+                    ≈ {previewRedeemAmount}
+                  </p>
+                )}
               {isConnected &&
                 withdrawShares &&
-                (!maxWithdraw || maxWithdraw === "0") && (
+                (!maxWithdrawFormatted || maxWithdrawFormatted === 0) && (
                   <p className="text-sm text-secondary">
                     You need vault shares to withdraw
+                  </p>
+                )}{" "}
+              {isConnected &&
+                withdrawShares &&
+                parseFloat(withdrawShares) > maxWithdrawFormatted && (
+                  <p className="text-sm text-secondary">
+                    Insufficient vault balance
                   </p>
                 )}
             </div>

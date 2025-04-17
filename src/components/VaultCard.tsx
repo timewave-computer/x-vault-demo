@@ -42,7 +42,7 @@ export function VaultCard({
 
           <div className="sm:inline-flex sm:shrink-0 sm:items-center sm:gap-2">
             <div className="mt-1.5 sm:mt-0">
-              <p className="text-black">APR</p>
+              <p className="text-black">Redemption Rate</p>
               <p className="text-xl font-beast text-secondary">{apr}</p>
             </div>
           </div>

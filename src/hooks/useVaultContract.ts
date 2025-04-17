@@ -3,12 +3,14 @@ import {
   useAccount,
   usePublicClient,
   useWalletClient,
+  useConfig,
 } from "wagmi";
 import { parseUnits, formatUnits, erc20Abi, BaseError } from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
 import { VaultData } from "@/hooks";
-import { formatTimestampToUTC } from "@/lib";
+import { formatTokenAmount, formatTimestampToUTC } from "@/lib";
+import { readContract } from "@wagmi/core";
 
 /**
  * Hook for interacting with an ERC-4626 vault contract
@@ -267,10 +269,55 @@ export function useVaultContract(vaultData?: VaultData) {
     }
   };
 
+  const config = useConfig();
+
+  const previewRedeem = async (shares: string) => {
+    if (!vaultData) throw new Error("Failed to preview redeem");
+    if (!address) throw new Error("Not connected");
+    if (!walletClient) throw new Error("Wallet not connected");
+    if (!publicClient) throw new Error("Public client not initialized");
+
+    const parsedShares = parseUnits(shares, Number(decimals));
+    const previewAmount = await readContract(config, {
+      abi: valenceVaultABI,
+      functionName: "previewRedeem",
+      address: vaultProxyAddress as Address,
+      args: [parsedShares],
+    });
+
+    return formatTokenAmount(previewAmount, vaultData.token, {
+      displayDecimals: 4,
+      formatUnits: decimals,
+    });
+  };
+
+  const previewDeposit = async (amount: string) => {
+    if (!vaultData) throw new Error("Failed to preview deposit");
+    if (!address) throw new Error("Not connected");
+    if (!walletClient) throw new Error("Wallet not connected");
+    if (!publicClient) throw new Error("Public client not initialized");
+
+    const parsedAmount = parseUnits(amount, Number(decimals));
+    const previewAmount = await readContract(config, {
+      abi: valenceVaultABI,
+      functionName: "previewDeposit",
+      address: vaultProxyAddress as Address,
+      args: [parsedAmount],
+    });
+
+    return formatTokenAmount(previewAmount, "shares", {
+      displayDecimals: 4,
+      formatUnits: decimals,
+    });
+  };
+
   return {
     depositWithAmount,
     withdrawShares,
     completeWithdraw,
+    previewDeposit,
+    previewRedeem,
+
     userWithdrawRequest: {
       withdrawData,
       updateData,
