@@ -23,6 +23,7 @@ export function useVaultContract(vaultData?: VaultData) {
     tokenAddress,
     decimals,
     transactionConfirmationTimeout,
+    startBlock: vaultStartBlock,
   } = vaultData ?? {};
   const { address } = useAccount();
   const publicClient = usePublicClient();
@@ -87,7 +88,6 @@ export function useVaultContract(vaultData?: VaultData) {
         account: address,
       });
 
-      // Then deposit into the vault
       const depositHash = await walletClient.writeContract(depositRequest);
 
       // Wait for deposit to be mined
@@ -184,15 +184,6 @@ export function useVaultContract(vaultData?: VaultData) {
     if (!vaultProxyAddress) throw new Error("Vault address not provided");
 
     try {
-      // Get the current block number
-      const currentBlock = await publicClient.getBlockNumber();
-
-      // Look back 30 days (approximately 172,800 blocks on Ethereum)
-      const _fromBlock = Math.max(Number(currentBlock) - 172800, 0);
-
-      // Convert to number, subtract, then back to BigInt
-      const fromBlock = BigInt(_fromBlock);
-
       // Get logs for Withdraw events
       const logs = await publicClient.getLogs({
         address: vaultProxyAddress as Address,
@@ -208,7 +199,7 @@ export function useVaultContract(vaultData?: VaultData) {
             { type: "uint64", name: "updateId", indexed: false },
           ],
         },
-        fromBlock,
+        fromBlock: vaultStartBlock,
         toBlock: "latest",
         args: {
           owner: address,

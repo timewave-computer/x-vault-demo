@@ -9,6 +9,7 @@ export interface BaseVaultData {
   vaultProxyAddress: `0x${string}`; // All of interaction is done here
   withdrawalLockup: number; // Number of hours to lock up withdrawals
   transactionConfirmationTimeout: number; // Number of milliseconds to wait for a transaction to be mined
+  startBlock: bigint; // Block number during which the vault was deployed
 }
 
 export const BASE_VAULTS: Record<number, BaseVaultData[]> = {
@@ -23,7 +24,8 @@ export const BASE_VAULTS: Record<number, BaseVaultData[]> = {
       tokenAddress: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
       apr: "3.8%",
       withdrawalLockup: 24 * 3, // 3 days,
-      transactionConfirmationTimeout: 60000, // 1 minute
+      transactionConfirmationTimeout: 60000, // 1 minute,
+      startBlock: BigInt(0),
     },
   ],
   31337: [
@@ -38,6 +40,7 @@ export const BASE_VAULTS: Record<number, BaseVaultData[]> = {
       apr: "3.8%",
       withdrawalLockup: 24 * 3, // 3 days
       transactionConfirmationTimeout: 60000, // 1 minute
+      startBlock: BigInt(0),
     },
   ],
 };
