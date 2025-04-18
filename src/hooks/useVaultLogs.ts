@@ -107,7 +107,46 @@ export function useVaultLogs(vaultData?: VaultData) {
         }),
       );
 
-      return { withdrawRequests, processedUpdates };
+      // Get deposit logs
+      const depositLogs = await publicClient.getLogs({
+        address: vaultProxyAddress as Address,
+        event: {
+          type: "event",
+          name: "Deposit",
+          inputs: [
+            { type: "address", name: "sender", indexed: true },
+            { type: "address", name: "owner", indexed: true },
+            { type: "uint256", name: "assets", indexed: false },
+            { type: "uint256", name: "shares", indexed: false },
+          ],
+        },
+        fromBlock: vaultStartBlock,
+        toBlock: "latest",
+      });
+
+      // Process the deposit logs
+      const deposits = depositLogs.map((log) => {
+        const { sender, owner, assets, shares } = log.args as {
+          sender: Address;
+          owner: Address;
+          assets: bigint;
+          shares: bigint;
+        };
+
+        const formattedAssets = formatUnits(assets, decimals ?? 18);
+        const formattedShares = formatUnits(shares, decimals ?? 18);
+
+        return {
+          sender,
+          owner,
+          assets: formattedAssets,
+          shares: formattedShares,
+          transactionHash: log.transactionHash,
+          blockNumber: log.blockNumber,
+        };
+      });
+
+      return { withdrawRequests, processedUpdates, deposits };
     } catch (error) {
       console.error("Failed to fetch pending withdrawals:", error);
       throw new Error("Failed to fetch pending withdrawals");
