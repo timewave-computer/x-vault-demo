@@ -30,6 +30,7 @@ export function useVaultContract(vaultData?: VaultData) {
   const { address } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
+  const config = useConfig();
 
   const { data: hasActiveWithdraw } = useReadContract({
     abi: valenceVaultABI,
@@ -86,8 +87,8 @@ export function useVaultContract(vaultData?: VaultData) {
     };
   }
 
-  // Query user's token balance
-  const { data: balance } = useReadContract({
+  // Query user's vault token balance
+  const { data: tokenBalance, refetch: refetchTokenBalance } = useReadContract({
     abi: erc20Abi,
     functionName: "balanceOf",
     address: tokenAddress as Address,
@@ -95,7 +96,7 @@ export function useVaultContract(vaultData?: VaultData) {
   });
 
   // Query user's vault share balance
-  const { data: shareBalance } = useReadContract({
+  const { data: shareBalance, refetch: refetchShareBalance } = useReadContract({
     abi: valenceVaultABI,
     functionName: "balanceOf",
     address: vaultProxyAddress as Address,
@@ -103,7 +104,7 @@ export function useVaultContract(vaultData?: VaultData) {
   });
 
   // Query maximum withdrawable amount
-  const { data: maxWithdraw } = useReadContract({
+  const { data: maxWithdraw, refetch: refetchMaxWithdraw } = useReadContract({
     abi: valenceVaultABI,
     functionName: "maxWithdraw",
     address: vaultProxyAddress as Address,
@@ -269,8 +270,6 @@ export function useVaultContract(vaultData?: VaultData) {
     }
   };
 
-  const config = useConfig();
-
   const previewRedeem = async (shares: string) => {
     if (!vaultData) throw new Error("Failed to preview redeem");
     if (!address) throw new Error("Not connected");
@@ -309,26 +308,31 @@ export function useVaultContract(vaultData?: VaultData) {
     });
   };
 
+  /**
+   * Refetches all related queries, to use after performing an action
+   */
+  const refetchContractState = () => {
+    refetchWithdrawRequest();
+    refetchUpdateInfo();
+    refetchTokenBalance();
+    refetchShareBalance();
+    refetchMaxWithdraw();
+  };
+
   return {
     depositWithAmount,
     withdrawShares,
     completeWithdraw,
     previewDeposit,
     previewRedeem,
-
+    refetchContractState,
     userWithdrawRequest: {
       withdrawData,
       updateData,
-      refetch: () => {
-        refetchWithdrawRequest();
-        refetchUpdateInfo();
-      },
     },
+    tokenBalance,
     maxWithdraw: maxWithdraw
       ? Number(formatUnits(maxWithdraw, Number(decimals ?? 18))).toFixed(4)
-      : "0",
-    balance: balance
-      ? Number(formatUnits(balance, Number(decimals ?? 18))).toFixed(4)
       : "0",
     shareBalance: shareBalance
       ? Number(formatUnits(shareBalance, Number(decimals ?? 18))).toFixed(4)

@@ -24,6 +24,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     completeWithdraw,
     previewRedeem,
     previewDeposit,
+    refetchContractState,
   } = useVaultContract(vaultData);
 
   const maxWithdrawFormatted = parseFloat(
@@ -123,7 +124,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       });
       tokenBalances.refetch(vaultData?.tokenAddress);
       ethBalance.refetch();
-      userWithdrawRequest.refetch();
+      refetchContractState();
     },
     onError: (err) => {
       if (err instanceof Error) {
@@ -158,7 +159,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         });
         tokenBalances.refetch(vaultData?.tokenAddress);
         ethBalance.refetch();
-        userWithdrawRequest.refetch();
+        refetchContractState();
       },
       onError: (err) => {
         if (err instanceof Error) {
