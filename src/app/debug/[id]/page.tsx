@@ -15,12 +15,12 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const { data: logs } = useQuery({
     enabled: !!vaultData?.vaultProxyAddress,
     queryKey: [QUERY_KEYS.VAULT_LOGS, vaultData?.vaultProxyAddress],
-    refetchInterval: 60000,
+    refetchInterval: 15000, // 15 seconds
     queryFn: async () => {
       return getLogs();
     },
   });
-  const { withdrawRequests, processedUpdates } = logs ?? {};
+  const { withdrawRequests, processedUpdates, deposits } = logs ?? {};
 
   if (!vaultData) {
     return (
@@ -81,14 +81,63 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           </div>
         </dl>
 
-        <dl className="mt-6 grid grid-cols-2 gap-6 ">
+        <dl className="mt-6 grid grid-cols-3 gap-6 ">
+          <div>
+            {deposits && deposits.length > 0 && (
+              <div className="mt-8">
+                <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
+                  <div className="mb-6">
+                    <h3 className="text-lg font-beast text-accent-purple mb-1">
+                      event = Deposit
+                    </h3>
+                  </div>
+                  <div className="space-y-4">
+                    {deposits.map((deposit) => {
+                      return (
+                        <div
+                          key={deposit.transactionHash}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
+                        >
+                          <div className="mb-4 sm:mb-0">
+                            <p className="text-base font-medium text-gray-900">
+                              {deposit.assets} assets
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {deposit.shares} shares minted
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Block:{" "}
+                              <a
+                                href={`https://etherscan.io/block/${deposit.blockNumber}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm opacity-90 hover:underline mt-1"
+                              >
+                                {deposit.blockNumber.toString()}
+                              </a>
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Sender: {deposit.sender}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Owner: {deposit.owner}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
           <div>
             {withdrawRequests && withdrawRequests.length > 0 && (
               <div className="mt-8">
                 <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
                   <div className="mb-6">
                     <h3 className="text-lg font-beast text-accent-purple mb-1">
-                      Withdrawals
+                      event = Withdraw
                     </h3>
                   </div>
                   <div className="space-y-4">
@@ -143,7 +192,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
                   <div className="mb-6">
                     <h3 className="text-lg font-beast text-accent-purple mb-1">
-                      Processed Updates
+                      event = UpdateProcessed
                     </h3>
                   </div>
                   <div className="space-y-4">
@@ -187,7 +236,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                                   )
                                 : "N/A"}
                             </p>
-                            <p className="text-sm text-gray-500 text-wrap break-words">
+                            {/* <p className="text-sm text-gray-500 text-wrap break-words">
                               Transaction:{" "}
                               <a
                                 href={`https://etherscan.io/tx/${update.transactionHash}`}
@@ -197,7 +246,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                               >
                                 {update.transactionHash}
                               </a>
-                            </p>
+                            </p> */}
                           </div>
                         </div>
                       );
