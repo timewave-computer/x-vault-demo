@@ -23,3 +23,21 @@ export function formatBigInt(
 
   return `${formattedValue} ${symbol}`;
 }
+
+export function formatNumber(
+  value: number | undefined = 0,
+  symbol: string,
+  options: {
+    displayDecimals?: number; // fraction precision
+  },
+): string {
+  const formattedValue = value.toFixed(
+    options.displayDecimals ?? defaultDisplayDecimals,
+  );
+
+  if (symbol === "") {
+    return formattedValue;
+  }
+
+  return `${formattedValue} ${symbol}`;
+}

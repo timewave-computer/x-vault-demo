@@ -5,7 +5,7 @@ import { useAccount, useBalance, useConfig } from "wagmi";
 import { type BaseVaultData, BASE_VAULTS, defaultChainId } from "@/config";
 import { valenceVaultABI } from "@/const";
 import { readContract } from "@wagmi/core";
-import { erc20Abi, formatUnits } from "viem";
+import { erc20Abi } from "viem";
 import { formatBigInt } from "@/lib";
 
 export type VaultData = BaseVaultData & {
@@ -173,5 +173,3 @@ export function useVaultData() {
     chainId,
   };
 }
-
-const defaultDisplayDecimals = 4;
