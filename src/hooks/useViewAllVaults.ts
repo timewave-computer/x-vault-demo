@@ -149,7 +149,16 @@ export function useViewAllVaults() {
           .filter((data) => data !== undefined),
         isLoading: results.some((result) => result.isLoading),
         isError: results.some((result) => result.isError),
-        error: results.map((result) => result.error),
+        errors: results.reduce(
+          (acc, result, index) => {
+            // keep info on which vaults are throwing error
+            if (result.isError && vaultsMetadata[index]) {
+              acc[vaultsMetadata[index].id] = result.error;
+            }
+            return acc;
+          },
+          {} as Record<string, unknown>,
+        ),
       };
     },
   });
