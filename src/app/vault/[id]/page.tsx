@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
+import { useViewAllVaults, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
 import { formatHoursToDays, formatNumber, isValidNumberInput } from "@/lib";
@@ -9,12 +9,19 @@ import { useToast } from "@/components";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
 export default function VaultPage({ params }: { params: { id: string } }) {
-  const { vaults } = useVaultData();
   const { isConnected, address } = useAccount();
+  const { showToast } = useToast();
+
+  const {
+    vaults,
+    isLoading: isLoadingVaults,
+    isError: isVaultsError,
+    isPending: isPendingVaults,
+  } = useViewAllVaults();
   const vaultData = vaults?.find((v) => v.id === params.id);
+
   const [depositInput, setDepositInput] = useState("");
   const [withdrawInput, setWithdrawInput] = useState("");
-  const { showToast } = useToast();
 
   const {
     depositWithAmount,
@@ -30,7 +37,12 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     assetBalance,
     tvl,
     redemptionRate,
+    isLoading: isLoadingContract,
+    isError: isContractError,
   } = useVaultContract(vaultData);
+
+  const isLoading = isLoadingVaults || isLoadingContract || isPendingVaults;
+  const isError = isVaultsError || isContractError;
 
   const formattedTvl = formatNumber(tvl, vaultData?.token ?? "", {
     displayDecimals: 4,
@@ -205,7 +217,15 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     !tokenBalance ||
     parseFloat(depositInput) > tokenBalance;
 
-  if (!vaultData) {
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-purple"></div>
+      </div>
+    );
+  } else if (isError) {
+    return <p>Error loading vault data.</p>;
+  } else if (!vaultData) {
     return (
       <div className="text-center">
         <h1 className="text-3xl font-beast text-accent-purple sm:text-4xl">

@@ -2,7 +2,7 @@
 
 import { useBalance, useConfig } from "wagmi";
 import { readContracts } from "@wagmi/core";
-import { erc20Abi } from "viem";
+import { Address, erc20Abi } from "viem";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { QUERY_KEYS } from "@/const";
@@ -11,8 +11,8 @@ export function useTokenBalances({
   address,
   tokenAddresses,
 }: {
-  address: `0x${string}` | undefined;
-  tokenAddresses: `0x${string}`[];
+  address?: Address;
+  tokenAddresses?: Address[];
 }) {
   const config = useConfig();
   const queryClient = useQueryClient();
@@ -26,42 +26,44 @@ export function useTokenBalances({
   });
 
   const tokenBalances = useQueries({
-    queries: tokenAddresses.map((tokenAddress) => ({
-      queryKey: [QUERY_KEYS.TOKEN_BALANCE, address, tokenAddress],
-      enabled: !!address,
-      queryFn: async () => {
-        if (!address) return;
-        const [balance, decimals, symbol] = await readContracts(config, {
-          allowFailure: false,
-          contracts: [
-            {
-              address: tokenAddress,
-              abi: erc20Abi,
-              functionName: "balanceOf",
-              args: [address],
-            },
-            {
-              address: tokenAddress,
-              abi: erc20Abi,
-              functionName: "decimals",
-            },
-            {
-              address: tokenAddress,
-              abi: erc20Abi,
-              functionName: "symbol",
-            },
-          ],
-        });
-        return {
-          balance: {
-            raw: balance,
-            formatted: formatUnits(balance, decimals),
+    queries: !tokenAddresses
+      ? []
+      : tokenAddresses.map((tokenAddress) => ({
+          queryKey: [QUERY_KEYS.TOKEN_BALANCE, address, tokenAddress],
+          enabled: !!address,
+          queryFn: async () => {
+            if (!address) return;
+            const [balance, decimals, symbol] = await readContracts(config, {
+              allowFailure: false,
+              contracts: [
+                {
+                  address: tokenAddress,
+                  abi: erc20Abi,
+                  functionName: "balanceOf",
+                  args: [address],
+                },
+                {
+                  address: tokenAddress,
+                  abi: erc20Abi,
+                  functionName: "decimals",
+                },
+                {
+                  address: tokenAddress,
+                  abi: erc20Abi,
+                  functionName: "symbol",
+                },
+              ],
+            });
+            return {
+              balance: {
+                raw: balance,
+                formatted: formatUnits(balance, decimals),
+              },
+              decimals,
+              symbol,
+            };
           },
-          decimals,
-          symbol,
-        };
-      },
-    })),
+        })),
     combine: (results) => {
       return {
         data: results.map((result) => result.data),

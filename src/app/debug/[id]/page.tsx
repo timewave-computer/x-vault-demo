@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useVaultData, useVaultLogs } from "@/hooks";
+import { useViewAllVaults, useVaultLogs } from "@/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
 import { formatUnits } from "viem";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
-  const { vaults } = useVaultData();
+  const {
+    vaults,
+    isLoading: _isLoading,
+    isError,
+    isPending,
+  } = useViewAllVaults();
   const vaultData = vaults?.find((v) => v.id === params.id);
 
   const { getLogs } = useVaultLogs(vaultData);
@@ -20,9 +25,20 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       return getLogs();
     },
   });
+
   const { withdrawRequests, processedUpdates, deposits } = logs ?? {};
 
-  if (!vaultData) {
+  const isLoading = _isLoading || isPending;
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-purple"></div>
+      </div>
+    );
+  } else if (isError) {
+    return <p>Error loading vault data.</p>;
+  } else if (!vaultData) {
     return (
       <div className="text-center">
         <h1 className="text-3xl font-beast text-accent-purple sm:text-4xl">
