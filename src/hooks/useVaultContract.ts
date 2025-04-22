@@ -186,6 +186,9 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     isLoading: isLoadingUpdateInfo,
     isError: isUpdateInfoError,
   } = useReadContract({
+    query: {
+      enabled: !!withdrawData?.updateId,
+    },
     abi: valenceVaultABI,
     functionName: "updateInfos",
     address: vaultProxyAddress as Address,

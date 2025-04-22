@@ -37,7 +37,10 @@ export default function Home() {
           {!isLoading && isError && <p>Error loading vaults.</p>}
 
           {!isLoading && !isError && vaults.length === 0 ? (
-            <p>No vaults to show for chain ID {chainId}.</p>
+            <p>
+              No vaults to show for chain ID {chainId}. Confirm your wallet is
+              connected to the correct chain.
+            </p>
           ) : (
             vaults.map((vault) => (
               <VaultCard
