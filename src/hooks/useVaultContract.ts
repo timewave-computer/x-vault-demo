@@ -4,6 +4,7 @@ import {
   usePublicClient,
   useWalletClient,
   useConfig,
+  useReadContracts,
 } from "wagmi";
 import { parseUnits, formatUnits, erc20Abi, BaseError } from "viem";
 import { type Address } from "viem";
@@ -20,167 +21,162 @@ import { readContract } from "@wagmi/core";
  * - Depositing assets and withdrawing shares
  * - Viewing pending withdrawals
  */
-export function useVaultContract(vaultData?: VaultData) {
+export function useVaultContract(vaultMetadata?: VaultData) {
   const {
     vaultProxyAddress,
     tokenAddress,
     decimals,
     transactionConfirmationTimeout,
-  } = vaultData ?? {};
+  } = vaultMetadata ?? {};
 
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   const config = useConfig();
 
-  /***
-   * Fetch underlying token information
-   */
-
-  // Query user's token balance
   const {
-    data: tokenBalance,
-    refetch: refetchTokenBalance,
-    isLoading: isLoadingTokenBalance,
-    isError: isTokenBalanceError,
-  } = useReadContract({
-    abi: erc20Abi,
-    functionName: "balanceOf",
-    address: tokenAddress as Address,
-    args: address ? [address] : undefined,
+    data: vaultData,
+    isLoading: isLoadingVaultData,
+    isError: isErrorVaultData,
+    refetch: refetchVaultData,
+  } = useReadContracts({
+    contracts: [
+      {
+        // underlying token decimals
+        abi: erc20Abi,
+        functionName: "decimals",
+        address: tokenAddress as Address,
+      },
+      {
+        // total assetss (tvl)
+        abi: valenceVaultABI,
+        functionName: "totalAssets",
+        address: vaultProxyAddress as Address,
+      },
+      {
+        // redemption rate
+        abi: valenceVaultABI,
+        functionName: "redemptionRate",
+        address: vaultProxyAddress as Address,
+      },
+    ],
   });
 
-  // Query user's token balance
+  let tokenDecimals = undefined;
+  let tvl = undefined;
+  let redemptionRate = undefined;
+  if (vaultData && vaultData.length === 3) {
+    tokenDecimals = vaultData[0].result;
+    tvl = vaultData[1].result;
+    redemptionRate = vaultData[2].result;
+  }
+
   const {
-    data: tokenDecimals,
-    isLoading: isLoadingTokenDecimals,
-    isError: isTokenDecimalsError,
-  } = useReadContract({
-    abi: erc20Abi,
-    functionName: "decimals",
-    address: tokenAddress as Address,
+    data: userData,
+    isLoading: isLoadingUserData,
+    isError: isErrorUserData,
+    refetch: refetchUserData,
+  } = useReadContracts({
+    query: {
+      enabled: isConnected && !!address,
+    },
+    contracts: [
+      {
+        // balance of underlying token
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        address: tokenAddress as Address,
+        args: address ? [address] : undefined,
+      },
+      {
+        // balance of vault shares
+        abi: valenceVaultABI,
+        functionName: "balanceOf",
+        address: vaultProxyAddress as Address,
+        args: address ? [address] : undefined,
+      },
+      {
+        // maximum shares redeemable
+        abi: valenceVaultABI,
+        functionName: "maxRedeem",
+        address: vaultProxyAddress as Address,
+        args: [address as Address],
+      },
+      {
+        // requested a withdrawal
+        abi: valenceVaultABI,
+        functionName: "hasActiveWithdraw",
+        address: vaultProxyAddress as Address,
+        args: [address as Address],
+      }, // withdrawal request if exists
+      {
+        abi: valenceVaultABI,
+        functionName: "userWithdrawRequest",
+        address: vaultProxyAddress as Address,
+        args: [address as Address],
+      },
+    ],
   });
+  let tokenBalance = undefined;
+  let shareBalance = undefined;
+  let maxRedeem = undefined;
+  let hasActiveWithdraw = undefined;
+  let userWithdrawRequest = undefined;
 
-  /***
-   * Fetch general vault information
-   */
+  let withdrawData = null;
 
-  // Query vault total assets
-  const {
-    data: tvl,
-    refetch: refetchTvl,
-    isLoading: isLoadingTvl,
-    isError: isTvlError,
-  } = useReadContract({
-    abi: valenceVaultABI,
-    functionName: "totalAssets",
-    address: vaultProxyAddress as Address,
-  });
+  if (userData?.length && userData.length !== 5) {
+    throw new Error("Failed to fetch user data");
+  }
+  if (userData) {
+    tokenBalance = userData[0].result;
+    shareBalance = userData[1].result;
+    maxRedeem = userData[2].result;
+    hasActiveWithdraw = userData[3].result;
+    userWithdrawRequest = userData[4].result;
 
-  // Query vault total assets
-  const {
-    data: redemptionRate,
-    refetch: refetchRedemptionRate,
-    isLoading: isLoadingRedemptionRate,
-    isError: isRedemptionRateError,
-  } = useReadContract({
-    abi: valenceVaultABI,
-    functionName: "redemptionRate",
-    address: vaultProxyAddress as Address,
-  });
+    if (userWithdrawRequest && userWithdrawRequest?.length === 7) {
+      const [
+        owner,
+        claimTime,
+        maxLossBps,
+        receiver,
+        updateId,
+        solverFee,
+        sharesAmount,
+      ] = userWithdrawRequest;
 
-  /***
-   * Query user specific vault information
-   */
+      withdrawData = {
+        owner,
+        claimTime: claimTime ? formatTimestampToUTC(claimTime) : "N/A",
+        maxLossBps,
+        receiver,
+        updateId,
+        solverFee,
+        sharesAmount:
+          decimals && sharesAmount
+            ? formatUnits(sharesAmount ?? BigInt(0), decimals)
+            : "0",
+      };
+    }
+  }
 
-  // Query user's vault share balance
-  const {
-    data: shareBalance,
-    refetch: refetchShareBalance,
-    isLoading: isLoadingShareBalance,
-    isError: isShareBalanceError,
-  } = useReadContract({
-    abi: valenceVaultABI,
-    functionName: "balanceOf",
-    address: vaultProxyAddress as Address,
-    args: address ? [address] : undefined,
-  });
-
-  // Query user's vault "position" (shares -> assets)
+  //  user's vault "position" (shares -> assets)
+  // depends on user's share balance
   const {
     data: assetBalance,
     refetch: refetchAssetBalance,
     isLoading: isLoadingAssetBalance,
     isError: isAssetBalanceError,
   } = useReadContract({
+    query: {
+      enabled: !!shareBalance,
+    },
     abi: valenceVaultABI,
     functionName: "convertToAssets",
     address: vaultProxyAddress as Address,
-    args: shareBalance ? [shareBalance] : undefined,
+    args: shareBalance ? [shareBalance] : [BigInt(0)],
   });
-
-  // Query maximum redeemable shares
-  const {
-    data: maxRedeem,
-    refetch: refetchMaxRedeem,
-    isLoading: isLoadingMaxRedeem,
-    isError: isMaxRedeemError,
-  } = useReadContract({
-    abi: valenceVaultABI,
-    functionName: "maxRedeem",
-    address: vaultProxyAddress as Address,
-    args: [address as Address],
-  });
-
-  const {
-    data: hasActiveWithdraw,
-    refetch: refetchHasActiveWithdraw,
-    isLoading: isLoadingHasActiveWithdraw,
-    isError: isHasActiveWithdrawError,
-  } = useReadContract({
-    abi: valenceVaultABI,
-    functionName: "hasActiveWithdraw",
-    address: vaultProxyAddress as Address,
-    args: [address as Address],
-  });
-
-  // Query user's pending withdrawal request (if any exist)
-  const {
-    data: withdrawRequest,
-    refetch: refetchWithdrawRequest,
-    isLoading: isLoadingWithdrawRequest,
-    isError: isWithdrawRequestError,
-  } = useReadContract({
-    abi: valenceVaultABI,
-    functionName: "userWithdrawRequest",
-    address: vaultProxyAddress as Address,
-    args: [address as Address],
-  });
-  withdrawRequest;
-  let withdrawData = null;
-  if (withdrawRequest?.length === 7) {
-    const [
-      owner,
-      claimTime,
-      maxLossBps,
-      receiver,
-      updateId,
-      solverFee,
-      sharesAmount,
-    ] = withdrawRequest;
-    withdrawData = {
-      owner,
-      claimTime: claimTime ? formatTimestampToUTC(claimTime) : "N/A",
-      maxLossBps,
-      receiver,
-      updateId,
-      solverFee,
-      sharesAmount:
-        decimals && sharesAmount
-          ? formatUnits(sharesAmount ?? BigInt(0), decimals)
-          : "0",
-    };
-  }
 
   // Query the strategist update info for the withdrawal request
   const {
@@ -207,30 +203,18 @@ export function useVaultContract(vaultData?: VaultData) {
   }
 
   const isLoading =
-    isLoadingTokenBalance ||
-    isLoadingTokenDecimals ||
-    isLoadingTvl ||
-    isLoadingRedemptionRate ||
-    isLoadingShareBalance ||
+    isLoadingVaultData ||
+    isLoadingUserData ||
     isLoadingAssetBalance ||
-    isLoadingMaxRedeem ||
-    isLoadingHasActiveWithdraw ||
-    isLoadingWithdrawRequest ||
     isLoadingUpdateInfo;
 
   const isError =
-    isTokenBalanceError ||
-    isTokenDecimalsError ||
-    isTvlError ||
-    isRedemptionRateError ||
-    isShareBalanceError ||
+    isErrorVaultData ||
+    isErrorUserData ||
     isAssetBalanceError ||
-    isMaxRedeemError ||
-    isHasActiveWithdrawError ||
-    isWithdrawRequestError ||
     isUpdateInfoError;
 
-  /***
+  /**
    * Vault actions
    */
 
@@ -434,15 +418,10 @@ export function useVaultContract(vaultData?: VaultData) {
 
   //Refetch all queries, useful after performing an action
   const refetchContractState = () => {
-    refetchWithdrawRequest();
-    refetchUpdateInfo();
-    refetchTokenBalance();
-    refetchShareBalance();
-    refetchHasActiveWithdraw();
-    refetchMaxRedeem();
+    refetchVaultData();
+    refetchUserData();
     refetchAssetBalance();
-    refetchTvl();
-    refetchRedemptionRate();
+    refetchUpdateInfo();
   };
 
   return {
@@ -462,10 +441,7 @@ export function useVaultContract(vaultData?: VaultData) {
       redemptionRate && decimals
         ? parseFloat(formatUnits(redemptionRate, decimals))
         : 0,
-    tokenBalance:
-      tokenBalance && tokenDecimals
-        ? parseFloat(formatUnits(tokenBalance, tokenDecimals))
-        : 0,
+    tokenBalance: 0,
     maxRedeem:
       maxRedeem && decimals ? parseFloat(formatUnits(maxRedeem, decimals)) : 0,
     shareBalance:
