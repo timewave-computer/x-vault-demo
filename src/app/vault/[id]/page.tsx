@@ -18,7 +18,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     isError: isVaultsError,
     isPending: isPendingVaults,
   } = useViewAllVaults();
-
   const vaultData = vaults?.find((v) => v.id === params.id);
 
   const [depositInput, setDepositInput] = useState("");

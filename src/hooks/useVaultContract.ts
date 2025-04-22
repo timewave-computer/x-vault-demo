@@ -25,9 +25,15 @@ export function useVaultContract(vaultMetadata?: VaultData) {
   const {
     vaultProxyAddress,
     tokenAddress,
-    decimals,
+    tokenDecimals,
+    shareDecimals,
     transactionConfirmationTimeout,
-  } = vaultMetadata ?? {};
+    token: symbol,
+  } = vaultMetadata ?? {
+    tokenDecimals: 18, // reasonable default
+    shareDecimals: 18, // reasonable default
+    token: "",
+  };
 
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
@@ -41,12 +47,6 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     refetch: refetchVaultData,
   } = useReadContracts({
     contracts: [
-      {
-        // underlying token decimals
-        abi: erc20Abi,
-        functionName: "decimals",
-        address: tokenAddress as Address,
-      },
       {
         // total assetss (tvl)
         abi: valenceVaultABI,
@@ -62,13 +62,14 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     ],
   });
 
-  let tokenDecimals = undefined;
-  let tvl = undefined;
-  let redemptionRate = undefined;
-  if (vaultData && vaultData.length === 3) {
-    tokenDecimals = vaultData[0].result;
-    tvl = vaultData[1].result;
-    redemptionRate = vaultData[2].result;
+  let tvl: bigint | undefined = undefined;
+  let redemptionRate: bigint | undefined = undefined;
+  if (vaultData && vaultData.length !== 2) {
+    throw new Error("Failed to fetch vault data");
+  }
+  if (vaultData) {
+    tvl = vaultData[0].result;
+    redemptionRate = vaultData[1].result;
   }
 
   const {
@@ -154,8 +155,8 @@ export function useVaultContract(vaultMetadata?: VaultData) {
         updateId,
         solverFee,
         sharesAmount:
-          decimals && sharesAmount
-            ? formatUnits(sharesAmount ?? BigInt(0), decimals)
+          shareDecimals && sharesAmount
+            ? formatUnits(sharesAmount ?? BigInt(0), shareDecimals)
             : "0",
       };
     }
@@ -196,7 +197,9 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     const [withdrawRate, timestamp, withdrawFee] = updateInfoRequest;
     updateData = {
       withdrawRate:
-        decimals && withdrawRate ? formatUnits(withdrawRate, decimals) : "0",
+        shareDecimals && withdrawRate
+          ? formatUnits(withdrawRate, shareDecimals)
+          : "0",
       timestamp: formatTimestampToUTC(timestamp),
       withdrawFee: withdrawFee.toString(),
     };
@@ -226,7 +229,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     if (!publicClient) throw new Error("Public client not initialized");
 
     try {
-      const parsedAmount = parseUnits(amount, Number(decimals));
+      const parsedAmount = parseUnits(amount, Number(tokenDecimals));
 
       // approve vault to spend tokens
       const { request: approveRequest } = await publicClient.simulateContract({
@@ -287,7 +290,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     if (!shareBalance) throw new Error("No shares to withdraw");
 
     try {
-      const parsedShares = parseUnits(shares, Number(decimals));
+      const parsedShares = parseUnits(shares, Number(shareDecimals));
 
       // approve the vault to spend vault shares (shares owned by user)
       const { request: approveRequest } = await publicClient.simulateContract({
@@ -383,7 +386,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     if (!walletClient) throw new Error("Wallet not connected");
     if (!publicClient) throw new Error("Public client not initialized");
 
-    const parsedAmount = parseUnits(amount, Number(decimals));
+    const parsedAmount = parseUnits(amount, Number(tokenDecimals));
     const previewAmount = await readContract(config, {
       abi: valenceVaultABI,
       functionName: "previewDeposit",
@@ -391,7 +394,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       args: [parsedAmount],
     });
 
-    return formatBigInt(previewAmount, vaultData.decimals, "shares", {
+    return formatBigInt(previewAmount, shareDecimals, "shares", {
       displayDecimals: 4,
     });
   };
@@ -403,7 +406,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     if (!walletClient) throw new Error("Wallet not connected");
     if (!publicClient) throw new Error("Public client not initialized");
 
-    const parsedShares = parseUnits(shares, Number(decimals));
+    const parsedShares = parseUnits(shares, Number(shareDecimals));
     const previewAmount = await readContract(config, {
       abi: valenceVaultABI,
       functionName: "previewRedeem",
@@ -411,7 +414,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       args: [parsedShares],
     });
 
-    return formatBigInt(previewAmount, vaultData.decimals, vaultData.token, {
+    return formatBigInt(previewAmount, tokenDecimals, symbol, {
       displayDecimals: 4,
     });
   };
@@ -436,22 +439,20 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       ...withdrawData,
       ...updateData,
     },
-    tvl: tvl && decimals ? parseFloat(formatUnits(tvl, decimals)) : 0,
-    redemptionRate:
-      redemptionRate && decimals
-        ? parseFloat(formatUnits(redemptionRate, decimals))
-        : 0,
+    tvl: tvl ? parseFloat(formatUnits(tvl, tokenDecimals)) : 0,
+    redemptionRate: redemptionRate
+      ? parseFloat(formatUnits(redemptionRate, shareDecimals))
+      : 0,
     tokenBalance: 0,
-    maxRedeem:
-      maxRedeem && decimals ? parseFloat(formatUnits(maxRedeem, decimals)) : 0,
-    shareBalance:
-      shareBalance && decimals
-        ? parseFloat(formatUnits(shareBalance ?? BigInt(0), decimals))
-        : 0,
-    assetBalance:
-      assetBalance && decimals
-        ? parseFloat(formatUnits(assetBalance ?? BigInt(0), decimals))
-        : 0,
+    maxRedeem: maxRedeem
+      ? parseFloat(formatUnits(maxRedeem, shareDecimals))
+      : 0,
+    shareBalance: shareBalance
+      ? parseFloat(formatUnits(shareBalance ?? BigInt(0), shareDecimals))
+      : 0,
+    assetBalance: assetBalance
+      ? parseFloat(formatUnits(assetBalance ?? BigInt(0), tokenDecimals))
+      : 0,
     isLoading,
     isError,
   };

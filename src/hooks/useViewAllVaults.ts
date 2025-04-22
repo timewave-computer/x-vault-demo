@@ -14,7 +14,8 @@ import { formatBigInt } from "@/lib";
 import { useQueries } from "@tanstack/react-query";
 
 export type VaultData = VaultMetadata & {
-  decimals: number;
+  tokenDecimals: number;
+  shareDecimals: number;
   raw: {
     totalShares: bigint;
     userShares: bigint;
@@ -60,6 +61,12 @@ export function useViewAllVaults() {
             args: [],
           },
           {
+            abi: valenceVaultABI,
+            address: vault.vaultProxyAddress,
+            functionName: "decimals",
+            args: [],
+          },
+          {
             // tvl
             abi: valenceVaultABI,
             address: vault.vaultProxyAddress,
@@ -81,19 +88,21 @@ export function useViewAllVaults() {
           },
         ],
       });
-      let decimals: number = 18; // reasonable default
+      let tokenDecimals: number = 18; // reasonable default
+      let shareDecimals: number = 18; // reasonable default
       let tvl: bigint | undefined = undefined;
       let totalShares: bigint | undefined = undefined;
       let redemptionRate: bigint | undefined = undefined;
 
-      if (generalVaultData.length !== 4) {
+      if (generalVaultData.length !== 5) {
         throw new Error("Failed to fetch general vault data");
       }
       if (generalVaultData) {
-        decimals = generalVaultData[0].result ?? 18; // reasonable default
-        tvl = generalVaultData[1].result;
-        totalShares = generalVaultData[2].result;
-        redemptionRate = generalVaultData[3].result;
+        tokenDecimals = generalVaultData[0].result ?? 18; // reasonable default
+        shareDecimals = generalVaultData[1].result ?? 18; // reasonable default
+        tvl = generalVaultData[2].result;
+        totalShares = generalVaultData[3].result;
+        redemptionRate = generalVaultData[4].result;
       }
 
       let userShares = BigInt(0),
@@ -115,7 +124,8 @@ export function useViewAllVaults() {
       }
 
       const result: VaultData = {
-        decimals: Number(decimals),
+        tokenDecimals,
+        shareDecimals,
         ...vault,
         raw: {
           totalShares: totalShares ?? BigInt(0),
@@ -125,19 +135,19 @@ export function useViewAllVaults() {
           redemptionRate: redemptionRate ?? BigInt(0),
         },
         formatted: {
-          totalShares: formatBigInt(totalShares, decimals, "shares", {
+          totalShares: formatBigInt(totalShares, shareDecimals, "shares", {
             displayDecimals: 4,
           }),
-          tvl: formatBigInt(tvl, decimals, vault.token, {
+          tvl: formatBigInt(tvl, tokenDecimals, vault.token, {
             displayDecimals: 4,
           }),
-          userShares: formatBigInt(userShares, decimals, "shares", {
+          userShares: formatBigInt(userShares, shareDecimals, "shares", {
             displayDecimals: 4,
           }),
-          userPosition: formatBigInt(userPosition, decimals, vault.token, {
+          userPosition: formatBigInt(userPosition, tokenDecimals, vault.token, {
             displayDecimals: 4,
           }),
-          redemptionRate: formatBigInt(redemptionRate, decimals, "%", {
+          redemptionRate: formatBigInt(redemptionRate, shareDecimals, "%", {
             displayDecimals: 2,
           }),
         },
