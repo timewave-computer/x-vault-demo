@@ -239,7 +239,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                               {update.args?.withdrawRate
                                 ? formatUnits(
                                     update.args.withdrawRate,
-                                    vaultData?.decimals ?? 18,
+                                    vaultData?.shareDecimals ?? 18,
                                   )
                                 : "N/A"}
                             </p>
@@ -248,7 +248,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                               {update.args?.totalAssetsToWithdraw
                                 ? formatUnits(
                                     update.args.totalAssetsToWithdraw,
-                                    vaultData?.decimals ?? 18,
+                                    vaultData?.tokenDecimals ?? 18,
                                   )
                                 : "N/A"}
                             </p>

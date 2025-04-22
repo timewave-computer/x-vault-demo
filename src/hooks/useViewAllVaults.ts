@@ -8,13 +8,14 @@ import {
   getVaultsMetadata,
 } from "@/config";
 import { QUERY_KEYS, valenceVaultABI } from "@/const";
-import { readContract } from "@wagmi/core";
+import { readContract, readContracts } from "@wagmi/core";
 import { erc20Abi } from "viem";
 import { formatBigInt } from "@/lib";
 import { useQueries } from "@tanstack/react-query";
 
 export type VaultData = VaultMetadata & {
-  decimals: number;
+  tokenDecimals: number;
+  shareDecimals: number;
   raw: {
     totalShares: bigint;
     userShares: bigint;
@@ -51,33 +52,58 @@ export function useViewAllVaults() {
   // fetches vault data for a single vault
   const fetchVaultData = useCallback(
     async (vault: VaultMetadata) => {
-      const decimals = await readContract(config, {
-        abi: erc20Abi,
-        address: vault.tokenAddress,
-        functionName: "decimals",
-        args: [],
+      const generalVaultData = await readContracts(config, {
+        contracts: [
+          {
+            abi: erc20Abi,
+            address: vault.tokenAddress,
+            functionName: "decimals",
+            args: [],
+          },
+          {
+            abi: valenceVaultABI,
+            address: vault.vaultProxyAddress,
+            functionName: "decimals",
+            args: [],
+          },
+          {
+            // tvl
+            abi: valenceVaultABI,
+            address: vault.vaultProxyAddress,
+            functionName: "totalAssets",
+            args: [],
+          },
+          {
+            // total shares
+            abi: valenceVaultABI,
+            address: vault.vaultProxyAddress,
+            functionName: "totalSupply",
+            args: [],
+          },
+          {
+            abi: valenceVaultABI,
+            address: vault.vaultProxyAddress,
+            functionName: "redemptionRate",
+            args: [],
+          },
+        ],
       });
+      let tokenDecimals: number = 18; // reasonable default
+      let shareDecimals: number = 18; // reasonable default
+      let tvl: bigint | undefined = undefined;
+      let totalShares: bigint | undefined = undefined;
+      let redemptionRate: bigint | undefined = undefined;
 
-      const tvl = await readContract(config, {
-        abi: valenceVaultABI,
-        address: vault.vaultProxyAddress,
-        functionName: "totalAssets",
-        args: [],
-      });
-
-      const totalShares = await readContract(config, {
-        abi: valenceVaultABI,
-        address: vault.vaultProxyAddress,
-        functionName: "totalSupply",
-        args: [],
-      });
-
-      const redemptionRate = await readContract(config, {
-        abi: valenceVaultABI,
-        address: vault.vaultProxyAddress,
-        functionName: "redemptionRate",
-        args: [],
-      });
+      if (generalVaultData.length !== 5) {
+        throw new Error("Failed to fetch general vault data");
+      }
+      if (generalVaultData) {
+        tokenDecimals = generalVaultData[0].result ?? 18; // reasonable default
+        shareDecimals = generalVaultData[1].result ?? 18; // reasonable default
+        tvl = generalVaultData[2].result;
+        totalShares = generalVaultData[3].result;
+        redemptionRate = generalVaultData[4].result;
+      }
 
       let userShares = BigInt(0),
         userPosition = BigInt(0);
@@ -98,29 +124,30 @@ export function useViewAllVaults() {
       }
 
       const result: VaultData = {
-        decimals: Number(decimals),
+        tokenDecimals,
+        shareDecimals,
         ...vault,
         raw: {
-          totalShares: totalShares,
-          tvl: tvl,
-          userShares: userShares,
-          userPosition: userPosition,
-          redemptionRate: redemptionRate,
+          totalShares: totalShares ?? BigInt(0),
+          tvl: tvl ?? BigInt(0),
+          userShares: userShares ?? BigInt(0),
+          userPosition: userPosition ?? BigInt(0),
+          redemptionRate: redemptionRate ?? BigInt(0),
         },
         formatted: {
-          totalShares: formatBigInt(totalShares, decimals, "shares", {
+          totalShares: formatBigInt(totalShares, shareDecimals, "shares", {
             displayDecimals: 4,
           }),
-          tvl: formatBigInt(tvl, decimals, vault.token, {
+          tvl: formatBigInt(tvl, tokenDecimals, vault.token, {
             displayDecimals: 4,
           }),
-          userShares: formatBigInt(userShares, decimals, "shares", {
+          userShares: formatBigInt(userShares, shareDecimals, "shares", {
             displayDecimals: 4,
           }),
-          userPosition: formatBigInt(userPosition, decimals, vault.token, {
+          userPosition: formatBigInt(userPosition, tokenDecimals, vault.token, {
             displayDecimals: 4,
           }),
-          redemptionRate: formatBigInt(redemptionRate, decimals, "%", {
+          redemptionRate: formatBigInt(redemptionRate, shareDecimals, "%", {
             displayDecimals: 2,
           }),
         },
@@ -136,6 +163,7 @@ export function useViewAllVaults() {
     isError,
   } = useQueries({
     queries: vaultsMetadata.map((vaultMetadata) => ({
+      refetchInterval: 30000, // 30 seconds
       enabled: !!vaultMetadata,
       queryKey: [QUERY_KEYS.VAULT_DATA, vaultMetadata.id, address],
       queryFn: async () => {
@@ -143,23 +171,21 @@ export function useViewAllVaults() {
       },
     })),
     combine: (results) => {
-      return {
+      const _errors = results
+        .filter((result) => result.isError)
+        .map((result) => result.error);
+      const combinedResults = {
         data: results
           .flatMap((result) => result.data)
           .filter((data) => data !== undefined),
         isLoading: results.some((result) => result.isLoading),
         isError: results.some((result) => result.isError),
-        errors: results.reduce(
-          (acc, result, index) => {
-            // keep info on which vaults are throwing error
-            if (result.isError && vaultsMetadata[index]) {
-              acc[vaultsMetadata[index].id] = result.error;
-            }
-            return acc;
-          },
-          {} as Record<string, unknown>,
-        ),
+        errors: _errors.length > 0 ? _errors : undefined,
       };
+      if (combinedResults.errors) {
+        console.error("Error fetching vault data", combinedResults.errors);
+      }
+      return combinedResults;
     },
   });
 

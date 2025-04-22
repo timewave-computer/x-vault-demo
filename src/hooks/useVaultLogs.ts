@@ -10,7 +10,8 @@ import { formatTimestampToUTC } from "@/lib";
 export function useVaultLogs(vaultData?: VaultData) {
   const {
     vaultProxyAddress,
-    decimals,
+    tokenDecimals,
+    shareDecimals,
     startBlock: vaultStartBlock,
   } = vaultData ?? {};
   const publicClient = usePublicClient();
@@ -69,7 +70,7 @@ export function useVaultLogs(vaultData?: VaultData) {
               owner: Address;
             };
 
-          const formattedShares = formatUnits(shares, decimals ?? 18);
+          const formattedShares = formatUnits(shares, shareDecimals ?? 18);
           const formattedMaxLossBps = Number(maxLossBps).toString();
 
           const updateInfos = await readContract(config, {
@@ -97,7 +98,7 @@ export function useVaultLogs(vaultData?: VaultData) {
             receiver: log.args.receiver,
             transactionHash: log.transactionHash,
             blockNumber: log.blockNumber,
-            withdrawRate: formatUnits(withdrawRate, decimals ?? 18),
+            withdrawRate: formatUnits(withdrawRate, shareDecimals ?? 18),
             updateTimestamp: timestamp
               ? formatTimestampToUTC(timestamp)
               : "N/A",
@@ -133,8 +134,8 @@ export function useVaultLogs(vaultData?: VaultData) {
           shares: bigint;
         };
 
-        const formattedAssets = formatUnits(assets, decimals ?? 18);
-        const formattedShares = formatUnits(shares, decimals ?? 18);
+        const formattedAssets = formatUnits(assets, tokenDecimals ?? 18);
+        const formattedShares = formatUnits(shares, shareDecimals ?? 18);
 
         return {
           sender,
