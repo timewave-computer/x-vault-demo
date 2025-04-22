@@ -172,8 +172,8 @@ export function useViewAllVaults() {
     })),
     combine: (results) => {
       const _errors = results
-        .map((result) => result.isError)
-        .filter((error) => !!error);
+        .filter((result) => result.isError)
+        .map((result) => result.error);
       const combinedResults = {
         data: results
           .flatMap((result) => result.data)

@@ -443,7 +443,9 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     redemptionRate: redemptionRate
       ? parseFloat(formatUnits(redemptionRate, shareDecimals))
       : 0,
-    tokenBalance: 0,
+    tokenBalance: tokenBalance
+      ? parseFloat(formatUnits(tokenBalance ?? BigInt(0), tokenDecimals))
+      : 0,
     maxRedeem: maxRedeem
       ? parseFloat(formatUnits(maxRedeem, shareDecimals))
       : 0,
