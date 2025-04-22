@@ -3,7 +3,7 @@
 import { useAccount, useDisconnect } from "wagmi";
 import { useState, useEffect, Fragment } from "react";
 import { useAppKit } from "@/components";
-import { useTokenBalances, useVaultData } from "@/hooks";
+import { useTokenBalances, useViewAllVaults } from "@/hooks";
 
 /**
  * Utility function to format an Ethereum address for display
@@ -37,7 +37,7 @@ export function ConnectButton() {
   const [mounted, setMounted] = useState(false);
   const { address, isConnected } = useAccount();
   const { disconnect } = useDisconnect();
-  const { vaults } = useVaultData();
+  const { vaults } = useViewAllVaults();
   const appKit = useAppKit();
 
   // Extract unique token addresses from vaults

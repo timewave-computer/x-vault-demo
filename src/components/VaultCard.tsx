@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { VaultData } from "@/hooks/useVaultData";
+import type { VaultData } from "@/hooks";
 
 interface VaultCardProps extends VaultData {
   isConnected: boolean;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useVaultData, useVaultContract, useTokenBalances } from "@/hooks";
+import { useViewAllVaults, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
 import { formatHoursToDays, formatNumber, isValidNumberInput } from "@/lib";
@@ -9,12 +9,14 @@ import { useToast } from "@/components";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
 export default function VaultPage({ params }: { params: { id: string } }) {
-  const { vaults } = useVaultData();
   const { isConnected, address } = useAccount();
+  const { showToast } = useToast();
+
+  const { vaults } = useViewAllVaults();
   const vaultData = vaults?.find((v) => v.id === params.id);
+
   const [depositInput, setDepositInput] = useState("");
   const [withdrawInput, setWithdrawInput] = useState("");
-  const { showToast } = useToast();
 
   const {
     depositWithAmount,

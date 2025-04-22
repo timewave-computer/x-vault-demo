@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useVaultData, useVaultLogs } from "@/hooks";
+import { useViewAllVaults, useVaultLogs } from "@/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
 import { formatUnits } from "viem";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
-  const { vaults } = useVaultData();
+  const { vaults } = useViewAllVaults();
   const vaultData = vaults?.find((v) => v.id === params.id);
 
   const { getLogs } = useVaultLogs(vaultData);
