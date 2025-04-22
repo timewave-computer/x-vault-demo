@@ -17,7 +17,7 @@ const tenantId = process.env.NEXT_PUBLIC_TENANT_ID ?? defaultTenantId;
 
 // all vaults metadata for a given chain
 export const getVaultsMetadata = (chainId: number) => {
-  return BASE_VAULT_METADATA[tenantId][chainId];
+  return BASE_VAULT_METADATA[tenantId]?.[chainId] ?? [];
 };
 
 // vault metadata for a given chain and vault id
