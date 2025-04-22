@@ -155,8 +155,8 @@ export function useViewAllVaults() {
   });
 
   return {
-    isLoading,
-
+    isLoading: isLoading,
+    isPending: !chainId, // need to wait to chainId to be set in client to trigger fetch
     isError,
     vaults,
     chainId,

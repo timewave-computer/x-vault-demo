@@ -5,8 +5,15 @@ import { useViewAllVaults } from "@/hooks";
 import { useAccount } from "wagmi";
 export default function Home() {
   const { isConnected } = useAccount();
-  const { vaults, chainId, isLoading, isError, isPending } = useViewAllVaults();
+  const {
+    vaults,
+    chainId,
+    isLoading: _isLoading,
+    isError,
+    isPending,
+  } = useViewAllVaults();
 
+  const isLoading = _isLoading || isPending;
   return (
     <div className="relative">
       {/* Content */}
