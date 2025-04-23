@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useViewAllVaults, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
-import { formatHoursToDays, formatNumber, isValidNumberInput } from "@/lib";
+import { formatNumber, isValidNumberInput } from "@/lib";
 import { useToast } from "@/components";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
+import { Button } from "@/components";
+
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { isConnected, address } = useAccount();
   const { showToast } = useToast();
@@ -145,7 +147,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       setWithdrawInput("");
       showToast({
         title: "Withdraw initiation submitted",
-        description: `This vault has a withdraw fullfillment period of ${formatHoursToDays(vaultData?.withdrawalLockup ?? 0)} days. After this time, you can claim your tokens.`,
+        description: "Assets will be claimable after the unbonding period.",
         type: "success",
         txHash: hash,
       });
@@ -253,12 +255,18 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             <h1 className="text-3xl font-beast text-primary sm:text-4xl">
               {vaultData.name}
             </h1>
-            <p className="mt-1.5 text-base text-gray-500">
-              {vaultData.description}
-            </p>
-            <p className="mt-1 text-sm text-gray-400 font-mono">
-              Contract: {vaultData.vaultProxyAddress}
-            </p>
+            <div className="flex flex-col gap-1 mt-1.5 text-base text-gray-500">
+              <p className=" ">{vaultData.description}</p>
+
+              <a
+                href={`https://etherscan.io/address/${vaultData.vaultProxyAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className=" hover:underline"
+              >
+                {vaultData.vaultProxyAddress}
+              </a>
+            </div>
           </div>
         </div>
 
@@ -305,19 +313,16 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   <p className="text-sm text-gray-500">
                     Available: {`${tokenBalance ?? 0} ${tokenSymbol}`}
                   </p>
-                  <button
+                  <Button
                     onClick={() =>
                       tokenBalance && setDepositInput(tokenBalance.toString())
                     }
                     disabled={!isConnected}
-                    className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
-                      isConnected
-                        ? "text-white bg-primary hover:bg-primary-hover"
-                        : "text-gray-400 bg-gray-200 cursor-not-allowed"
-                    }`}
+                    variant="secondary"
+                    size="sm"
                   >
                     MAX
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -350,17 +355,16 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               </div>
             </div>
 
-            <button
+            <Button
+              className="mt-4"
               onClick={() => handleDeposit()}
               disabled={isDepositDisabled}
-              className={`w-full rounded-lg px-8 py-3 text-base font-beast focus:outline-none focus:ring mt-4 ${
-                isDepositDisabled
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-accent-purple text-white hover:scale-110 hover:shadow-xl hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all"
-              }`}
+              variant="primary"
+              fullWidth
+              isLoading={isDepositing}
             >
               {isDepositing ? "Confirm in Wallet..." : "Deposit"}
-            </button>
+            </Button>
 
             {/* Deposit estimate and warning display */}
             <div className="h-6 mt-4 flex justify-between items-center">
@@ -396,19 +400,16 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   <p className="text-sm text-gray-500">
                     Available: {shareBalanceFormatted ?? `0 shares`}
                   </p>
-                  <button
+                  <Button
                     onClick={() =>
                       setWithdrawInput(maxRedeem?.toString() ?? "0")
                     }
                     disabled={!isConnected}
-                    className={`px-2 py-1 text-sm font-medium rounded transition-colors ${
-                      isConnected
-                        ? "text-white bg-primary hover:bg-primary-hover"
-                        : "text-gray-400 bg-gray-200 cursor-not-allowed"
-                    }`}
+                    variant="secondary"
+                    size="sm"
                   >
                     MAX
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -443,17 +444,16 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               </div>
             </div>
 
-            <button
+            <Button
+              className="mt-4"
               onClick={() => handleWithdraw()}
               disabled={isWithdrawDisabled}
-              className={`w-full rounded-lg px-8 py-3 text-base font-beast focus:outline-none focus:ring mt-4 ${
-                isWithdrawDisabled
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-accent-purple text-white hover:scale-110 hover:shadow-xl hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all"
-              }`}
+              variant="primary"
+              fullWidth
+              isLoading={isWithdrawing}
             >
               {isWithdrawing ? "Confirm in Wallet..." : "Initiate Withdraw"}
-            </button>
+            </Button>
 
             {/* Withdraw estimate and warning display */}
             <div className="h-6 mt-4 flex justify-between items-center">
@@ -491,49 +491,31 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 </h3>
                 <p className="text-sm text-gray-500">
                   Complete your pending withdrawal to receive your tokens.
-                </p>
-                <p className="text-sm text-gray-500">
-                  This vault has a withdrawal fulfillment period of{" "}
-                  {formatHoursToDays(vaultData?.withdrawalLockup ?? 0)} days.
-                  You must wait this period after initiating a withdrawal before
-                  you can complete it.
+                  Assets will be claimable after the unbonding period.
                 </p>
               </div>
 
               <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white w-1/2 rounded-lg border border-gray-200">
                   <div className="mb-4 sm:mb-0">
                     <p className="text-base font-medium text-gray-900">
-                      {pendingWithdrawal.sharesAmount} shares
+                      {pendingWithdrawal.sharesAmount} shares at{" "}
+                      {pendingWithdrawal?.withdrawRate}%
                     </p>
 
-                    <p className="text-sm text-gray-500">
-                      Owner: {pendingWithdrawal.owner}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Update ID: {pendingWithdrawal.updateId}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Withdraw rate: {pendingWithdrawal?.withdrawRate}
-                    </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 mt-2">
                       Claimable after: {pendingWithdrawal.claimTime}
                     </p>
                   </div>
-                  <button
-                    onClick={() => handleCompleteWithdraw()}
-                    disabled={!isConnected || isCompletingWithdraw}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                      !isConnected || isCompletingWithdraw
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-accent-purple text-white hover:bg-accent-purple-hover active:bg-accent-purple-active transition-all"
-                    }`}
-                  >
-                    {isCompletingWithdraw
-                      ? "Processing..."
-                      : "Complete Withdraw"}
-                  </button>
                 </div>
+                <Button
+                  onClick={() => handleCompleteWithdraw()}
+                  // disabled={!isConnected || isCompletingWithdraw || !pendingWithdrawal.isClaimable}
+                  variant="primary"
+                  isLoading={isCompletingWithdraw}
+                >
+                  {isCompletingWithdraw ? "Processing..." : "Complete Withdraw"}
+                </Button>
               </div>
             </div>
           </div>

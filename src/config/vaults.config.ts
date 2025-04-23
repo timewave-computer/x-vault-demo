@@ -6,7 +6,6 @@ export interface VaultMetadata {
   tokenAddress: `0x${string}`; // Contract address of the token
   vaultAddress: `0x${string}`; // Added for reference, not used by app
   vaultProxyAddress: `0x${string}`; // All of interaction is done here
-  withdrawalLockup: number; // Number of hours to lock up withdrawals
   transactionConfirmationTimeout: number; // Number of milliseconds to wait for a transaction to be mined
   startBlock: bigint; // Block number during which the vault was deployed
 }
@@ -40,7 +39,6 @@ const BASE_VAULT_METADATA: Record<string, Record<number, VaultMetadata[]>> = {
         vaultAddress: "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
         vaultProxyAddress: "0x9A676e781A523b5d0C0e43731313A708CB607508",
         tokenAddress: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-        withdrawalLockup: 24 * 3, // 3 days
         transactionConfirmationTimeout: 60000, // 1 minute
         startBlock: BigInt(0),
       },
