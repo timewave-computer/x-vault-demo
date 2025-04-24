@@ -2,6 +2,17 @@ export const formatHoursToDays = (hours: number) => {
   return Math.floor(hours / 24);
 };
 
+// converts a bigint to a unix timestamp in milliseconds example: 1745518813154
+export const formatBigIntToTimestamp = (timestamp: bigint) => {
+  // convert bigint to number and multiply by 1000 to get milliseconds
+  return Number(timestamp) * 1000;
+};
+
+// returns unix timestamp in milliseconds example: 1745518813154
+export const dateToUnixTimestamp = (date: Date): number => {
+  return Math.floor(date.getTime());
+};
+
 /**
  * Converts a BigInt Unix timestamp to a date string
  * @param timestamp - The BigInt Unix timestamp (in seconds)
@@ -9,14 +20,15 @@ export const formatHoursToDays = (hours: number) => {
  * @param timezone - Optional timezone (default: 'local', can be 'UTC')
  * @returns Formatted date string
  */
-export const formatUnixTimestamp = (
-  timestamp: bigint | undefined,
+export const unixTimestampToDateString = (
+  timestamp: number | undefined,
   format: "toLocaleString" | "toISOString" | "toUTCString" = "toLocaleString",
 ): string => {
   if (!timestamp) return "N/A";
 
   // Convert BigInt to number and multiply by 1000 to get milliseconds
-  const date = new Date(Number(timestamp) * 1000);
+  const date = new Date(timestamp);
+
   const timeZoneName = new Intl.DateTimeFormat("en-US", {
     timeZoneName: "short",
   })
@@ -44,8 +56,4 @@ export const formatUnixTimestamp = (
         second: "2-digit",
       })} ${timeZoneName}`;
   }
-};
-
-export const dateToUnixTimestamp = (date: Date) => {
-  return Math.floor(date.getTime());
 };

@@ -5,7 +5,7 @@ import { VaultData } from "@/hooks";
 import { Address } from "viem";
 import { valenceVaultABI } from "@/const";
 import { readContract } from "wagmi/actions";
-import { formatUnixTimestamp } from "@/lib";
+import { unixTimestampToDateString } from "@/lib";
 
 export function useVaultLogs(vaultData?: VaultData) {
   const {
@@ -100,11 +100,11 @@ export function useVaultLogs(vaultData?: VaultData) {
             blockNumber: log.blockNumber,
             withdrawRate: formatUnits(withdrawRate, shareDecimals ?? 18),
             updateTimestamp: timestamp
-              ? formatUnixTimestamp(timestamp, "toUTCString")
+              ? unixTimestampToDateString(timestamp, "toUTCString")
               : "N/A",
             withdrawFee,
             claimTime: claimTime
-              ? formatUnixTimestamp(claimTime, "toUTCString")
+              ? unixTimestampToDateString(claimTime, "toUTCString")
               : "N/A",
           };
         }),

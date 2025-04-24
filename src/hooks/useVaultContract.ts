@@ -10,7 +10,11 @@ import { parseUnits, formatUnits, erc20Abi, BaseError } from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
 import { VaultData } from "@/hooks";
-import { dateToUnixTimestamp, formatBigInt, formatUnixTimestamp } from "@/lib";
+import {
+  formatBigInt,
+  formatBigIntToTimestamp,
+  unixTimestampToDateString,
+} from "@/lib";
 import { readContract } from "@wagmi/core";
 
 /**
@@ -139,7 +143,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     if (userWithdrawRequest && userWithdrawRequest?.length === 7) {
       const [
         owner,
-        claimTime,
+        _claimTime, // bigint
         maxLossBps,
         receiver,
         updateId,
@@ -147,13 +151,14 @@ export function useVaultContract(vaultMetadata?: VaultData) {
         sharesAmount,
       ] = userWithdrawRequest;
 
+      const claimTime = formatBigIntToTimestamp(_claimTime);
+      const now = new Date().getTime();
+
       withdrawData = {
         owner,
-        isClaimable: claimTime
-          ? Number(claimTime) < dateToUnixTimestamp(new Date())
-          : false,
+        isClaimable: claimTime ? now > claimTime : false,
         claimTime: claimTime
-          ? formatUnixTimestamp(claimTime, "toLocaleString")
+          ? unixTimestampToDateString(claimTime, "toLocaleString")
           : "N/A",
         maxLossBps,
         receiver,
@@ -208,7 +213,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
         shareDecimals && withdrawRate
           ? formatUnits(withdrawRate, shareDecimals)
           : "0",
-      timestamp: formatUnixTimestamp(timestamp),
+      timestamp: unixTimestampToDateString(formatBigIntToTimestamp(timestamp)),
       withdrawFee: withdrawFee.toString(),
     };
   }
@@ -454,6 +459,8 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       maxRedeem,
       shareBalance,
       assetBalance,
+      tokenDecimals,
+      shareDecimals,
     },
     formatted: {
       tvl: formatBigInt(tvl, tokenDecimals, symbol, {
@@ -504,3 +511,5 @@ const handleAndThrowError = (error: unknown, defaultMessage: string) => {
     throw new Error(defaultMessage);
   }
 };
+
+//1745539682 now 1745518813154
