@@ -88,28 +88,31 @@ export function useViewAllVaults() {
           },
         ],
       });
-      let tokenDecimals;
-      let shareDecimals;
+      let tokenDecimals: number;
+      let shareDecimals: number;
       let tvl: bigint | undefined = undefined;
       let totalShares: bigint | undefined = undefined;
       let redemptionRate: bigint | undefined = undefined;
 
-      if (generalVaultData.length !== 5) {
+      if (!generalVaultData) {
         throw new Error("Failed to fetch general vault data");
       }
 
-      if (generalVaultData) {
-        const _tokenDecimals = generalVaultData[0];
-        const _shareDecimals = generalVaultData[1];
-        if (_tokenDecimals === undefined || _shareDecimals === undefined) {
-          throw new Error("Failed to fetch token or share decimals");
-        }
-        tokenDecimals = Number(_tokenDecimals.result);
-        shareDecimals = Number(_shareDecimals.result);
-        tvl = generalVaultData[2].result;
-        totalShares = generalVaultData[3].result;
-        redemptionRate = generalVaultData[4].result;
+      if (generalVaultData.length !== 5) {
+        throw new Error("Failed to fetch general vault data");
+      } else if (
+        generalVaultData[0] === undefined ||
+        generalVaultData[1] === undefined
+      ) {
+        // if these are undefined, unit conversions cannot be done
+        throw new Error("Failed to fetch token or share decimals");
       }
+
+      tokenDecimals = Number(generalVaultData[0].result);
+      shareDecimals = Number(generalVaultData[1].result);
+      tvl = generalVaultData[2].result;
+      totalShares = generalVaultData[3].result;
+      redemptionRate = generalVaultData[4].result;
 
       let userShares = BigInt(0),
         userPosition = BigInt(0);
