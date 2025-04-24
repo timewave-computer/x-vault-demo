@@ -88,8 +88,8 @@ export function useViewAllVaults() {
           },
         ],
       });
-      let tokenDecimals: number = 18; // reasonable default
-      let shareDecimals: number = 18; // reasonable default
+      let tokenDecimals;
+      let shareDecimals;
       let tvl: bigint | undefined = undefined;
       let totalShares: bigint | undefined = undefined;
       let redemptionRate: bigint | undefined = undefined;
@@ -97,9 +97,15 @@ export function useViewAllVaults() {
       if (generalVaultData.length !== 5) {
         throw new Error("Failed to fetch general vault data");
       }
+
       if (generalVaultData) {
-        tokenDecimals = generalVaultData[0].result ?? 18; // reasonable default
-        shareDecimals = generalVaultData[1].result ?? 18; // reasonable default
+        const _tokenDecimals = generalVaultData[0];
+        const _shareDecimals = generalVaultData[1];
+        if (_tokenDecimals === undefined || _shareDecimals === undefined) {
+          throw new Error("Failed to fetch token or share decimals");
+        }
+        tokenDecimals = Number(_tokenDecimals.result);
+        shareDecimals = Number(_shareDecimals.result);
         tvl = generalVaultData[2].result;
         totalShares = generalVaultData[3].result;
         redemptionRate = generalVaultData[4].result;

@@ -250,19 +250,21 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                             </p>
                             <p className="text-sm text-gray-500">
                               Withdraw Rate:{" "}
-                              {update.args?.withdrawRate
+                              {update.args?.withdrawRate &&
+                              vaultData?.shareDecimals
                                 ? formatUnits(
                                     update.args.withdrawRate,
-                                    vaultData?.shareDecimals ?? 18,
+                                    vaultData.shareDecimals,
                                   )
                                 : "N/A"}
                             </p>
                             <p className="text-sm text-gray-500">
                               Total Assets To Withdraw:{" "}
-                              {update.args?.totalAssetsToWithdraw
+                              {update.args?.totalAssetsToWithdraw &&
+                              vaultData?.tokenDecimals
                                 ? formatUnits(
                                     update.args.totalAssetsToWithdraw,
-                                    vaultData?.tokenDecimals ?? 18,
+                                    vaultData.tokenDecimals,
                                   )
                                 : "N/A"}
                             </p>

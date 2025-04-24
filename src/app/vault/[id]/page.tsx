@@ -129,8 +129,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     },
   });
 
-  console.log(parseFloat(depositInput), parseFloat(preciseTokenBalance));
-
   const { mutate: handleWithdraw, isPending: isWithdrawing } = useMutation({
     mutationFn: async () => {
       if (!withdrawInput || !isConnected || !vaultData)

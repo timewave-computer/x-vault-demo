@@ -5,7 +5,7 @@ import { VaultData } from "@/hooks";
 import { Address } from "viem";
 import { valenceVaultABI } from "@/const";
 import { readContract } from "wagmi/actions";
-import { unixTimestampToDateString } from "@/lib";
+import { formatBigIntToTimestamp, unixTimestampToDateString } from "@/lib";
 
 export function useVaultLogs(vaultData?: VaultData) {
   const {
@@ -13,7 +13,11 @@ export function useVaultLogs(vaultData?: VaultData) {
     tokenDecimals,
     shareDecimals,
     startBlock: vaultStartBlock,
-  } = vaultData ?? {};
+  } = vaultData ?? {
+    // placeholders
+    tokenDecimals: 6,
+    shareDecimals: 18,
+  };
   const publicClient = usePublicClient();
 
   const config = useConfig();
@@ -70,7 +74,7 @@ export function useVaultLogs(vaultData?: VaultData) {
               owner: Address;
             };
 
-          const formattedShares = formatUnits(shares, shareDecimals ?? 18);
+          const formattedShares = formatUnits(shares, shareDecimals);
           const formattedMaxLossBps = Number(maxLossBps).toString();
 
           const updateInfos = await readContract(config, {
@@ -98,13 +102,19 @@ export function useVaultLogs(vaultData?: VaultData) {
             receiver: log.args.receiver,
             transactionHash: log.transactionHash,
             blockNumber: log.blockNumber,
-            withdrawRate: formatUnits(withdrawRate, shareDecimals ?? 18),
+            withdrawRate: formatUnits(withdrawRate, shareDecimals),
             updateTimestamp: timestamp
-              ? unixTimestampToDateString(timestamp, "toUTCString")
+              ? unixTimestampToDateString(
+                  formatBigIntToTimestamp(timestamp),
+                  "toUTCString",
+                )
               : "N/A",
             withdrawFee,
             claimTime: claimTime
-              ? unixTimestampToDateString(claimTime, "toUTCString")
+              ? unixTimestampToDateString(
+                  formatBigIntToTimestamp(claimTime),
+                  "toUTCString",
+                )
               : "N/A",
           };
         }),
@@ -136,8 +146,8 @@ export function useVaultLogs(vaultData?: VaultData) {
           shares: bigint;
         };
 
-        const formattedAssets = formatUnits(assets, tokenDecimals ?? 18);
-        const formattedShares = formatUnits(shares, shareDecimals ?? 18);
+        const formattedAssets = formatUnits(assets, tokenDecimals);
+        const formattedShares = formatUnits(shares, shareDecimals);
 
         return {
           sender,

@@ -34,8 +34,9 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     transactionConfirmationTimeout,
     token: symbol,
   } = vaultMetadata ?? {
-    tokenDecimals: 6, // reasonable default
-    shareDecimals: 18, // reasonable default
+    // placeholders
+    tokenDecimals: 6,
+    shareDecimals: 18,
     token: "",
   };
 
@@ -511,5 +512,3 @@ const handleAndThrowError = (error: unknown, defaultMessage: string) => {
     throw new Error(defaultMessage);
   }
 };
-
-//1745539682 now 1745518813154
