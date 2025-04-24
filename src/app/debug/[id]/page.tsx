@@ -5,6 +5,7 @@ import { useViewAllVaults, useVaultLogs } from "@/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
 import { formatUnits } from "viem";
+import { Card } from "@/components";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const {
@@ -88,32 +89,33 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         </div>
 
         <dl className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-4">
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+          <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">TVL</dt>
-            <dd className="mt-2 text-2xl font-beast text-accent-purple">
+            <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
               {vaultData.formatted.tvl}
             </dd>
-          </div>
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+          </Card>
+
+          <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Total Shares</dt>
-            <dd className="mt-2 text-2xl font-beast text-accent-purple">
+            <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
               {vaultData.formatted.totalShares}
             </dd>
-          </div>
+          </Card>
 
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+          <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Redemption Rate</dt>
-            <dd className="mt-2 text-2xl font-beast text-secondary">
+            <dd className="mt-2 text-2xl font-beast text-secondary text-wrap break-words">
               {vaultData.formatted.redemptionRate}
             </dd>
-          </div>
+          </Card>
         </dl>
 
         <dl className="mt-6 grid grid-cols-3 gap-6 text-nowrap ">
           <div>
             {deposits && deposits.length > 0 && (
               <div className="mt-8">
-                <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40 overflow-x-scroll">
+                <Card variant="primary">
                   <div className="mb-6">
                     <h3 className="text-lg font-beast text-accent-purple mb-1">
                       event = Deposit
@@ -155,14 +157,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       );
                     })}
                   </div>
-                </div>
+                </Card>
               </div>
             )}
           </div>
           <div>
             {withdrawRequests && withdrawRequests.length > 0 && (
               <div className="mt-8">
-                <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40 overflow-x-scroll">
+                <Card variant="primary">
                   <div className="mb-6">
                     <h3 className="text-lg font-beast text-accent-purple mb-1">
                       event = Withdraw
@@ -210,14 +212,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       );
                     })}
                   </div>
-                </div>
+                </Card>
               </div>
             )}
           </div>
           <div>
             {processedUpdates && processedUpdates.length > 0 && (
               <div className="mt-8">
-                <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40 overflow-x-scroll">
+                <Card variant="primary">
                   <div className="mb-6">
                     <h3 className="text-lg font-beast text-accent-purple mb-1">
                       event = UpdateProcessed
@@ -280,7 +282,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       );
                     })}
                   </div>
-                </div>
+                </Card>
               </div>
             )}
           </div>

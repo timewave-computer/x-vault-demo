@@ -167,8 +167,6 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     }
   }
 
-  console.log("withdrawData", withdrawData);
-
   //  user's vault "position" (shares -> assets)
   // depends on user's share balance
   const {

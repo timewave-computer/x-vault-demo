@@ -5,7 +5,7 @@ import { useViewAllVaults, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
 import { isValidNumberInput } from "@/lib";
-import { useToast } from "@/components";
+import { Card, useToast } from "@/components";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
 import { Button } from "@/components";
@@ -255,38 +255,38 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         </div>
 
         <dl className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-4">
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+          <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Your Balance</dt>
-            <dd className="mt-2 text-2xl font-beast text-accent-purple">
+            <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
               {isConnected ? shareBalanceFormatted : "-"}
             </dd>
-          </div>
+          </Card>
 
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+          <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Your Position</dt>
-            <dd className="mt-2 text-2xl font-beast text-accent-purple">
+            <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
               {isConnected ? assetBalanceFormatted : "-"}
             </dd>
-          </div>
+          </Card>
 
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light overflow-x-scroll">
+          <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Vault TVL</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
               {tvlFormatted}
             </dd>
-          </div>
+          </Card>
 
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light overflow-x-scroll">
+          <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Redemption Rate</dt>
             <dd className="mt-2 text-2xl font-beast text-secondary text-wrap break-words">
               {redemptionRateFormatted}
             </dd>
-          </div>
+          </Card>
         </dl>
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Deposit Section */}
-          <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
+          <Card variant="primary">
             <div className="mb-6">
               <h3 className="text-lg font-beast text-accent-purple">Deposit</h3>
               <div className="flex justify-between items-center mt-2">
@@ -312,6 +312,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </div>
 
             {/* Deposit input */}
+
             <div className="flex rounded-lg border-2 border-primary/40">
               <input
                 type="number"
@@ -368,10 +369,10 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   </p>
                 )}
             </div>
-          </div>
+          </Card>
 
           {/* Withdraw Section */}
-          <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
+          <Card variant="primary">
             <div className="mb-6">
               <h3 className="text-lg font-beast text-accent-purple mb-1">
                 Withdraw
@@ -463,12 +464,12 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   </p>
                 )}
             </div>
-          </div>
+          </Card>
         </div>
 
         {pendingWithdrawal && pendingWithdrawal.hasActiveWithdraw && (
           <div className="mt-8">
-            <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
+            <Card variant="primary">
               <div className="mb-6">
                 <h3 className="text-lg font-beast text-accent-purple mb-1">
                   Pending Withdrawal
@@ -501,7 +502,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   {isCompletingWithdraw ? "Processing..." : "Complete Withdraw"}
                 </Button>
               </div>
-            </div>
+            </Card>
           </div>
         )}
       </div>
