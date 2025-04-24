@@ -10,7 +10,7 @@ import { parseUnits, formatUnits, erc20Abi, BaseError } from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
 import { VaultData } from "@/hooks";
-import { formatBigInt, formatTimestampToUTC } from "@/lib";
+import { dateToUnixTimestamp, formatBigInt, formatUnixTimestamp } from "@/lib";
 import { readContract } from "@wagmi/core";
 
 /**
@@ -30,7 +30,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     transactionConfirmationTimeout,
     token: symbol,
   } = vaultMetadata ?? {
-    tokenDecimals: 18, // reasonable default
+    tokenDecimals: 6, // reasonable default
     shareDecimals: 18, // reasonable default
     token: "",
   };
@@ -149,7 +149,12 @@ export function useVaultContract(vaultMetadata?: VaultData) {
 
       withdrawData = {
         owner,
-        claimTime: claimTime ? formatTimestampToUTC(claimTime) : "N/A",
+        isClaimable: claimTime
+          ? Number(claimTime) < dateToUnixTimestamp(new Date())
+          : false,
+        claimTime: claimTime
+          ? formatUnixTimestamp(claimTime, "toLocaleString")
+          : "N/A",
         maxLossBps,
         receiver,
         updateId,
@@ -161,6 +166,8 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       };
     }
   }
+
+  console.log("withdrawData", withdrawData);
 
   //  user's vault "position" (shares -> assets)
   // depends on user's share balance
@@ -203,7 +210,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
         shareDecimals && withdrawRate
           ? formatUnits(withdrawRate, shareDecimals)
           : "0",
-      timestamp: formatTimestampToUTC(timestamp),
+      timestamp: formatUnixTimestamp(timestamp),
       withdrawFee: withdrawFee.toString(),
     };
   }
@@ -442,22 +449,34 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       ...withdrawData,
       ...updateData,
     },
-    tvl: tvl ? parseFloat(formatUnits(tvl, tokenDecimals)) : 0,
-    redemptionRate: redemptionRate
-      ? parseFloat(formatUnits(redemptionRate, shareDecimals))
-      : 0,
-    tokenBalance: tokenBalance
-      ? parseFloat(formatUnits(tokenBalance ?? BigInt(0), tokenDecimals))
-      : 0,
-    maxRedeem: maxRedeem
-      ? parseFloat(formatUnits(maxRedeem, shareDecimals))
-      : 0,
-    shareBalance: shareBalance
-      ? parseFloat(formatUnits(shareBalance ?? BigInt(0), shareDecimals))
-      : 0,
-    assetBalance: assetBalance
-      ? parseFloat(formatUnits(assetBalance ?? BigInt(0), tokenDecimals))
-      : 0,
+    raw: {
+      tvl,
+      redemptionRate,
+      tokenBalance,
+      maxRedeem,
+      shareBalance,
+      assetBalance,
+    },
+    formatted: {
+      tvl: formatBigInt(tvl, tokenDecimals, symbol, {
+        displayDecimals: 2,
+      }),
+      redemptionRate: formatBigInt(redemptionRate, shareDecimals, "%", {
+        displayDecimals: 2,
+      }),
+      tokenBalance: formatBigInt(tokenBalance, tokenDecimals, symbol, {
+        displayDecimals: 2,
+      }),
+      maxRedeem: formatBigInt(maxRedeem, shareDecimals, "shares", {
+        displayDecimals: 2,
+      }),
+      shareBalance: formatBigInt(shareBalance, shareDecimals, "shares", {
+        displayDecimals: 2,
+      }),
+      assetBalance: formatBigInt(assetBalance, tokenDecimals, symbol, {
+        displayDecimals: 2,
+      }),
+    },
     isLoading,
     isError,
   };

@@ -10,34 +10,26 @@ export function formatBigInt(
     displayDecimals?: number; // fraction precision
   },
 ): string {
-  const value = !_value || _value === BigInt(0) ? BigInt(0) : _value;
+  const value = _value ?? BigInt(0);
+  const displayDecimals = options.displayDecimals ?? defaultDisplayDecimals;
 
-  const float = parseFloat(formatUnits(value, decimals)); // WARNING: this will truncate to 15 significant figures. Needs to be revisited.
-  const formattedValue = float.toFixed(
-    options.displayDecimals ?? defaultDisplayDecimals,
-  );
+  // Use formatUnits to shift the decimal point
+  const formatted = formatUnits(value, decimals);
 
-  if (symbol === "") {
-    return formattedValue;
-  }
+  // Split into whole and decimal parts
+  const [whole, decimal] = formatted.split(".");
 
-  return `${formattedValue} ${symbol}`;
-}
-
-export function formatNumber(
-  value: number | undefined = 0,
-  symbol: string,
-  options: {
-    displayDecimals?: number; // fraction precision
-  },
-): string {
-  const formattedValue = value.toFixed(
-    options.displayDecimals ?? defaultDisplayDecimals,
-  );
+  // Format decimal part to desired precision
+  const formattedDecimal = decimal
+    ? decimal.slice(0, displayDecimals).padEnd(displayDecimals, "0")
+    : "0".repeat(displayDecimals);
 
   if (symbol === "") {
-    return formattedValue;
+    return `${whole}.${formattedDecimal}`;
+  }
+  if (symbol === "%") {
+    return `${whole}.${formattedDecimal}%`;
   }
 
-  return `${formattedValue} ${symbol}`;
+  return `${whole}.${formattedDecimal} ${symbol}`;
 }

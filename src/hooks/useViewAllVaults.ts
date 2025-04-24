@@ -136,16 +136,16 @@ export function useViewAllVaults() {
         },
         formatted: {
           totalShares: formatBigInt(totalShares, shareDecimals, "shares", {
-            displayDecimals: 4,
+            displayDecimals: 2,
           }),
           tvl: formatBigInt(tvl, tokenDecimals, vault.token, {
-            displayDecimals: 4,
+            displayDecimals: 2,
           }),
           userShares: formatBigInt(userShares, shareDecimals, "shares", {
-            displayDecimals: 4,
+            displayDecimals: 2,
           }),
           userPosition: formatBigInt(userPosition, tokenDecimals, vault.token, {
-            displayDecimals: 4,
+            displayDecimals: 2,
           }),
           redemptionRate: formatBigInt(redemptionRate, shareDecimals, "%", {
             displayDecimals: 2,

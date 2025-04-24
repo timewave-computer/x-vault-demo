@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useViewAllVaults, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
-import { formatNumber, isValidNumberInput } from "@/lib";
+import { isValidNumberInput } from "@/lib";
 import { useToast } from "@/components";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
@@ -33,37 +33,21 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     previewRedeem,
     previewDeposit,
     refetchContractState,
-    maxRedeem,
-    shareBalance,
-    tokenBalance,
-    assetBalance,
-    tvl,
-    redemptionRate,
+    formatted: {
+      tvl: tvlFormatted,
+      redemptionRate: redemptionRateFormatted,
+      maxRedeem: maxRedeemFormatted,
+      shareBalance: shareBalanceFormatted,
+      assetBalance: assetBalanceFormatted,
+    },
+    raw: { maxRedeem, tokenBalance },
+
     isLoading: isLoadingContract,
     isError: isContractError,
   } = useVaultContract(vaultData);
 
   const isLoading = isLoadingVaults || isLoadingContract || isPendingVaults;
   const isError = isVaultsError || isContractError;
-
-  const formattedTvl = formatNumber(tvl, vaultData?.token ?? "", {
-    displayDecimals: 4,
-  });
-
-  const formattedRedemptionRate = formatNumber(redemptionRate, "%", {
-    displayDecimals: 4,
-  });
-
-  const shareBalanceFormatted = formatNumber(shareBalance, "shares", {
-    displayDecimals: 4,
-  });
-  const assetBalanceFormatted = formatNumber(
-    assetBalance,
-    vaultData?.token ?? "",
-    {
-      displayDecimals: 4,
-    },
-  );
 
   const { ethBalance } = useTokenBalances({
     address,
@@ -210,7 +194,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     !withdrawInput ||
     isWithdrawing ||
     !maxRedeem ||
-    maxRedeem === 0 ||
+    maxRedeem === BigInt(0) ||
     parseFloat(withdrawInput) > maxRedeem;
   const isDepositDisabled =
     !isConnected ||
@@ -285,17 +269,17 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </dd>
           </div>
 
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light overflow-x-scroll">
             <dt className="text-base text-black">Vault TVL</dt>
-            <dd className="mt-2 text-2xl font-beast text-accent-purple">
-              {formattedTvl}
+            <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
+              {tvlFormatted}
             </dd>
           </div>
 
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light overflow-x-scroll">
             <dt className="text-base text-black">Redemption Rate</dt>
-            <dd className="mt-2 text-2xl font-beast text-secondary">
-              {formattedRedemptionRate}
+            <dd className="mt-2 text-2xl font-beast text-secondary text-wrap break-words">
+              {redemptionRateFormatted}
             </dd>
           </div>
         </dl>
@@ -424,7 +408,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 className={`w-full px-4 py-3 text-base text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-0 [border-top-left-radius:0.4rem] [border-bottom-left-radius:0.4rem] transition-shadow ${
                   withdrawInput &&
                   parseFloat(withdrawInput) > 0 &&
-                  parseFloat(withdrawInput) > maxRedeem
+                  parseFloat(withdrawInput) > parseFloat(maxRedeemFormatted)
                     ? "shadow-[inset_0_1px_8px_rgba(255,0,0,0.25)]"
                     : "focus:shadow-[inset_0_1px_8px_rgba(0,145,255,0.25)]"
                 }`}
@@ -466,14 +450,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 )}
               {isConnected &&
                 withdrawInput &&
-                (!maxRedeem || maxRedeem === 0) && (
+                (!maxRedeem || maxRedeem === BigInt(0)) && (
                   <p className="text-sm text-secondary">
                     You need vault shares to withdraw
                   </p>
                 )}{" "}
               {isConnected &&
                 withdrawInput &&
-                parseFloat(withdrawInput) > maxRedeem && (
+                parseFloat(withdrawInput) > parseFloat(maxRedeemFormatted) && (
                   <p className="text-sm text-secondary">
                     Insufficient vault balance
                   </p>

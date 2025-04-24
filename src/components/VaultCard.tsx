@@ -15,7 +15,7 @@ export function VaultCard({
   return (
     <Link
       href={`/vault/${id}`}
-      className="block rounded-lg p-4 shadow-sm hover:shadow-lg hover:shadow-primary transition-all duration-200 active:scale-95 active:shadow-inner bg-primary-light border-2 border-primary/40"
+      className="block rounded-lg p-4 shadow-sm hover:shadow-lg hover:shadow-primary transition-all duration-200 active:scale-95 active:shadow-inner bg-primary-light border-2 border-primary/40 overflow-x-scroll"
     >
       <div className="mt-2">
         <dl>
@@ -30,17 +30,17 @@ export function VaultCard({
         </dl>
 
         <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
-          <div className="sm:inline-flex sm:shrink-0 sm:items-center sm:gap-2">
-            <div className="mt-1.5 sm:mt-0">
-              <p className="text-black">Vault TVL</p>
-              <p className="text-xl font-beast text-accent-purple">{tvl}</p>
-            </div>
+          <div className="mt-1.5 sm:mt-0">
+            <p className="text-black">Vault TVL</p>
+            <p className="text-xl font-beast text-accent-purple text-wrap break-words">
+              {tvl}
+            </p>
           </div>
 
-          <div className="sm:inline-flex sm:shrink-0 sm:items-center sm:gap-2">
+          <div className="gap-2">
             <div className="mt-1.5 sm:mt-0">
               <p className="text-black">Redemption Rate</p>
-              <p className="text-xl font-beast text-secondary">
+              <p className="text-xl font-beast text-secondary text-wrap break-words">
                 {redemptionRate}
               </p>
             </div>
