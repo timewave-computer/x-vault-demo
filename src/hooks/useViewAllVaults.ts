@@ -88,22 +88,31 @@ export function useViewAllVaults() {
           },
         ],
       });
-      let tokenDecimals: number = 18; // reasonable default
-      let shareDecimals: number = 18; // reasonable default
+      let tokenDecimals: number;
+      let shareDecimals: number;
       let tvl: bigint | undefined = undefined;
       let totalShares: bigint | undefined = undefined;
       let redemptionRate: bigint | undefined = undefined;
 
-      if (generalVaultData.length !== 5) {
+      if (!generalVaultData) {
         throw new Error("Failed to fetch general vault data");
       }
-      if (generalVaultData) {
-        tokenDecimals = generalVaultData[0].result ?? 18; // reasonable default
-        shareDecimals = generalVaultData[1].result ?? 18; // reasonable default
-        tvl = generalVaultData[2].result;
-        totalShares = generalVaultData[3].result;
-        redemptionRate = generalVaultData[4].result;
+
+      if (generalVaultData.length !== 5) {
+        throw new Error("Failed to fetch general vault data");
+      } else if (
+        generalVaultData[0] === undefined ||
+        generalVaultData[1] === undefined
+      ) {
+        // if these are undefined, unit conversions cannot be done
+        throw new Error("Failed to fetch token or share decimals");
       }
+
+      tokenDecimals = Number(generalVaultData[0].result);
+      shareDecimals = Number(generalVaultData[1].result);
+      tvl = generalVaultData[2].result;
+      totalShares = generalVaultData[3].result;
+      redemptionRate = generalVaultData[4].result;
 
       let userShares = BigInt(0),
         userPosition = BigInt(0);
@@ -136,16 +145,16 @@ export function useViewAllVaults() {
         },
         formatted: {
           totalShares: formatBigInt(totalShares, shareDecimals, "shares", {
-            displayDecimals: 4,
+            displayDecimals: 2,
           }),
           tvl: formatBigInt(tvl, tokenDecimals, vault.token, {
-            displayDecimals: 4,
+            displayDecimals: 2,
           }),
           userShares: formatBigInt(userShares, shareDecimals, "shares", {
-            displayDecimals: 4,
+            displayDecimals: 2,
           }),
           userPosition: formatBigInt(userPosition, tokenDecimals, vault.token, {
-            displayDecimals: 4,
+            displayDecimals: 2,
           }),
           redemptionRate: formatBigInt(redemptionRate, shareDecimals, "%", {
             displayDecimals: 2,

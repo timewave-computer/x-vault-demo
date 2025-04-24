@@ -5,19 +5,24 @@ import { useViewAllVaults, useVaultLogs } from "@/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
 import { formatUnits } from "viem";
+import { Card } from "@/components";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const {
     vaults,
-    isLoading: _isLoading,
-    isError,
-    isPending,
+    isLoading: isLoadingVaults,
+    isError: isErrorVaults,
+    isPending: isPendingVaults,
   } = useViewAllVaults();
   const vaultData = vaults?.find((v) => v.id === params.id);
 
   const { getLogs } = useVaultLogs(vaultData);
 
-  const { data: logs } = useQuery({
+  const {
+    data: logs,
+    error: logsError,
+    isLoading: isLogsLoading,
+  } = useQuery({
     enabled: !!vaultData?.vaultProxyAddress,
     queryKey: [QUERY_KEYS.VAULT_LOGS, vaultData?.vaultProxyAddress],
     refetchInterval: 15000, // 15 seconds
@@ -28,7 +33,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
 
   const { withdrawRequests, processedUpdates, deposits } = logs ?? {};
 
-  const isLoading = _isLoading || isPending;
+  const isLoading = isLoadingVaults || isPendingVaults || isLogsLoading;
 
   if (isLoading) {
     return (
@@ -36,8 +41,10 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-purple"></div>
       </div>
     );
-  } else if (isError) {
+  } else if (isErrorVaults) {
     return <p>Error loading vault data.</p>;
+  } else if (logsError) {
+    return <p>Error loading logs.</p>;
   } else if (!vaultData) {
     return (
       <div className="text-center">
@@ -66,42 +73,49 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             <h1 className="text-3xl font-beast text-primary sm:text-4xl">
               {vaultData.name}
             </h1>
-            <p className="mt-1.5 text-base text-gray-500">
-              {vaultData.description}
-            </p>
-            <p className="mt-1 text-sm text-gray-400 font-mono">
-              Contract: {vaultData.vaultProxyAddress}
-            </p>
+            <div className="flex flex-col gap-1 mt-1.5 text-base text-gray-500">
+              <p className=" ">{vaultData.description}</p>
+
+              <a
+                href={`https://etherscan.io/address/${vaultData.vaultProxyAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className=" hover:underline"
+              >
+                {vaultData.vaultProxyAddress}
+              </a>
+            </div>
           </div>
         </div>
 
         <dl className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-4">
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+          <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">TVL</dt>
-            <dd className="mt-2 text-2xl font-beast text-accent-purple">
+            <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
               {vaultData.formatted.tvl}
             </dd>
-          </div>
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+          </Card>
+
+          <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Total Shares</dt>
-            <dd className="mt-2 text-2xl font-beast text-accent-purple">
+            <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
               {vaultData.formatted.totalShares}
             </dd>
-          </div>
+          </Card>
 
-          <div className="rounded-lg border-2 border-accent-purple/40 px-4 py-6 text-center bg-accent-purple-light">
+          <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Redemption Rate</dt>
-            <dd className="mt-2 text-2xl font-beast text-secondary">
+            <dd className="mt-2 text-2xl font-beast text-secondary text-wrap break-words">
               {vaultData.formatted.redemptionRate}
             </dd>
-          </div>
+          </Card>
         </dl>
 
-        <dl className="mt-6 grid grid-cols-3 gap-6 ">
+        <dl className="mt-6 grid grid-cols-3 gap-6 text-nowrap ">
           <div>
             {deposits && deposits.length > 0 && (
               <div className="mt-8">
-                <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
+                <Card variant="primary">
                   <div className="mb-6">
                     <h3 className="text-lg font-beast text-accent-purple mb-1">
                       event = Deposit
@@ -112,7 +126,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       return (
                         <div
                           key={deposit.transactionHash}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 overflow-x-scroll"
                         >
                           <div className="mb-4 sm:mb-0">
                             <p className="text-base font-medium text-gray-900">
@@ -143,14 +157,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       );
                     })}
                   </div>
-                </div>
+                </Card>
               </div>
             )}
           </div>
           <div>
             {withdrawRequests && withdrawRequests.length > 0 && (
               <div className="mt-8">
-                <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
+                <Card variant="primary">
                   <div className="mb-6">
                     <h3 className="text-lg font-beast text-accent-purple mb-1">
                       event = Withdraw
@@ -161,7 +175,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       return (
                         <div
                           key={withdrawal.transactionHash}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 overflow-x-scroll"
                         >
                           <div className="mb-4 sm:mb-0">
                             <p className="text-base font-medium text-gray-900">
@@ -198,14 +212,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       );
                     })}
                   </div>
-                </div>
+                </Card>
               </div>
             )}
           </div>
           <div>
             {processedUpdates && processedUpdates.length > 0 && (
               <div className="mt-8">
-                <div className="rounded-lg bg-primary-light px-8 pt-8 pb-6 border-2 border-primary/40">
+                <Card variant="primary">
                   <div className="mb-6">
                     <h3 className="text-lg font-beast text-accent-purple mb-1">
                       event = UpdateProcessed
@@ -216,7 +230,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       return (
                         <div
                           key={update.transactionHash}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 overflow-x-scroll"
                         >
                           <div className="mb-4 sm:mb-0">
                             <p className="text-base font-medium text-gray-900">
@@ -236,39 +250,41 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                             </p>
                             <p className="text-sm text-gray-500">
                               Withdraw Rate:{" "}
-                              {update.args?.withdrawRate
+                              {update.args?.withdrawRate &&
+                              vaultData?.shareDecimals
                                 ? formatUnits(
                                     update.args.withdrawRate,
-                                    vaultData?.shareDecimals ?? 18,
+                                    vaultData.shareDecimals,
                                   )
                                 : "N/A"}
                             </p>
                             <p className="text-sm text-gray-500">
                               Total Assets To Withdraw:{" "}
-                              {update.args?.totalAssetsToWithdraw
+                              {update.args?.totalAssetsToWithdraw &&
+                              vaultData?.tokenDecimals
                                 ? formatUnits(
                                     update.args.totalAssetsToWithdraw,
-                                    vaultData?.tokenDecimals ?? 18,
+                                    vaultData.tokenDecimals,
                                   )
                                 : "N/A"}
                             </p>
-                            {/* <p className="text-sm text-gray-500 text-wrap break-words">
+                            <p className="text-sm text-gray-500 ">
                               Transaction:{" "}
                               <a
                                 href={`https://etherscan.io/tx/${update.transactionHash}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm opacity-90 hover:underline mt-1 text-wrap break-words"
+                                className="text-sm opacity-90 hover:underline mt-1 "
                               >
                                 {update.transactionHash}
                               </a>
-                            </p> */}
+                            </p>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                </div>
+                </Card>
               </div>
             )}
           </div>

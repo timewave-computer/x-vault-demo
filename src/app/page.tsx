@@ -1,7 +1,8 @@
 "use client";
 
-import { VaultCard } from "@/components/VaultCard";
+import { Card } from "@/components";
 import { useViewAllVaults } from "@/hooks";
+import Link from "next/link";
 import { useAccount } from "wagmi";
 export default function Home() {
   const { isConnected } = useAccount();
@@ -43,11 +44,42 @@ export default function Home() {
             </p>
           ) : (
             vaults.map((vault) => (
-              <VaultCard
-                key={`vaultcard-${vault.id}`}
-                {...vault}
-                isConnected={isConnected}
-              />
+              <Link key={`vaultcard-${vault.id}`} href={`/vault/${vault.id}`}>
+                <Card isHoverable={true} className="block  " variant="primary">
+                  <div className="mt-2">
+                    <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
+                      <div className="mt-1.5 sm:mt-0">
+                        <p className="text-black">Vault TVL</p>
+                        <p className="text-xl font-beast text-accent-purple text-wrap break-words">
+                          {vault.formatted.tvl}
+                        </p>
+                      </div>
+
+                      <div className="gap-2">
+                        <div className="mt-1.5 sm:mt-0">
+                          <p className="text-black">Redemption Rate</p>
+                          <p className="text-xl font-beast text-secondary text-wrap break-words">
+                            {vault.formatted.redemptionRate}
+                          </p>
+                        </div>
+                      </div>
+
+                      {isConnected && (
+                        <div className="col-span-2 border-t-2 border-primary/40 pt-4">
+                          <div className="items-center gap-2">
+                            <div className="mt-1.5 sm:mt-0">
+                              <p className="text-black">Your Deposit</p>
+                              <p className="text-xl font-beast text-accent-purple text-wrap break-words">
+                                {vault.formatted.userPosition}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              </Link>
             ))
           )}
         </div>
