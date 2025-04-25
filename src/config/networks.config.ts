@@ -9,7 +9,7 @@ import type { AppKitNetwork } from "@reown/appkit-common";
 export const defaultChainId = 31337;
 
 // Get Anvil RPC URL from environment variables
-const anvilRpcUrl = process.env.NEXT_PUBLIC_ANVIL_RPC_URL;
+const anvilRpcUrl = process.env.NEXT_PUBLIC_RPC_URL;
 
 // Define network configurations for Appkit
 export const networks: [AppKitNetwork, ...AppKitNetwork[]] = [

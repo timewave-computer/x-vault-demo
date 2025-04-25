@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/fetch-vaults.js && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "build-with-remote": "npm run fetch-remote-config && npm run build",
+    "fetch-remote-config": "node scripts/fetch-vaults.js",
     "start-anvil": "./scripts/start-anvil.sh",
     "manage-key": "./scripts/manage-key.sh",
     "deploy-vaults": "./scripts/deploy-vaults.sh",

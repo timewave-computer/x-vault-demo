@@ -35,6 +35,12 @@ export type VaultConfig = z.infer<typeof VaultConfigSchema> & {
 export async function getVaultsConfig() {
   try {
     const vaultsPath = path.join(process.cwd(), VAULTS_CONFIG_PATH);
+    const isExists = fs.existsSync(vaultsPath);
+    if (!isExists) {
+      throw new Error(
+        `${VAULTS_CONFIG_PATH} not found. See README.md for more info.`,
+      );
+    }
     const vaultsData = JSON.parse(fs.readFileSync(vaultsPath, "utf-8"));
 
     // Validate against schema
