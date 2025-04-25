@@ -6,6 +6,43 @@ A simple web application for interacting with ERC-4626 vault contracts on Ethere
 
 ## Development
 
+1. set up environment variables
+
+```bash
+cp .env.example .env
+```
+
+Create reown project and wallet connect project and add. You can opt-in to use the optional ones later.
+
+2. start server
+
+```bash
+nix develop
+npm install
+npm run start
+```
+
+3. Add `vaults.config.json` file
+   Copy `example.vaults.config.json` and rename the file.
+
+This file tells the UI which contracts to read. The repo is set up to not commit the config, and fetch from a remote github file.
+
+You can delete the `fetch-vaults` npm script and simply use the `build` command and commit the file locally, or modify the `build-with-remote` if you would like to fetch the config from elsewhere.
+
+4. Add testnet to your browser wallet as a custom network:
+   - Network Name: Vaults Test Env (or any name)
+   - RPC URL: http://localhost:8545 (or any anvil rpc)
+   - Chain ID: 31337
+   - Currency Symbol: ETH
+
+## Build & Deployment
+
+The repository reads
+
+# DEPRECATED DOCS
+
+## Development
+
 1. Enter environment and install dependencies:
 
    ```bash

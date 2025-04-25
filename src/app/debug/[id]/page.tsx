@@ -12,9 +12,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     vaults,
     isLoading: isLoadingVaults,
     isError: isErrorVaults,
-    isPending: isPendingVaults,
   } = useViewAllVaults();
-  const vaultData = vaults?.find((v) => v.id === params.id);
+  const vaultData = vaults?.find((v) => v.vaultId === params.id);
 
   const { getLogs } = useVaultLogs(vaultData);
 
@@ -33,7 +32,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
 
   const { withdrawRequests, processedUpdates, deposits } = logs ?? {};
 
-  const isLoading = isLoadingVaults || isPendingVaults || isLogsLoading;
+  const isLoading = isLoadingVaults || isLogsLoading;
 
   if (isLoading) {
     return (
