@@ -7,3 +7,4 @@ export * from "./Header";
 export * from "./ChainProviders";
 export * from "./Toast";
 export * from "./Input";
+export * from "./VaultsConfigProvider";

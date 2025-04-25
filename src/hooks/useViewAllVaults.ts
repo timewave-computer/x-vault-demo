@@ -1,19 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback } from "react";
 import { useAccount, useConfig } from "wagmi";
-import {
-  type VaultMetadata,
-  defaultChainId,
-  getVaultsMetadata,
-} from "@/config";
 import { QUERY_KEYS, valenceVaultABI } from "@/const";
 import { readContract, readContracts } from "@wagmi/core";
 import { erc20Abi } from "viem";
 import { formatBigInt } from "@/lib";
 import { useQueries } from "@tanstack/react-query";
+import { useVaultsConfig } from "@/components/VaultsConfigProvider";
+import { VaultConfig } from "@/server";
 
-export type VaultData = VaultMetadata & {
+export type VaultData = VaultConfig & {
   tokenDecimals: number;
   shareDecimals: number;
   raw: {
@@ -33,25 +30,13 @@ export type VaultData = VaultMetadata & {
 };
 
 export function useViewAllVaults() {
-  const { address, chainId: accountChainId } = useAccount();
-  const [vaultsMetadata, setVaultsMetadata] = useState<VaultMetadata[]>([]);
-  const [chainId, setChainId] = useState<number | null>(null);
+  const { address, chainId } = useAccount();
   const config = useConfig();
-
-  useEffect(() => {
-    // client may have different chain ID than what is server rendered. Need to set with effect to avoid hydration error
-    setChainId(accountChainId || defaultChainId);
-  }, [accountChainId]);
-
-  useEffect(() => {
-    if (!chainId) return;
-    const vaultsMetadata = getVaultsMetadata(chainId);
-    setVaultsMetadata(vaultsMetadata);
-  }, [chainId]);
+  const { vaultsConfig } = useVaultsConfig();
 
   // fetches vault data for a single vault
   const fetchVaultData = useCallback(
-    async (vault: VaultMetadata) => {
+    async (vault: VaultConfig) => {
       const generalVaultData = await readContracts(config, {
         contracts: [
           {
@@ -171,14 +156,18 @@ export function useViewAllVaults() {
     isLoading,
     isError,
   } = useQueries({
-    queries: vaultsMetadata.map((vaultMetadata) => ({
-      refetchInterval: 30000, // 30 seconds
-      enabled: !!vaultMetadata,
-      queryKey: [QUERY_KEYS.VAULT_DATA, vaultMetadata.id, address],
-      queryFn: async () => {
-        return fetchVaultData(vaultMetadata);
-      },
-    })),
+    queries: vaultsConfig
+      .filter((vaultConfig) =>
+        chainId ? vaultConfig.chainId === chainId : true,
+      )
+      .map((vaultConfig) => ({
+        refetchInterval: 30000, // 30 seconds
+        enabled: vaultsConfig?.length > 0,
+        queryKey: [QUERY_KEYS.VAULT_DATA, vaultConfig.vaultId, address],
+        queryFn: async () => {
+          return fetchVaultData(vaultConfig);
+        },
+      })),
     combine: (results) => {
       const _errors = results
         .filter((result) => result.isError)
@@ -200,7 +189,6 @@ export function useViewAllVaults() {
 
   return {
     isLoading: isLoading,
-    isPending: !chainId, // need to wait to chainId to be set in client to trigger fetch
     isError,
     vaults,
     chainId,

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/fetch-vaults.js && next build",
     "start": "next start",
     "lint": "next lint",
     "start-anvil": "./scripts/start-anvil.sh",
@@ -27,7 +27,8 @@
     "react-dom": "^18.2.0",
     "tailwind-merge": "^3.2.0",
     "viem": "^2.23.2",
-    "wagmi": "^2.14.11"
+    "wagmi": "^2.14.11",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",

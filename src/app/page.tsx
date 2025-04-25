@@ -6,15 +6,8 @@ import Link from "next/link";
 import { useAccount } from "wagmi";
 export default function Home() {
   const { isConnected } = useAccount();
-  const {
-    vaults,
-    chainId,
-    isLoading: _isLoading,
-    isError,
-    isPending,
-  } = useViewAllVaults();
+  const { vaults, chainId, isLoading, isError } = useViewAllVaults();
 
-  const isLoading = _isLoading || isPending;
   return (
     <div className="relative">
       {/* Content */}
@@ -44,9 +37,26 @@ export default function Home() {
             </p>
           ) : (
             vaults.map((vault) => (
-              <Link key={`vaultcard-${vault.id}`} href={`/vault/${vault.id}`}>
+              <Link
+                key={`vaultcard-${vault.vaultId}`}
+                href={`/vault/${vault.vaultId}`}
+              >
                 <Card isHoverable={true} className="block  " variant="primary">
                   <div className="mt-2">
+                    <dl>
+                      <div>
+                        <dt className="sr-only">Name</dt>
+                        <dd className="text-2xl font-beast text-primary">
+                          {vault.name}
+                        </dd>
+                      </div>
+                      <div className="mt-2">
+                        <dt className="sr-only">Description</dt>
+                        <dd className="text-sm text-gray-500">
+                          {vault.description}
+                        </dd>
+                      </div>
+                    </dl>
                     <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
                       <div className="mt-1.5 sm:mt-0">
                         <p className="text-black">Vault TVL</p>

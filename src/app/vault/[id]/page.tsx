@@ -19,9 +19,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     vaults,
     isLoading: isLoadingVaults,
     isError: isVaultsError,
-    isPending: isPendingVaults,
   } = useViewAllVaults();
-  const vaultData = vaults?.find((v) => v.id === params.id);
+  const vaultData = vaults?.find((v) => v.vaultId === params.id);
 
   const [depositInput, setDepositInput] = useState("");
   const [withdrawInput, setWithdrawInput] = useState("");
@@ -54,7 +53,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     tokenDecimals,
   );
 
-  const isLoading = isLoadingVaults || isLoadingContract || isPendingVaults;
+  const isLoading = isLoadingVaults || isLoadingContract;
   const isError = isVaultsError || isContractError;
 
   const { ethBalance } = useTokenBalances({

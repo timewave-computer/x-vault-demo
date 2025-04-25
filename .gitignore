@@ -45,3 +45,5 @@ coverage/
 
 # Scratch files
 *scratch*
+
+vaults.config.json
