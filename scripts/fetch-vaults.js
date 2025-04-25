@@ -1,53 +1,52 @@
 const fs = require("fs");
 const path = require("path");
-const https = require("https");
+const { Octokit } = require("octokit");
+const dotenv = require("dotenv");
 
-const VAULT_CONFIG_URL = process.env.VAULT_CONFIG_URL;
+dotenv.config();
+
 const isProduction = process.env.NODE_ENV === "production";
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_PATH = process.env.GITHUB_PATH;
+const VAULTS_CONFIG_PATH = "vaults.config.json";
 
-function fetchVaults(url) {
-  return new Promise((resolve, reject) => {
-    https
-      .get(url, (res) => {
-        let data = "";
+async function fetchVaults() {
+  if (!GITHUB_TOKEN || !GITHUB_PATH) {
+    throw new Error("Missing GITHUB_TOKEN or GITHUB_PATH in .env");
+  }
 
-        res.on("data", (chunk) => {
-          data += chunk;
-        });
-
-        res.on("end", () => {
-          try {
-            // Validate that the data is valid JSON
-            JSON.parse(data);
-            resolve(data);
-          } catch (e) {
-            reject(new Error("Invalid JSON received"));
-          }
-        });
-      })
-      .on("error", (err) => {
-        reject(err);
-      });
+  const octokit = new Octokit({
+    auth: GITHUB_TOKEN,
   });
+
+  const response = await octokit.request(
+    "GET /repos/{owner}/{repo}/contents/{path}",
+    {
+      owner: "timewave-computer",
+      repo: "vault-customer-configs",
+      path: GITHUB_PATH,
+      headers: {
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    },
+  );
+
+  const content = Buffer.from(response.data.content, "base64").toString();
+  return content;
 }
 
 async function main() {
   try {
     if (!isProduction) {
       console.log(
-        "Not fetching vaults in non-production environment. Please modify vaults.config.  json in the root folder.",
-      );
-      return;
-    } else if (!VAULT_CONFIG_URL) {
-      console.log(
-        "VAULT_CONFIG_URL is not set. Please set it in the .env file.",
+        "Not fetching vaults in non-production environment. Please modify vaults.config.json in the root folder, or set NODE_ENV to production.",
       );
       return;
     }
-    const data = await fetchVaults(VAULT_CONFIG_URL);
-    const outputPath = path.join(process.cwd(), "vaults.config.json");
+    const data = await fetchVaults();
+    const outputPath = path.join(process.cwd(), VAULTS_CONFIG_PATH);
     fs.writeFileSync(outputPath, data);
-    console.log("Successfully fetched and saved vaults.config.json");
+    console.log("Successfully fetched and saved ", VAULTS_CONFIG_PATH);
   } catch (error) {
     console.error("Error fetching vaults:", error);
     process.exit(1);

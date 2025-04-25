@@ -6,8 +6,8 @@ import { ConnectButton } from "@/components/ConnectButton";
 
 export function Header() {
   const pathname = usePathname();
-  const isVaultPage = pathname.startsWith("/vault/");
-  const vaultId = isVaultPage ? pathname.split("/")[2] : null;
+  const isVaultPage = pathname?.startsWith("/vault/");
+  const vaultId = isVaultPage ? pathname?.split("/")[2] : null;
 
   return (
     <header>

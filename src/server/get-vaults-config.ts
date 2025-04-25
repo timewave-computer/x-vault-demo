@@ -4,6 +4,8 @@ import path from "path";
 import { z } from "zod";
 import { Address } from "viem";
 
+const VAULTS_CONFIG_PATH = "vaults.config.json";
+
 const VaultConfigSchema = z.object({
   chainId: z.number(),
   vaultId: z.string(),
@@ -32,14 +34,14 @@ export type VaultConfig = z.infer<typeof VaultConfigSchema> & {
 
 export async function getVaultsConfig() {
   try {
-    const vaultsPath = path.join(process.cwd(), "vaults.config.json");
+    const vaultsPath = path.join(process.cwd(), VAULTS_CONFIG_PATH);
     const vaultsData = JSON.parse(fs.readFileSync(vaultsPath, "utf-8"));
 
     // Validate against schema
     const validatedData = VaultConfigSchema.array().parse(vaultsData);
     return Promise.resolve(validatedData as VaultConfig[]);
   } catch (error) {
-    console.error("Error reading or validating vaults.config.json:", error);
+    console.error("Error reading or validating ", VAULTS_CONFIG_PATH, error);
     throw new Error("Failed to read or validate vaults configuration");
   }
 }
