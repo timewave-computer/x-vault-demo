@@ -12,9 +12,17 @@ A simple web application for interacting with ERC-4626 vault contracts on Ethere
 cp .env.example .env
 ```
 
+2. Add `vaults.config.json` file
+   Copy `example.vaults.config.json` and rename the file.
+
+This file tells the UI which contracts to read. The repo is set up to not commit the config. For development you can save the file locally, and for deployment you can fetch from a private github repository.
+
+To opt out of this, by delete the `fetch-remote-config` and `build-with-remote` npm scripts. Then, simply commit the config file and use the `build` command for deployment.
+
 Create reown project and wallet connect project and add. You can opt-in to use the optional ones later.
 
-2. start server
+3. start server
+   NOTE: MAKE SURE YOU DID STEP #2 and created a `vaults.config.json`.
 
 ```bash
 nix develop
@@ -22,18 +30,26 @@ npm install
 npm run start
 ```
 
-3. Add `vaults.config.json` file
-   Copy `example.vaults.config.json` and rename the file.
-
-This file tells the UI which contracts to read. The repo is set up to not commit the config. For development you can save the file locally, and for deployment you can fetch from a private github repository.
-
-To opt out of this, by delete the `fetch-remote-config` and `build-with-remote` npm scripts. Then, simply commit the config file and use the `build` command for deployment.
-
 4. Add testnet to your browser wallet as a custom network:
    - Network Name: Vaults Test Env (or any name)
    - RPC URL: http://localhost:8545 (or any anvil rpc)
    - Chain ID: 31337
    - Currency Symbol: ETH
+
+## Deployment
+
+1. deploy with local vaults config (have to remove file from .gitignore)
+
+```bash
+npm run build
+```
+
+2. deploy with remotely saved vaults config
+   The included script will fetch the json file from a private github repository.
+
+```bash
+npm run build-with-remote
+```
 
 ## About `vaults.config.json`
 
