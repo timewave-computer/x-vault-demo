@@ -13,5 +13,5 @@ export async function GET() {
   // Log that we're using mock data
   console.log("APR API: Returning mock APR data:", mockApr);
 
-  return NextResponse.json(Number(mockApr));
+  return NextResponse.json(mockApr);
 }
