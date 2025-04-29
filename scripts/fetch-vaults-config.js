@@ -9,7 +9,7 @@ const isDevelopment = process.env.NODE_ENV === "development";
 const GITHUB_ACCESS_TOKEN = process.env.VAULT_CONFIG_ACCESS_TOKEN;
 const FILE_PATH = process.env.VAULT_CONFIG_FILE_PATH_URL;
 
-const VAULTS_CONFIG_PUBLIC_PATH = "public/vaults.config.json";
+const VAULTS_CONFIG_PATH = "vaults.config.json";
 
 async function fetchVaults() {
   if (!GITHUB_ACCESS_TOKEN || !FILE_PATH) {
@@ -50,22 +50,13 @@ async function main() {
     const { content, url } = await fetchVaults();
     console.log("Successfully fetched remote vaults config from", url);
 
-    // save to public directory for client-side access
     try {
-      // Create public directory if it doesn't exist
-      const publicDir = path.join(process.cwd(), "public");
-      if (!fs.existsSync(publicDir)) {
-        fs.mkdirSync(publicDir, { recursive: true });
-      }
-
-      const publicOutputPath = path.join(
-        process.cwd(),
-        VAULTS_CONFIG_PUBLIC_PATH,
-      );
-      fs.writeFileSync(publicOutputPath, content);
-      console.log("Saved remote vaults config to", VAULTS_CONFIG_PUBLIC_PATH);
+      // Save to root directory for serverless environments
+      const rootOutputPath = path.join(process.cwd(), VAULTS_CONFIG_PATH);
+      fs.writeFileSync(rootOutputPath, content);
+      console.log("Saved remote vaults config to", VAULTS_CONFIG_PATH);
     } catch (error) {
-      console.error("Error saving to public directory:", error);
+      console.error("Error saving config files:", error);
       // Continue even if public directory save fails
     }
   } catch (error) {

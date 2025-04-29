@@ -1,15 +1,12 @@
 "use server";
-import fs from "fs";
-import path from "path";
 import { z } from "zod";
 import { Address } from "viem";
+import vaultsConfig from "../../vaults.config.json";
 
 /***
  * Reads the vaults config from the vaults.config.json file
  * and returns the config as an array of VaultConfig objects
  */
-
-const VAULTS_CONFIG_READ_PATH = "public/vaults.config.json";
 
 const aprContractRequestSchema = z.object({
   type: z.literal("contract"),
@@ -61,23 +58,13 @@ export type VaultConfig = z.infer<typeof VaultConfigSchema> & {
 
 export async function readVaultsConfig() {
   try {
-    const vaultsPath = path.join(process.cwd(), VAULTS_CONFIG_READ_PATH);
-    console.log("searching for vaults config at", vaultsPath);
-    const isExists = fs.existsSync(vaultsPath);
-    if (!isExists) {
-      throw new Error(
-        `${VAULTS_CONFIG_READ_PATH} not found at ${vaultsPath}. See README.md for more info.`,
-      );
-    }
-    const vaultsData = JSON.parse(fs.readFileSync(vaultsPath, "utf-8"));
-
     // Validate against schema
-    const validatedData = VaultConfigSchema.array().parse(vaultsData);
+    const validatedData = VaultConfigSchema.array().parse(vaultsConfig);
     return Promise.resolve(validatedData as VaultConfig[]);
   } catch (error) {
     console.error(
-      "Error reading or validating ",
-      VAULTS_CONFIG_READ_PATH,
+      "Error reading or validating vaults config. Config:",
+      JSON.stringify(vaultsConfig),
       error,
     );
     throw new Error("Failed to read or validate vaults configuration");

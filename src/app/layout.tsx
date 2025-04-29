@@ -48,8 +48,6 @@ export default async function RootLayout({
 }) {
   const vaultsConfig = await readVaultsConfig();
 
-  console.log("vaultsConfig in layout.tsx", vaultsConfig);
-
   return (
     <html lang="en" className="scroll-smooth">
       <head>
