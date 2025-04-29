@@ -9,6 +9,13 @@
     "startBlock": 0,
     "name": "USDC Stable Vault",
     "description": "Stable yield generation for USDC deposits.",
-    "token": "USDC"
+    "token": "USDC",
+    "aprRequest": {
+      "type": "api",
+      "url": "/api/mock-apr",
+      "method": "GET",
+      "headers": {},
+      "body": {}
+    }
   }
 ]

@@ -67,9 +67,9 @@ export default function Home() {
 
                       <div className="gap-2">
                         <div className="mt-1.5 sm:mt-0">
-                          <p className="text-black">Redemption Rate</p>
+                          <p className="text-black">APR</p>
                           <p className="text-xl font-beast text-secondary text-wrap break-words">
-                            {vault.formatted.redemptionRate}
+                            {vault.apr ? `${vault.apr} %` : "N/A"}
                           </p>
                         </div>
                       </div>

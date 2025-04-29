@@ -25,9 +25,9 @@ npm run start
 3. Add `vaults.config.json` file
    Copy `example.vaults.config.json` and rename the file.
 
-This file tells the UI which contracts to read. The repo is set up to not commit the config, and fetch from a remote github file.
+This file tells the UI which contracts to read. The repo is set up to not commit the config. For development you can save the file locally, and for deployment you can fetch from a private github repository.
 
-You can delete the `fetch-vaults` npm script and simply use the `build` command and commit the file locally, or modify the `build-with-remote` if you would like to fetch the config from elsewhere.
+To opt out of this, by delete the `fetch-remote-config` and `build-with-remote` npm scripts. Then, simply commit the config file and use the `build` command for deployment.
 
 4. Add testnet to your browser wallet as a custom network:
    - Network Name: Vaults Test Env (or any name)
@@ -35,9 +35,37 @@ You can delete the `fetch-vaults` npm script and simply use the `build` command 
    - Chain ID: 31337
    - Currency Symbol: ETH
 
-## Build & Deployment
+## About `vaults.config.json`
 
-The repository reads
+The `vaults.config.json` file contains an array of vault configurations. Each vault object has the following fields:
+
+- `chainId`: The ID of the blockchain network where the vault is deployed (e.g., 31337 for local testnet, 1 for Ethereum mainnet)
+- `vaultId`: A unique identifier for the vault used internally by the application
+- `vaultAddress`: The Ethereum address of the vault contract
+- `vaultProxyAddress`: The address of the proxy contract if the vault uses upgradeable contracts
+- `tokenAddress`: The address of the ERC-20 token that the vault accepts as deposits
+- `transactionConfirmationTimeout`: Maximum time (in milliseconds) to wait for transaction confirmations
+- `startBlock`: The block number from which to start scanning for vault events
+- `name`: Human-readable name of the vault
+- `description`: A brief description of the vault's purpose and strategy
+- `token`: The symbol of the token accepted by the vault (e.g., "USDC", "ETH")
+- `aprRequest`: Configuration for fetching the vault's APR (Annual Percentage Rate)
+  - `type`: The source type for APR data ("api" or "contract")
+  - For API requests:
+    - `url`: The endpoint URL
+    - `method`: HTTP method (GET, POST, etc.)
+    - `headers`: Optional HTTP headers
+    - `body`: Optional request body
+  - For contract requests:
+    - `address`: The contract address
+    - `abi`: Contract ABI array
+    - `functionName`: Name of the function to call
+    - `args`: Optional arguments for the function call
+    - NOTE: this is supported but not tested in production
+
+## Deprecated npm scripts
+
+start-anvil, manage-key, deploy-vaults, faucet are deprecated. They are for use with a local env.
 
 # DEPRECATED DOCS
 

@@ -284,9 +284,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           </Card>
 
           <Card variant="secondary" className="text-center">
-            <dt className="text-base text-black">Redemption Rate</dt>
+            <dt className="text-base text-black">APR</dt>
             <dd className="mt-2 text-2xl font-beast text-secondary text-wrap break-words">
-              {redemptionRateFormatted}
+              {vaultData.apr ? `${vaultData.apr} %` : "N/A"}
             </dd>
           </Card>
         </dl>

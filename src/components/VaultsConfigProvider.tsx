@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, ReactNode } from "react";
-import { VaultConfig } from "@/server/get-vaults-config";
+import { VaultConfig } from "@/lib";
 
 interface VaultsContextType {
   vaultsConfig: VaultConfig[];

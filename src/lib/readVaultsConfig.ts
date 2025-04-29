@@ -4,7 +4,33 @@ import path from "path";
 import { z } from "zod";
 import { Address } from "viem";
 
-const VAULTS_CONFIG_PATH = "vaults.config.json";
+/***
+ * Reads the vaults config from the vaults.config.json file
+ * and returns the config as an array of VaultConfig objects
+ */
+
+const VAULTS_CONFIG_READ_PATH = "vaults.config.json";
+
+const aprContractRequestSchema = z.object({
+  type: z.literal("contract"),
+  address: z.string(),
+  abi: z.array(z.string()),
+  functionName: z.string(),
+  args: z.array(z.string()),
+});
+
+const aprApiRequestSchema = z.object({
+  type: z.literal("api"),
+  url: z.string(),
+  method: z.string(),
+  headers: z.record(z.string(), z.string()),
+  body: z.record(z.string(), z.string()),
+});
+
+const aprRequestSchema = z.union([
+  aprContractRequestSchema,
+  aprApiRequestSchema,
+]);
 
 const VaultConfigSchema = z.object({
   chainId: z.number(),
@@ -23,6 +49,7 @@ const VaultConfigSchema = z.object({
   name: z.string(),
   description: z.string(),
   token: z.string(),
+  aprRequest: aprRequestSchema,
 });
 
 export type VaultConfig = z.infer<typeof VaultConfigSchema> & {
@@ -32,13 +59,13 @@ export type VaultConfig = z.infer<typeof VaultConfigSchema> & {
   startBlock: bigint;
 };
 
-export async function getVaultsConfig() {
+export async function readVaultsConfig() {
   try {
-    const vaultsPath = path.join(process.cwd(), VAULTS_CONFIG_PATH);
+    const vaultsPath = path.join(process.cwd(), VAULTS_CONFIG_READ_PATH);
     const isExists = fs.existsSync(vaultsPath);
     if (!isExists) {
       throw new Error(
-        `${VAULTS_CONFIG_PATH} not found. See README.md for more info.`,
+        `${VAULTS_CONFIG_READ_PATH} not found. See README.md for more info.`,
       );
     }
     const vaultsData = JSON.parse(fs.readFileSync(vaultsPath, "utf-8"));
@@ -47,7 +74,11 @@ export async function getVaultsConfig() {
     const validatedData = VaultConfigSchema.array().parse(vaultsData);
     return Promise.resolve(validatedData as VaultConfig[]);
   } catch (error) {
-    console.error("Error reading or validating ", VAULTS_CONFIG_PATH, error);
+    console.error(
+      "Error reading or validating ",
+      VAULTS_CONFIG_READ_PATH,
+      error,
+    );
     throw new Error("Failed to read or validate vaults configuration");
   }
 }
