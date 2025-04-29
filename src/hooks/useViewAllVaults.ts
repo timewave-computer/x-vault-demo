@@ -4,15 +4,17 @@ import { useCallback } from "react";
 import { useAccount, useConfig } from "wagmi";
 import { QUERY_KEYS, valenceVaultABI } from "@/const";
 import { readContract, readContracts } from "@wagmi/core";
-import { erc20Abi } from "viem";
+import { erc20Abi, formatUnits, parseUnits } from "viem";
 import { formatBigInt } from "@/lib";
 import { useQueries } from "@tanstack/react-query";
 import { useVaultsConfig } from "@/components/VaultsConfigProvider";
 import { VaultConfig } from "@/server";
+import { fetchAprFromApi, fetchAprFromContract } from "@/lib/fetchVaultApr";
 
 export type VaultData = VaultConfig & {
   tokenDecimals: number;
   shareDecimals: number;
+  apr?: string;
   raw: {
     totalShares: bigint;
     userShares: bigint;
@@ -117,10 +119,23 @@ export function useViewAllVaults() {
         });
       }
 
+      let aprPercentage: string | undefined = undefined;
+      if (vault.aprRequest.type === "contract") {
+        const apr = await fetchAprFromContract(vault, config, tokenDecimals);
+
+        // TODO: be mindful of decimals here. used as a placeholder for now.
+        const aprFormatted = formatUnits(apr, shareDecimals);
+        aprPercentage = (parseFloat(aprFormatted) * 100).toString();
+      } else if (vault.aprRequest.type === "api") {
+        const apr = await fetchAprFromApi(vault);
+        aprPercentage = (parseFloat(apr.toString()) * 100).toString();
+      }
+
       const result: VaultData = {
         tokenDecimals,
         shareDecimals,
         ...vault,
+        apr: aprPercentage,
         raw: {
           totalShares: totalShares ?? BigInt(0),
           tvl: tvl ?? BigInt(0),

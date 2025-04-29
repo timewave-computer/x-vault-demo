@@ -8,8 +8,7 @@ import {
   VaultsConfigProvider,
 } from "@/components";
 import { Recursive } from "next/font/google";
-import { getVaultsConfig } from "@/server";
-
+import { getVaultsConfig } from "@/lib";
 const recursive = Recursive({
   subsets: ["latin"],
   display: "swap",

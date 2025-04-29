@@ -9,7 +9,7 @@ const isProduction = process.env.NODE_ENV === "production";
 const GITHUB_ACCESS_TOKEN = process.env.VAULT_CONFIG_ACCESS_TOKEN;
 const FILE_PATH = process.env.VAULT_CONFIG_FILE_PATH_URL;
 
-const WRITE_PATH = "vaults.config.json";
+const VAULTS_CONFIG_WRITE_PATH = "vaults.config.json";
 
 async function fetchVaults() {
   if (!GITHUB_ACCESS_TOKEN || !FILE_PATH) {
@@ -49,9 +49,9 @@ async function main() {
     }
     const { content, url } = await fetchVaults();
     console.log("Successfully fetched remote vaults config from", url);
-    const outputPath = path.join(process.cwd(), WRITE_PATH);
+    const outputPath = path.join(process.cwd(), VAULTS_CONFIG_WRITE_PATH);
     fs.writeFileSync(outputPath, content);
-    console.log("Saved remote vaults config to", WRITE_PATH);
+    console.log("Saved remote vaults config to", VAULTS_CONFIG_WRITE_PATH);
   } catch (error) {
     console.error("Error fetching vaults:", error);
     process.exit(1);
