@@ -1,65 +1,22 @@
 "use server";
-import { z } from "zod";
-import { Address } from "viem";
+import { vaultConfigSchema } from "@/lib";
+import { type VaultConfig } from "@/context";
+
+// NOTE: if this file does not exist, create from example.vaults.config.json
 import vaultsConfig from "../../vaults.config.json";
 
 /***
- * Reads the vaults config from the vaults.config.json file
- * and returns the config as an array of VaultConfig objects
+ * Reads and validates the vaults config from the file system from vaults.config.json
+
+ * This method is necessary if vaults.config.json is fetched from a remote source, because it is fetched on build time
+ * This can be removed and the config file accessed by direct import if vaults.config.json is committed to the repository
+ *
  */
-
-const aprContractRequestSchema = z.object({
-  type: z.literal("contract"),
-  address: z.string(),
-  abi: z.array(z.string()),
-  functionName: z.string(),
-  args: z.array(z.string()),
-});
-
-const aprApiRequestSchema = z.object({
-  type: z.literal("api"),
-  url: z.string(),
-  method: z.string(),
-  headers: z.record(z.string(), z.string()),
-  body: z.record(z.string(), z.string()),
-});
-
-const aprRequestSchema = z.union([
-  aprContractRequestSchema,
-  aprApiRequestSchema,
-]);
-
-const VaultConfigSchema = z.object({
-  chainId: z.number(),
-  vaultId: z.string(),
-  vaultAddress: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid vault address"),
-  vaultProxyAddress: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid vault proxy address"),
-  tokenAddress: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid token address"),
-  transactionConfirmationTimeout: z.number(),
-  startBlock: z.number(),
-  name: z.string(),
-  description: z.string(),
-  token: z.string(),
-  aprRequest: aprRequestSchema,
-});
-
-export type VaultConfig = z.infer<typeof VaultConfigSchema> & {
-  vaultAddress: Address;
-  vaultProxyAddress: Address;
-  tokenAddress: Address;
-  startBlock: bigint;
-};
 
 export async function readVaultsConfig() {
   try {
     // Validate against schema
-    const validatedData = VaultConfigSchema.array().parse(vaultsConfig);
+    const validatedData = vaultConfigSchema.array().parse(vaultsConfig);
     return Promise.resolve(validatedData as VaultConfig[]);
   } catch (error) {
     console.error(

@@ -5,11 +5,10 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-const isDevelopment = process.env.NODE_ENV === "development";
 const GITHUB_ACCESS_TOKEN = process.env.VAULT_CONFIG_ACCESS_TOKEN;
 const FILE_PATH = process.env.VAULT_CONFIG_FILE_PATH_URL;
 
-const VAULTS_CONFIG_PATH = "vaults.config.json";
+const VAULTS_CONFIG_PATH_WRITE_PATH = "vaults.config.json";
 
 async function fetchVaults() {
   if (!GITHUB_ACCESS_TOKEN || !FILE_PATH) {
@@ -41,20 +40,20 @@ async function fetchVaults() {
 async function main() {
   console.log("Fetching remote vaults config...");
   try {
-    if (isDevelopment) {
-      console.log(
-        "Not fetching vaults for development environment. Please modify vaults.config.json in the root folder, or set NODE_ENV to production.",
-      );
-      return;
-    }
     const { content, url } = await fetchVaults();
     console.log("Successfully fetched remote vaults config from", url);
 
     try {
       // Save to root directory for serverless environments
-      const rootOutputPath = path.join(process.cwd(), VAULTS_CONFIG_PATH);
+      const rootOutputPath = path.join(
+        process.cwd(),
+        VAULTS_CONFIG_PATH_WRITE_PATH,
+      );
       fs.writeFileSync(rootOutputPath, content);
-      console.log("Saved remote vaults config to", VAULTS_CONFIG_PATH);
+      console.log(
+        "Saved remote vaults config to",
+        VAULTS_CONFIG_PATH_WRITE_PATH,
+      );
     } catch (error) {
       console.error("Error saving config files:", error);
       // Continue even if public directory save fails

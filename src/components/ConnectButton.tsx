@@ -2,7 +2,7 @@
 
 import { useAccount, useDisconnect } from "wagmi";
 import { useState, useEffect, Fragment } from "react";
-import { useAppKit } from "@/components";
+import { useAppKit } from "@/context";
 import { useTokenBalances, useViewAllVaults } from "@/hooks";
 
 /**

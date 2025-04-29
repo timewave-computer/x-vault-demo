@@ -1,12 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import {
-  Header,
-  Footer,
-  ToastProvider,
-  ChainProviders,
-  VaultsConfigProvider,
-} from "@/components";
+import { Header, Footer } from "@/components";
+import { VaultsConfigProvider, ChainProviders, ToastProvider } from "@/context";
 import { Recursive } from "next/font/google";
 import { readVaultsConfig } from "@/lib";
 import { MobileDetection } from "@/components";
