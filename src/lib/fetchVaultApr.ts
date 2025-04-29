@@ -1,4 +1,4 @@
-import { VaultConfig } from "@/lib/getVaultsConfig";
+import { VaultConfig } from "@/lib";
 import { readContract } from "wagmi/actions";
 import type { Config } from "wagmi";
 

@@ -4,12 +4,15 @@ import { useCallback } from "react";
 import { useAccount, useConfig } from "wagmi";
 import { QUERY_KEYS, valenceVaultABI } from "@/const";
 import { readContract, readContracts } from "@wagmi/core";
-import { erc20Abi, formatUnits, parseUnits } from "viem";
-import { formatBigInt } from "@/lib";
+import { erc20Abi, formatUnits } from "viem";
+import {
+  formatBigInt,
+  VaultConfig,
+  fetchAprFromApi,
+  fetchAprFromContract,
+} from "@/lib";
 import { useQueries } from "@tanstack/react-query";
-import { useVaultsConfig } from "@/components/VaultsConfigProvider";
-import { VaultConfig } from "@/server";
-import { fetchAprFromApi, fetchAprFromContract } from "@/lib/fetchVaultApr";
+import { useVaultsConfig } from "@/components";
 
 export type VaultData = VaultConfig & {
   tokenDecimals: number;
