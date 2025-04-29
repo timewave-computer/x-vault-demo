@@ -8,7 +8,7 @@ import {
   VaultsConfigProvider,
 } from "@/components";
 import { Recursive } from "next/font/google";
-import { getVaultsConfig } from "@/lib";
+import { readVaultsConfig } from "@/lib";
 const recursive = Recursive({
   subsets: ["latin"],
   display: "swap",
@@ -44,7 +44,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const vaultsConfig = await getVaultsConfig();
+  const vaultsConfig = await readVaultsConfig();
 
   return (
     <html lang="en" className="scroll-smooth">

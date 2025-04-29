@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { useAccount, useConfig } from "wagmi";
 import { QUERY_KEYS, valenceVaultABI } from "@/const";
 import { readContract, readContracts } from "@wagmi/core";
-import { erc20Abi, formatUnits } from "viem";
+import { erc20Abi } from "viem";
 import {
   formatBigInt,
   VaultConfig,
@@ -34,10 +34,9 @@ export type VaultData = VaultConfig & {
   };
 };
 
-export function useViewAllVaults() {
-  const { address, chainId } = useAccount();
+export const useFetchVaultData = () => {
+  const { address } = useAccount();
   const config = useConfig();
-  const { vaultsConfig } = useVaultsConfig();
 
   // fetches vault data for a single vault
   const fetchVaultData = useCallback(
@@ -122,17 +121,15 @@ export function useViewAllVaults() {
         });
       }
 
-      let aprPercentage: string | undefined = undefined;
+      let _apr: string | undefined = undefined;
       if (vault.aprRequest.type === "contract") {
-        const apr = await fetchAprFromContract(vault, config, tokenDecimals);
-
-        // TODO: be mindful of decimals here. used as a placeholder for now.
-        const aprFormatted = formatUnits(apr, shareDecimals);
-        aprPercentage = (parseFloat(aprFormatted) * 100).toString();
+        _apr = await fetchAprFromContract(vault, config, tokenDecimals);
       } else if (vault.aprRequest.type === "api") {
-        const apr = await fetchAprFromApi(vault);
-        aprPercentage = (parseFloat(apr.toString()) * 100).toString();
+        _apr = await fetchAprFromApi(vault);
       }
+      const aprPercentage = _apr
+        ? (parseFloat(_apr) * 100).toString()
+        : undefined;
 
       const result: VaultData = {
         tokenDecimals,
@@ -168,6 +165,17 @@ export function useViewAllVaults() {
     },
     [config, address],
   );
+
+  return {
+    fetchVaultData,
+  };
+};
+
+export function useViewAllVaults() {
+  const { address, chainId } = useAccount();
+  const { vaultsConfig } = useVaultsConfig();
+
+  const { fetchVaultData } = useFetchVaultData();
 
   const {
     data: vaults,

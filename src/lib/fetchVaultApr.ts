@@ -1,13 +1,16 @@
 import { VaultConfig } from "@/lib";
 import { readContract } from "wagmi/actions";
 import type { Config } from "wagmi";
+import { formatUnits } from "viem";
+import { z } from "zod";
 
 /**
  * Fetches APR data from an API endpoint
+ * Should return a ration (i.e "0.04")
  */
 export async function fetchAprFromApi(
   vaultConfig: VaultConfig,
-): Promise<number> {
+): Promise<string> {
   const {
     url,
     method,
@@ -40,11 +43,9 @@ export async function fetchAprFromApi(
 
     const data = await response.json();
 
-    // If a responseField is specified, extract that field from the response
-    const responseField = (vaultConfig.aprRequest as any).responseField;
-    const aprValue = responseField ? data[responseField] : data;
+    const aprValue = z.string().parse(data);
 
-    return Number(aprValue);
+    return aprValue;
   } catch (error) {
     console.error(
       `Error fetching APR from API for vault ${vaultConfig.vaultId}:`,
@@ -61,7 +62,7 @@ export async function fetchAprFromContract(
   vaultConfig: VaultConfig,
   config: Config,
   decimals: number,
-): Promise<bigint> {
+): Promise<string> {
   const {
     address,
     abi,
@@ -75,12 +76,20 @@ export async function fetchAprFromContract(
     args?: string[];
   };
 
-  const fetchedApr = await readContract(config, {
-    address: address as `0x${string}`,
-    abi: abi,
-    functionName,
-    args,
-  });
+  try {
+    const fetchedApr = await readContract(config, {
+      address: address as `0x${string}`,
+      abi: abi,
+      functionName,
+      args,
+    });
 
-  return fetchedApr as bigint;
+    return formatUnits(fetchedApr as bigint, decimals);
+  } catch (error) {
+    console.error(
+      `Error fetching APR from contract for vault ${vaultConfig.vaultId}:`,
+      error,
+    );
+    throw error;
+  }
 }

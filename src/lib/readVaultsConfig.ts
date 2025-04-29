@@ -4,6 +4,11 @@ import path from "path";
 import { z } from "zod";
 import { Address } from "viem";
 
+/***
+ * Reads the vaults config from the vaults.config.json file
+ * and returns the config as an array of VaultConfig objects
+ */
+
 const VAULTS_CONFIG_READ_PATH = "vaults.config.json";
 
 const aprContractRequestSchema = z.object({
@@ -54,7 +59,7 @@ export type VaultConfig = z.infer<typeof VaultConfigSchema> & {
   startBlock: bigint;
 };
 
-export async function getVaultsConfig() {
+export async function readVaultsConfig() {
   try {
     const vaultsPath = path.join(process.cwd(), VAULTS_CONFIG_READ_PATH);
     const isExists = fs.existsSync(vaultsPath);
