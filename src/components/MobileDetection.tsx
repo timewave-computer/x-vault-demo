@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 
+/**
+ * There is no suppot for connecting a wallet on mobile devices.
+ * This component is used to detect if the user is on a mobile device
+ * and prevent them from accessing the app.
+ *
+ */
+
 export function MobileDetection({ children }: { children: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -22,9 +29,6 @@ export function MobileDetection({ children }: { children: React.ReactNode }) {
 
   // Don't render anything during server-side rendering to prevent hydration mismatch
   if (!isClient) return children;
-
-  console.log("isMobile", isMobile);
-  console.log("isClient", isClient);
 
   if (isMobile) {
     return (
