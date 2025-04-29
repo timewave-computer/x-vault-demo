@@ -35,6 +35,34 @@ To opt out of this, by delete the `fetch-remote-config` and `build-with-remote` 
    - Chain ID: 31337
    - Currency Symbol: ETH
 
+## About `vaults.config.json`
+
+The `vaults.config.json` file contains an array of vault configurations. Each vault object has the following fields:
+
+- `chainId`: The ID of the blockchain network where the vault is deployed (e.g., 31337 for local testnet, 1 for Ethereum mainnet)
+- `vaultId`: A unique identifier for the vault used internally by the application
+- `vaultAddress`: The Ethereum address of the vault contract
+- `vaultProxyAddress`: The address of the proxy contract if the vault uses upgradeable contracts
+- `tokenAddress`: The address of the ERC-20 token that the vault accepts as deposits
+- `transactionConfirmationTimeout`: Maximum time (in milliseconds) to wait for transaction confirmations
+- `startBlock`: The block number from which to start scanning for vault events
+- `name`: Human-readable name of the vault
+- `description`: A brief description of the vault's purpose and strategy
+- `token`: The symbol of the token accepted by the vault (e.g., "USDC", "ETH")
+- `aprRequest`: Configuration for fetching the vault's APR (Annual Percentage Rate)
+  - `type`: The source type for APR data ("api" or "contract")
+  - For API requests:
+    - `url`: The endpoint URL
+    - `method`: HTTP method (GET, POST, etc.)
+    - `headers`: Optional HTTP headers
+    - `body`: Optional request body
+  - For contract requests:
+    - `address`: The contract address
+    - `abi`: Contract ABI array
+    - `functionName`: Name of the function to call
+    - `args`: Optional arguments for the function call
+    - NOTE: this is supported but not tested in production
+
 ## Deprecated npm scripts
 
 start-anvil, manage-key, deploy-vaults, faucet are deprecated. They are for use with a local env.
