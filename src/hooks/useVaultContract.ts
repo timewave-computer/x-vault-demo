@@ -429,7 +429,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     });
 
     return formatBigInt(previewAmount, tokenDecimals, symbol, {
-      displayDecimals: 4,
+      displayDecimals: 2,
     });
   };
 
