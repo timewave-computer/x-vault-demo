@@ -34,9 +34,10 @@ export type VaultData = VaultConfig & {
   };
 };
 
-export const useFetchVaultData = () => {
-  const { address } = useAccount();
+export function useViewAllVaults() {
+  const { address, chainId } = useAccount();
   const config = useConfig();
+  const { vaultsConfig } = useVaultsConfig();
 
   // fetches vault data for a single vault
   const fetchVaultData = useCallback(
@@ -165,17 +166,6 @@ export const useFetchVaultData = () => {
     },
     [config, address],
   );
-
-  return {
-    fetchVaultData,
-  };
-};
-
-export function useViewAllVaults() {
-  const { address, chainId } = useAccount();
-  const { vaultsConfig } = useVaultsConfig();
-
-  const { fetchVaultData } = useFetchVaultData();
 
   const {
     data: vaults,
