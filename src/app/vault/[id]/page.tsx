@@ -244,11 +244,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         <div className="sm:flex sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-beast text-primary sm:text-4xl">
-              {vaultData.name}
+              {vaultData.copy.name}
             </h1>
-            <div className="flex flex-col gap-1 mt-1.5 text-base text-gray-500">
-              <p className=" ">{vaultData.description}</p>
-
+            <div className="flex flex-col gap-1 mt-1 text-base text-gray-500">
               <a
                 href={`https://etherscan.io/address/${vaultData.vaultProxyAddress}`}
                 target="_blank"
@@ -257,6 +255,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               >
                 {vaultData.vaultProxyAddress}
               </a>
+              <p className="mt-2">{vaultData.copy.description}</p>
             </div>
           </div>
         </div>
@@ -291,6 +290,65 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           </Card>
         </dl>
 
+        {/*shows when user has assets in the vault */}
+        {isConnected &&
+          maxRedeem &&
+          maxRedeem > BigInt(0) &&
+          // contains copy for vault path and on deposit success
+          vaultData.copy.vaultPath &&
+          vaultData.copy.onDepositSuccess && (
+            <div className="mt-8">
+              <Card
+                variant="secondary"
+                className="bg-gradient-to-r from-accent-purple/10 to-primary-light/20 overflow-hidden relative border-2 border-accent-purple/20"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 bg-accent-purple/5 rounded-full blur-xl"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 -ml-10 -mb-10 bg-accent-purple/5 rounded-full blur-xl"></div>
+
+                <div className="py-4 relative z-10">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between px-4 md:px-6">
+                    <div className="text-left">
+                      <div className="text-xl font-beast text-accent-purple mb-2">
+                        Your Funds are Working
+                      </div>
+
+                      <div className="text-sm font-sans text-accent-purple mb-3">
+                        {vaultData.copy.vaultPath}
+                      </div>
+
+                      <div className="max-w-md mt-2">
+                        <p className="text-sm text-gray-600">
+                          {vaultData.copy.onDepositSuccess}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* APR Display - Right side */}
+                    {vaultData.apr && assetBalanceFormatted && (
+                      <div className="flex-shrink-0 mt-4 md:mt-0">
+                        <div className="flex flex-col items-center bg-accent-purple/10 py-3 px-5 rounded-xl border border-accent-purple/30 transform transition-transform">
+                          <div className="flex items-center">
+                            <span className="text-2xl font-beast text-accent-purple mr-2">
+                              🔥
+                            </span>
+                            <div className="flex flex-col items-start">
+                              <span className="text-xs text-gray-600 uppercase tracking-wider">
+                                {assetBalanceFormatted} earning
+                              </span>
+                              <span className="text-2xl font-beast text-accent-purple">
+                                {vaultData.apr}% APY
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
+
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Deposit Section */}
           <Card variant="primary">
@@ -317,7 +375,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </div>
 
             {/* Deposit input */}
-
             <div className="flex rounded-lg border-2 border-primary/40">
               <Input
                 type="number"

@@ -70,10 +70,10 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         <div className="sm:flex sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-beast text-primary sm:text-4xl">
-              {vaultData.name}
+              {vaultData.copy.name}
             </h1>
             <div className="flex flex-col gap-1 mt-1.5 text-base text-gray-500">
-              <p className=" ">{vaultData.description}</p>
+              <p className=" ">{vaultData.copy.description}</p>
 
               <a
                 href={`https://etherscan.io/address/${vaultData.vaultProxyAddress}`}
