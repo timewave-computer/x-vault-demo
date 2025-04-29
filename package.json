@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "build-with-remote": "npm run fetch-remote-config && npm run build",
-    "fetch-remote-config": "node scripts/fetch-vault-config.js",
+    "fetch-remote-config": "node scripts/fetch-vaults-config.js",
     "start-anvil": "./scripts/start-anvil.sh",
     "manage-key": "./scripts/manage-key.sh",
     "deploy-vaults": "./scripts/deploy-vaults.sh",
