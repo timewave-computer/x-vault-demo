@@ -5,11 +5,11 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-const isProduction = process.env.NODE_ENV === "production";
+const isDevelopment = process.env.NODE_ENV === "development";
 const GITHUB_ACCESS_TOKEN = process.env.VAULT_CONFIG_ACCESS_TOKEN;
 const FILE_PATH = process.env.VAULT_CONFIG_FILE_PATH_URL;
 
-const VAULTS_CONFIG_WRITE_PATH = "vaults.config.json";
+const VAULTS_CONFIG_PUBLIC_PATH = "public/vaults.config.json";
 
 async function fetchVaults() {
   if (!GITHUB_ACCESS_TOKEN || !FILE_PATH) {
@@ -41,17 +41,33 @@ async function fetchVaults() {
 async function main() {
   console.log("Fetching remote vaults config...");
   try {
-    if (!isProduction) {
+    if (isDevelopment) {
       console.log(
-        "Not fetching vaults in non-production environment. Please modify vaults.config.json in the root folder, or set NODE_ENV to production.",
+        "Not fetching vaults for development environment. Please modify vaults.config.json in the root folder, or set NODE_ENV to production.",
       );
       return;
     }
     const { content, url } = await fetchVaults();
     console.log("Successfully fetched remote vaults config from", url);
-    const outputPath = path.join(process.cwd(), VAULTS_CONFIG_WRITE_PATH);
-    fs.writeFileSync(outputPath, content);
-    console.log("Saved remote vaults config to", VAULTS_CONFIG_WRITE_PATH);
+
+    // save to public directory for client-side access
+    try {
+      // Create public directory if it doesn't exist
+      const publicDir = path.join(process.cwd(), "public");
+      if (!fs.existsSync(publicDir)) {
+        fs.mkdirSync(publicDir, { recursive: true });
+      }
+
+      const publicOutputPath = path.join(
+        process.cwd(),
+        VAULTS_CONFIG_PUBLIC_PATH,
+      );
+      fs.writeFileSync(publicOutputPath, content);
+      console.log("Saved remote vaults config to", VAULTS_CONFIG_PUBLIC_PATH);
+    } catch (error) {
+      console.error("Error saving to public directory:", error);
+      // Continue even if public directory save fails
+    }
   } catch (error) {
     console.error("Error fetching vaults:", error);
     process.exit(1);

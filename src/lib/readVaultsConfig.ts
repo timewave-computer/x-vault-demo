@@ -9,7 +9,7 @@ import { Address } from "viem";
  * and returns the config as an array of VaultConfig objects
  */
 
-const VAULTS_CONFIG_READ_PATH = "vaults.config.json";
+const VAULTS_CONFIG_READ_PATH = "public/vaults.config.json";
 
 const aprContractRequestSchema = z.object({
   type: z.literal("contract"),

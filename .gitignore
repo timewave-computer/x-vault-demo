@@ -47,4 +47,4 @@ coverage/
 *scratch*
 
 ## remove this if you want to commit the config to your repo
-vaults.config.json
+public/vaults.config.json
