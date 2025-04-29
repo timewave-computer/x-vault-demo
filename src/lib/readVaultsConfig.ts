@@ -62,10 +62,11 @@ export type VaultConfig = z.infer<typeof VaultConfigSchema> & {
 export async function readVaultsConfig() {
   try {
     const vaultsPath = path.join(process.cwd(), VAULTS_CONFIG_READ_PATH);
+    console.log("searching for vaults config at", vaultsPath);
     const isExists = fs.existsSync(vaultsPath);
     if (!isExists) {
       throw new Error(
-        `${VAULTS_CONFIG_READ_PATH} not found. See README.md for more info.`,
+        `${VAULTS_CONFIG_READ_PATH} not found at ${vaultsPath}. See README.md for more info.`,
       );
     }
     const vaultsData = JSON.parse(fs.readFileSync(vaultsPath, "utf-8"));
