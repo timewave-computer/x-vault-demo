@@ -1,4 +1,4 @@
-import { VaultConfig } from "@/lib";
+import { type VaultConfig } from "@/context";
 import { readContract } from "wagmi/actions";
 import type { Config } from "wagmi";
 import { formatUnits } from "viem";

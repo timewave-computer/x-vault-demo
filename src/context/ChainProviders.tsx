@@ -8,7 +8,7 @@ import {
   http,
 } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AppKitProvider } from "@/components";
+import { AppKitProvider } from "@/context";
 import { networks } from "@/config";
 import { createClient } from "viem";
 

@@ -1,7 +1,22 @@
 "use client";
 
+import { vaultConfigSchema } from "@/lib";
 import { createContext, useContext, ReactNode } from "react";
-import { VaultConfig } from "@/lib";
+import { Address } from "viem";
+import { z } from "zod";
+
+/***
+ * Provider for accessing data read out from vaults.config.json file saved locally in the file system
+ * This can be removed and the config file accessed by direct import if vaults.config.json is committed to the repository
+ *
+ */
+
+export type VaultConfig = z.infer<typeof vaultConfigSchema> & {
+  vaultAddress: Address;
+  vaultProxyAddress: Address;
+  tokenAddress: Address;
+  startBlock: bigint;
+};
 
 interface VaultsContextType {
   vaultsConfig: VaultConfig[];

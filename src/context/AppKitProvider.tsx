@@ -8,10 +8,10 @@ import Script from "next/script";
 import { networks } from "@/config";
 
 // Validate required environment variables
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
+const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID;
 if (!projectId) {
   throw new Error(
-    "Missing NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID in environment variables",
+    "Missing NEXT_PUBLIC_REOWN_PROJECT_ID in environment variables",
   );
 }
 
@@ -56,6 +56,7 @@ export function AppKitProvider({ children }: { children: ReactNode }) {
           features: {
             analytics: false,
           },
+          enableWalletConnect: false,
           themeMode: "light",
           themeVariables: {
             "--w3m-accent": "#600473",
