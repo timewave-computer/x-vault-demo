@@ -15,6 +15,7 @@ export function useVaultLogs(vaultData?: VaultData) {
     startBlock: vaultStartBlock,
   } = vaultData ?? {
     // placeholders
+    startBlock: BigInt(0),
     tokenDecimals: 6,
     shareDecimals: 18,
   };
@@ -161,8 +162,8 @@ export function useVaultLogs(vaultData?: VaultData) {
 
       return { withdrawRequests, processedUpdates, deposits };
     } catch (error) {
-      console.error("Failed to fetch pending withdrawals:", error);
-      throw new Error("Failed to fetch pending withdrawals");
+      console.error("Failed to fetch vault logs:", error);
+      throw new Error("Failed to fetch vault logs");
     }
   };
 

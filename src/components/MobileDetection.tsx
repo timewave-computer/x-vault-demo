@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 export function MobileDetection({ children }: { children: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const isDev = process.env.NODE_ENV === "development";
 
   useEffect(() => {
     setIsClient(true);
@@ -29,6 +30,9 @@ export function MobileDetection({ children }: { children: React.ReactNode }) {
 
   // Don't render anything during server-side rendering to prevent hydration mismatch
   if (!isClient) return children;
+
+  // Don't show mobile detection in development
+  if (isDev) return children;
 
   if (isMobile) {
     return (
