@@ -148,7 +148,6 @@ This file stores persistent environment variables and is created by the `manage-
 DEPLOYER_PRIVATE_KEY=<your-deployer-private-key>
 DEPLOYER_ADDRESS=<your-deployer-address>
 NEXT_PUBLIC_REOWN_PROJECT_ID=<reown-project-id>
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<walletconnect-project-id>  # Might be the same as the reown project id
 ```
 
 Do not commit this file to version control.
