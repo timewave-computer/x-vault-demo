@@ -8,20 +8,18 @@ import { readContract } from "wagmi/actions";
 import { formatBigIntToTimestamp, unixTimestampToDateString } from "@/lib";
 
 export function useVaultLogs(vaultData?: VaultData) {
-  const {
-    vaultProxyAddress,
-    tokenDecimals,
-    shareDecimals,
-    startBlock: vaultStartBlock,
-  } = vaultData ?? {
-    // placeholders
-    startBlock: BigInt(0),
-    tokenDecimals: 6,
-    shareDecimals: 18,
-  };
+  const { vaultProxyAddress, tokenDecimals, shareDecimals, startBlock } =
+    vaultData ?? {
+      // placeholders
+      startBlock: BigInt(0),
+      tokenDecimals: 6,
+      shareDecimals: 18,
+    };
   const publicClient = usePublicClient();
 
   const config = useConfig();
+
+  const test = BigInt(0);
   /**
    * Retrieves pending withdrawals for the current user from the vault
    * @returns An array of pending withdrawal objects with details
@@ -42,11 +40,11 @@ export function useVaultLogs(vaultData?: VaultData) {
             { type: "uint256", name: "totalAssetsToWithdraw", indexed: false },
           ],
         },
-        fromBlock: vaultStartBlock,
+        fromBlock: BigInt(startBlock),
         toBlock: "latest",
       });
 
-      const logs = await publicClient.getLogs({
+      const withdrawRequestLogs = await publicClient.getLogs({
         address: vaultProxyAddress as Address,
         event: {
           type: "event",
@@ -60,12 +58,12 @@ export function useVaultLogs(vaultData?: VaultData) {
             { type: "uint64", name: "updateId", indexed: false },
           ],
         },
-        fromBlock: vaultStartBlock,
+        fromBlock: BigInt(startBlock),
         toBlock: "latest",
       });
       // Process the logs to extract withdrawal information
       const withdrawRequests = await Promise.all(
-        logs.map(async (log) => {
+        withdrawRequestLogs.map(async (log) => {
           const { shares, maxLossBps, solverEnabled, updateId, owner } =
             log.args as {
               shares: bigint;
@@ -134,7 +132,7 @@ export function useVaultLogs(vaultData?: VaultData) {
             { type: "uint256", name: "shares", indexed: false },
           ],
         },
-        fromBlock: vaultStartBlock,
+        fromBlock: BigInt(startBlock),
         toBlock: "latest",
       });
 
