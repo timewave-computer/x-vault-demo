@@ -40,8 +40,12 @@ export const vaultConfigSchema = z.object({
     .regex(/^0x[a-fA-F0-9]{40}$/, "Invalid token address"),
   transactionConfirmationTimeout: z.number(),
   startBlock: z.number(),
-  name: z.string(),
-  description: z.string(),
+  copy: z.object({
+    name: z.string(),
+    description: z.string(),
+    onDepositSuccess: z.string().optional(),
+    vaultPath: z.string().optional(),
+  }),
   token: z.string(),
   aprRequest: aprRequestSchema,
 });

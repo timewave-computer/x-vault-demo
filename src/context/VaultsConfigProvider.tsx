@@ -23,7 +23,9 @@ interface VaultsContextType {
   getVaultConfig: (vaultId: string) => VaultConfig | undefined;
 }
 
-const VaultsContext = createContext<VaultsContextType | null>(null);
+export const VaultsConfigContext = createContext<VaultsContextType | null>(
+  null,
+);
 
 export function VaultsConfigProvider({
   children,
@@ -36,14 +38,14 @@ export function VaultsConfigProvider({
     return vaultsConfig.find((vault) => vault.vaultId === vaultId);
   };
   return (
-    <VaultsContext.Provider value={{ vaultsConfig, getVaultConfig }}>
+    <VaultsConfigContext.Provider value={{ vaultsConfig, getVaultConfig }}>
       {children}
-    </VaultsContext.Provider>
+    </VaultsConfigContext.Provider>
   );
 }
 
 export function useVaultsConfig() {
-  const context = useContext(VaultsContext);
+  const context = useContext(VaultsConfigContext);
   if (!context) {
     throw new Error(
       "useVaultsConfig must be used within a VaultsConfigProvider",

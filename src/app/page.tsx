@@ -47,13 +47,13 @@ export default function Home() {
                       <div>
                         <dt className="sr-only">Name</dt>
                         <dd className="text-2xl font-beast text-primary">
-                          {vault.name}
+                          {vault.copy.name}
                         </dd>
                       </div>
                       <div className="mt-2">
                         <dt className="sr-only">Description</dt>
                         <dd className="text-sm text-gray-500">
-                          {vault.description}
+                          {vault.copy.description}
                         </dd>
                       </div>
                     </dl>
