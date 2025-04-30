@@ -573,30 +573,21 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       the unbonding period.
                     </p>
                     <div className="mt-2">
-                      {pendingWithdrawal.isClaimable ? (
-                        <div className="bg-green-100 border border-green-300 rounded-lg p-3 mb-4">
-                          <div className="font-mono text-2xl text-center text-green-600 font-bold">
-                            00:00:00
-                          </div>
-                          <p className="text-center text-green-600 font-medium mt-1">
-                            Ready to claim
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="bg-gray-100 border border-gray-300 rounded-lg p-3 mb-4">
-                          <WithdrawalTimer
-                            initialTimeRemaining={
-                              pendingWithdrawal.timeRemaining || "--:--:--"
-                            }
-                            isClaimable={!!pendingWithdrawal.isClaimable}
-                            claimTime={pendingWithdrawal.claimTime || "N/A"}
-                          />
-                          <p className="text-center text-xs text-gray-600 mt-2 ">
-                            {" "}
+                      <WithdrawalTimer
+                        initialTimeRemaining={
+                          pendingWithdrawal.isClaimable
+                            ? "00:00:00"
+                            : pendingWithdrawal.timeRemaining || "--:--:--"
+                        }
+                        isClaimable={!!pendingWithdrawal.isClaimable}
+                        claimTime={pendingWithdrawal.claimTime || "N/A"}
+                      >
+                        {!pendingWithdrawal.isClaimable && (
+                          <p className="text-center text-xs text-gray-600 mt-2">
                             Claimable after: {pendingWithdrawal.claimTime}
                           </p>
-                        </div>
-                      )}
+                        )}
+                      </WithdrawalTimer>
                     </div>
                     <Button
                       onClick={() => handleCompleteWithdraw()}
@@ -645,10 +636,12 @@ function WithdrawalTimer({
   initialTimeRemaining,
   isClaimable,
   claimTime,
+  children,
 }: {
   initialTimeRemaining: string;
   isClaimable: boolean;
   claimTime: string;
+  children?: React.ReactNode;
 }) {
   const [timeRemaining, setTimeRemaining] = useState(initialTimeRemaining);
 
@@ -708,15 +701,26 @@ function WithdrawalTimer({
     }
   }, [isClaimable, claimTime]);
 
-  return (
-    <>
-      <p className="text-center text-gray-600 font-medium mt-1">
-        Time Remaining
-      </p>
+  const containerClassName = isClaimable
+    ? "bg-green-100 border border-green-300 rounded-lg p-3 mb-4"
+    : "bg-gray-100 border border-gray-300 rounded-lg p-3 mb-4";
 
-      <div className="font-mono text-2xl text-center text-gray-700 font-bold">
-        {timeRemaining}
-      </div>
-    </>
+  const timerClassName = isClaimable
+    ? "font-mono text-2xl text-center text-green-600 font-bold"
+    : "font-mono text-2xl text-center text-gray-700 font-bold";
+
+  const labelClassName = isClaimable
+    ? "text-center text-green-600 font-medium mb-1"
+    : "text-center text-gray-600 font-medium mt-1";
+
+  const label = isClaimable ? "Ready to claim" : "Time Remaining";
+
+  return (
+    <div className={containerClassName}>
+      {!isClaimable && <p className={labelClassName}>{label}</p>}
+      <div className={timerClassName}>{timeRemaining}</div>
+      {isClaimable && <p className={labelClassName}>{label}</p>}
+      {children}
+    </div>
   );
 }
