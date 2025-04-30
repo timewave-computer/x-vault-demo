@@ -37,6 +37,7 @@ export function useViewAllVaults() {
   // fetches vault data for a single vault
   const fetchVaultData = useCallback(
     async (vault: VaultConfig) => {
+      console.log("config", config);
       const generalVaultData = await readContracts(config, {
         contracts: [
           {
@@ -73,6 +74,7 @@ export function useViewAllVaults() {
           },
         ],
       });
+      console.log("generalVaultData", generalVaultData);
       let tokenDecimals: number;
       let shareDecimals: number;
       let tvl: bigint | undefined = undefined;

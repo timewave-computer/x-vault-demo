@@ -2,10 +2,9 @@
 
 import { createAppKit } from "@reown/appkit";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { mainnet } from "@reown/appkit/networks";
 import { type ReactNode, useEffect } from "react";
 import Script from "next/script";
-import { networks } from "@/config";
+import { anvilNetwork, networks } from "@/config";
 
 // Validate required environment variables
 const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID;
@@ -49,7 +48,7 @@ export function AppKitProvider({ children }: { children: ReactNode }) {
 
         // Create AppKit instance with error handling
         appKitInstance = createAppKit({
-          defaultNetwork: mainnet,
+          defaultNetwork: anvilNetwork,
           adapters: [adapter],
           networks,
           projectId: projectId as string,
