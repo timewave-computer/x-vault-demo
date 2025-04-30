@@ -192,7 +192,10 @@ export function useViewAllVaults() {
         errors: _errors.length > 0 ? _errors : undefined,
       };
       if (combinedResults.errors) {
-        console.error("Error fetching vault data", combinedResults.errors);
+        console.error(
+          "Error fetching vault data. Errors:",
+          combinedResults.errors,
+        );
       }
       return combinedResults;
     },

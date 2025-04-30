@@ -1,13 +1,30 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useViewAllVaults, useVaultLogs } from "@/hooks";
 import { useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
-import { formatUnits } from "viem";
-import { Card } from "@/components";
+import {
+  Card,
+  Toggle,
+  DepositEvents,
+  WithdrawEvents,
+  UpdateProcessedEvents,
+  type ToggleOption,
+  ChronologicalEvents,
+} from "@/components";
+
+// Export specific EventToggle for backward compatibility
+export type ViewMode = "divided" | "chronological";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
+  const [viewMode, setViewMode] = useState<ViewMode>("divided");
+  const toggleOptions: ToggleOption[] = [
+    { value: "divided", label: "By Event Type" },
+    { value: "chronological", label: "Chronological" },
+  ];
+
   const {
     vaults,
     isLoading: isLoadingVaults,
@@ -41,7 +58,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       </div>
     );
   } else if (isErrorVaults) {
-    return <p>Error loading vault data.</p>;
+    return (
+      <p>Could not load vaults Check that vault exists and chain is running.</p>
+    );
   } else if (logsError) {
     return <p>Error loading logs.</p>;
   } else if (!vaultData) {
@@ -62,6 +81,12 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       </div>
     );
   }
+
+  // Check if there are any events
+  const hasEvents =
+    (deposits && deposits.length > 0) ||
+    (withdrawRequests && withdrawRequests.length > 0) ||
+    (processedUpdates && processedUpdates.length > 0);
 
   return (
     <div className="relative">
@@ -110,184 +135,51 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           </Card>
         </dl>
 
-        <dl className="mt-6 grid grid-cols-3 gap-6 text-nowrap ">
-          <div>
-            {deposits && deposits.length > 0 && (
-              <div className="mt-8">
-                <Card variant="primary">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-beast text-accent-purple mb-1">
-                      event = Deposit
-                    </h3>
-                  </div>
-                  <div className="space-y-4">
-                    {deposits.map((deposit) => {
-                      return (
-                        <div
-                          key={deposit.transactionHash}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 overflow-x-scroll"
-                        >
-                          <div className="mb-4 sm:mb-0">
-                            <p className="text-base font-medium text-gray-900">
-                              {deposit.assets} assets
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {deposit.shares} shares minted
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Block:{" "}
-                              <a
-                                href={`https://etherscan.io/block/${deposit.blockNumber}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm opacity-90 hover:underline mt-1"
-                              >
-                                {deposit.blockNumber.toString()}
-                              </a>
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Sender: {deposit.sender}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Owner: {deposit.owner}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
-              </div>
+        {hasEvents && (
+          <div className="mt-8">
+            <h2 className="text-2xl font-beast text-primary mb-4">
+              Vault Events
+            </h2>
+
+            <Toggle
+              options={toggleOptions}
+              value={viewMode}
+              onChange={(value) => setViewMode(value as ViewMode)}
+            />
+
+            {viewMode === "divided" ? (
+              <dl className="grid grid-cols-1 gap-6 md:grid-cols-3 text-nowrap">
+                <div>
+                  <DepositEvents deposits={deposits || []} />
+                </div>
+                <div>
+                  <WithdrawEvents withdrawRequests={withdrawRequests || []} />
+                </div>
+                <div>
+                  <UpdateProcessedEvents
+                    processedUpdates={processedUpdates || []}
+                    tokenDecimals={vaultData?.tokenDecimals}
+                    shareDecimals={vaultData?.shareDecimals}
+                  />
+                </div>
+              </dl>
+            ) : (
+              <ChronologicalEvents
+                deposits={deposits || []}
+                withdrawRequests={withdrawRequests || []}
+                processedUpdates={processedUpdates || []}
+                tokenDecimals={vaultData?.tokenDecimals}
+                shareDecimals={vaultData?.shareDecimals}
+              />
             )}
           </div>
-          <div>
-            {withdrawRequests && withdrawRequests.length > 0 && (
-              <div className="mt-8">
-                <Card variant="primary">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-beast text-accent-purple mb-1">
-                      event = Withdraw
-                    </h3>
-                  </div>
-                  <div className="space-y-4">
-                    {withdrawRequests.map((withdrawal) => {
-                      return (
-                        <div
-                          key={withdrawal.transactionHash}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 overflow-x-scroll"
-                        >
-                          <div className="mb-4 sm:mb-0">
-                            <p className="text-base font-medium text-gray-900">
-                              {withdrawal.shares} shares
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Initiated on block:{" "}
-                              <a
-                                href={`https://etherscan.io/block/${withdrawal.blockNumber}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm opacity-90 hover:underline mt-1"
-                              >
-                                {withdrawal.blockNumber.toString()}
-                              </a>
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Owner: {withdrawal.owner}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Update ID: {withdrawal.updateId}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Withdraw rate: {withdrawal.withdrawRate}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Claimable after: {withdrawal.claimTime}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Update Timestamp: {withdrawal.updateTimestamp}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
-              </div>
-            )}
+        )}
+
+        {!hasEvents && (
+          <div className="mt-8 text-center p-6 bg-gray-50 rounded-lg">
+            <p className="text-gray-500">No events found for this vault</p>
           </div>
-          <div>
-            {processedUpdates && processedUpdates.length > 0 && (
-              <div className="mt-8">
-                <Card variant="primary">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-beast text-accent-purple mb-1">
-                      event = UpdateProcessed
-                    </h3>
-                  </div>
-                  <div className="space-y-4">
-                    {processedUpdates.map((update) => {
-                      return (
-                        <div
-                          key={update.transactionHash}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200 overflow-x-scroll"
-                        >
-                          <div className="mb-4 sm:mb-0">
-                            <p className="text-base font-medium text-gray-900">
-                              Update ID:{" "}
-                              {update.args?.updateId?.toString() || "N/A"}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Block:{" "}
-                              <a
-                                href={`https://etherscan.io/block/${update.blockNumber}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm opacity-90 hover:underline mt-1"
-                              >
-                                {update.blockNumber.toString()}
-                              </a>
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Withdraw Rate:{" "}
-                              {update.args?.withdrawRate &&
-                              vaultData?.shareDecimals
-                                ? formatUnits(
-                                    update.args.withdrawRate,
-                                    vaultData.shareDecimals,
-                                  )
-                                : "N/A"}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              Total Assets To Withdraw:{" "}
-                              {update.args?.totalAssetsToWithdraw &&
-                              vaultData?.tokenDecimals
-                                ? formatUnits(
-                                    update.args.totalAssetsToWithdraw,
-                                    vaultData.tokenDecimals,
-                                  )
-                                : "N/A"}
-                            </p>
-                            <p className="text-sm text-gray-500 ">
-                              Transaction:{" "}
-                              <a
-                                href={`https://etherscan.io/tx/${update.transactionHash}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm opacity-90 hover:underline mt-1 "
-                              >
-                                {update.transactionHash}
-                              </a>
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </Card>
-              </div>
-            )}
-          </div>
-        </dl>
+        )}
       </div>
     </div>
   );
