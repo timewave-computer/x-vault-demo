@@ -5,3 +5,5 @@ export * from "./Footer";
 export * from "./Header";
 export * from "./Input";
 export * from "./MobileDetection";
+export * from "./Toggle";
+export * from "./debug";
