@@ -521,51 +521,58 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 )}
             </div>
           </Card>
-        </div>
 
-        {pendingWithdrawal && pendingWithdrawal.hasActiveWithdraw && (
-          <div className="mt-8">
-            <Card variant="primary">
-              <div className="mb-6">
-                <h3 className="text-lg font-beast text-accent-purple mb-1">
-                  Pending Withdrawal
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Complete your pending withdrawal to receive your tokens.
-                  Assets will be claimable after the vault's unbonding period.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white w-1/2 rounded-lg border border-gray-200">
-                  <div className="mb-4 sm:mb-0">
-                    <p className="text-base font-medium text-gray-900">
-                      {pendingWithdrawal.sharesAmount} shares at{" "}
-                      {pendingWithdrawal?.withdrawRate}%
-                    </p>
-
-                    <p className="text-sm text-gray-500 mt-2">
-                      Claimable after: {pendingWithdrawal.claimTime}
+          {/* Withdrawal Status */}
+          {pendingWithdrawal &&
+            pendingWithdrawal.formatted &&
+            pendingWithdrawal.hasActiveWithdraw && (
+              <>
+                <Card variant="secondary">
+                  <div className="mb-6">
+                    <h3 className="text-lg font-beast text-accent-purple mb-1">
+                      Withdraw Initiated
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Complete your pending withdrawal to receive your tokens.
+                      Assets will be claimable after the vault's unbonding
+                      period.
                     </p>
                   </div>
-                </div>
 
-                <Button
-                  onClick={() => handleCompleteWithdraw()}
-                  disabled={
-                    !isConnected ||
-                    isCompletingWithdraw ||
-                    !pendingWithdrawal.isClaimable
-                  }
-                  variant="primary"
-                  isLoading={isCompletingWithdraw}
-                >
-                  {isCompletingWithdraw ? "Processing..." : "Complete Withdraw"}
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+                      <div className="mb-4 sm:mb-0">
+                        <p className="text-base font-medium text-gray-900">
+                          {pendingWithdrawal.formatted.sharesAmount} for{" "}
+                          {pendingWithdrawal.withdrawAssetBalance} at{" "}
+                          (redemption rate: {pendingWithdrawal?.withdrawRate}%)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+                <Card variant="primary">
+                  <p className="text-sm text-gray-500 mt-2">
+                    Claimable after: {pendingWithdrawal.claimTime}
+                  </p>
+                  <Button
+                    onClick={() => handleCompleteWithdraw()}
+                    disabled={
+                      !isConnected ||
+                      isCompletingWithdraw ||
+                      !pendingWithdrawal.isClaimable
+                    }
+                    variant="primary"
+                    isLoading={isCompletingWithdraw}
+                  >
+                    {isCompletingWithdraw
+                      ? "Processing..."
+                      : "Complete Withdraw"}
+                  </Button>
+                </Card>
+              </>
+            )}
+        </div>
       </div>
     </div>
   );
