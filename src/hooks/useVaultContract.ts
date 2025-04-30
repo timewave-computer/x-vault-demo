@@ -14,6 +14,7 @@ import {
   formatBigInt,
   formatBigIntToTimestamp,
   unixTimestampToDateString,
+  formatRemainingTime,
 } from "@/lib";
 import { readContract } from "@wagmi/core";
 
@@ -155,12 +156,16 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       const claimTime = formatBigIntToTimestamp(_claimTime);
       const now = new Date().getTime();
 
+      // Calculate the time remaining
+      const timeRemaining = formatRemainingTime(claimTime);
+
       withdrawData = {
         owner,
         isClaimable: claimTime ? now > claimTime : false,
         claimTime: claimTime
           ? unixTimestampToDateString(claimTime, "toLocaleString")
           : "N/A",
+        timeRemaining,
         maxLossBps,
         receiver,
         updateId,
