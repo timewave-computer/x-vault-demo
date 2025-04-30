@@ -176,6 +176,7 @@ export function useViewAllVaults() {
         enabled: vaultsConfig?.length > 0,
         queryKey: [QUERY_KEYS.VAULT_DATA, vaultConfig.vaultId, address],
         queryFn: async () => {
+          console.log("fetching vault data for", vaultConfig.vaultId);
           return fetchVaultData(vaultConfig);
         },
       })),
