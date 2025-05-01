@@ -31,8 +31,6 @@ export interface DepositEventProps {
 }
 
 export function DepositEvents({ deposits }: DepositEventProps) {
-  if (!deposits || deposits.length === 0) return null;
-
   return (
     <div className="mt-8">
       <EventCard title="Deposit">
@@ -87,8 +85,6 @@ export interface WithdrawEventProps {
 }
 
 export function WithdrawEvents({ withdrawRequests }: WithdrawEventProps) {
-  if (!withdrawRequests || withdrawRequests.length === 0) return null;
-
   return (
     <div className="mt-8">
       <EventCard title="Withdraw">
@@ -155,8 +151,6 @@ export function UpdateProcessedEvents({
   tokenDecimals,
   shareDecimals,
 }: UpdateProcessedEventProps) {
-  if (!processedUpdates || processedUpdates.length === 0) return null;
-
   return (
     <div className="mt-8">
       <EventCard title="UpdateProcessed">

@@ -87,15 +87,14 @@ export function WithdrawTimer({
 
   const childrenClassName = isClaimable
     ? "text-center text-green-600 text-xs"
-    : "text-center text-gray-600 ";
+    : "text-center text-gray-600 text-xs ";
 
   const label = isClaimable ? "Ready to claim" : "Time Remaining";
 
   return (
     <div className={containerClassName}>
-      {!isClaimable && <p className={labelClassName}>{label}</p>}
+      <p className={labelClassName}>{label}</p>
       <div className={timerClassName}>{timeRemaining}</div>
-      {isClaimable && <p className={labelClassName}>{label}</p>}
       {children && <div className={childrenClassName}>{children}</div>}
     </div>
   );

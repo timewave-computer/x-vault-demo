@@ -18,6 +18,8 @@ import {
 } from "@/lib";
 import { readContract } from "@wagmi/core";
 
+const REFRESH_INTERVAL = 5000;
+
 /**
  * Hook for interacting with an ERC-4626 vault contract
  * Provides functionality for:
@@ -52,6 +54,9 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     isError: isErrorVaultData,
     refetch: refetchVaultData,
   } = useReadContracts({
+    query: {
+      refetchInterval: REFRESH_INTERVAL,
+    },
     contracts: [
       {
         // total assetss (tvl)
@@ -86,6 +91,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
   } = useReadContracts({
     query: {
       enabled: isConnected && !!address,
+      refetchInterval: REFRESH_INTERVAL,
     },
     contracts: [
       {
@@ -153,8 +159,6 @@ export function useVaultContract(vaultMetadata?: VaultData) {
         sharesAmount,
       ] = userWithdrawRequest;
 
-      // Add 2 hours (7200 seconds) to _claimTime to adjust for server time difference
-      // TEMP
       const adjustedClaimTime = _claimTime - BigInt(7200);
       const claimTime = formatBigIntToTimestamp(adjustedClaimTime);
 
@@ -186,7 +190,6 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     }
   }
 
-  //  user's withdraw asset amount (shares -> assets)
   const {
     data: _withdrawAssetBalance,
     refetch: refetchWithdrawAssetBalance,
@@ -194,7 +197,8 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     isError: isWithdrawAssetBalanceError,
   } = useReadContract({
     query: {
-      enabled: !!withdrawData?.raw.sharesAmount,
+      enabled: isConnected && !!address && !!withdrawData?.raw.sharesAmount,
+      refetchInterval: REFRESH_INTERVAL,
     },
     abi: valenceVaultABI,
     functionName: "convertToAssets",
@@ -221,7 +225,8 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     isError: isAssetBalanceError,
   } = useReadContract({
     query: {
-      enabled: !!shareBalance,
+      enabled: isConnected && !!address && !!shareBalance,
+      refetchInterval: REFRESH_INTERVAL,
     },
     abi: valenceVaultABI,
     functionName: "convertToAssets",
@@ -237,7 +242,8 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     isError: isUpdateInfoError,
   } = useReadContract({
     query: {
-      enabled: !!withdrawData?.updateId,
+      enabled: isConnected && !!address && !!withdrawData?.updateId,
+      refetchInterval: REFRESH_INTERVAL,
     },
     abi: valenceVaultABI,
     functionName: "updateInfos",

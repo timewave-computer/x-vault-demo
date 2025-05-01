@@ -8,7 +8,13 @@ import { isValidNumberInput } from "@/lib";
 import { useToast } from "@/hooks";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
-import { Button, Input, Card, WithdrawTimer } from "@/components";
+import {
+  Button,
+  Input,
+  Card,
+  WithdrawTimer,
+  TimelineAnimation,
+} from "@/components";
 import { formatUnits } from "viem";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
@@ -293,8 +299,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           maxRedeem &&
           maxRedeem > BigInt(0) &&
           // contains copy for vault path and on deposit success
-          vaultData.copy.vaultPath &&
-          vaultData.copy.onDepositSuccess && (
+          !pendingWithdrawal?.hasActiveWithdraw && (
             <div className="mt-8">
               <Card
                 variant="secondary"
@@ -304,43 +309,20 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 <div className="absolute bottom-0 left-0 w-24 h-24 -ml-10 -mb-10 bg-accent-purple/5 rounded-full blur-xl"></div>
 
                 <div className="py-4 relative z-10">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between px-4 md:px-6">
-                    <div className="text-left">
-                      <div className="text-xl font-beast text-accent-purple mb-2">
-                        Your Funds are Working
-                      </div>
-
-                      <div className="text-sm font-sans text-accent-purple mb-3">
-                        {vaultData.copy.vaultPath}
-                      </div>
-
-                      <div className="max-w-md mt-2">
-                        <p className="text-sm text-gray-600">
-                          {vaultData.copy.onDepositSuccess}
-                        </p>
-                      </div>
+                  <div className="flex flex-col  px-4 max-w-[1200px] ">
+                    <div className="text-xl font-beast text-accent-purple mb-2">
+                      Your Funds are Working
                     </div>
 
-                    {/* APR Display - Right side */}
-                    {vaultData.apr && assetBalanceFormatted && (
-                      <div className="flex-shrink-0 mt-4 md:mt-0">
-                        <div className="flex flex-col items-center bg-accent-purple/10 py-3 px-5 rounded-xl border border-accent-purple/30 transform transition-transform">
-                          <div className="flex items-center">
-                            <span className="text-2xl font-beast text-accent-purple mr-2">
-                              🔥
-                            </span>
-                            <div className="flex flex-col items-start">
-                              <span className="text-xs text-gray-600 uppercase tracking-wider">
-                                {assetBalanceFormatted} earning
-                              </span>
-                              <span className="text-2xl font-beast text-accent-purple">
-                                {vaultData.apr}% APY
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    <div className=" grid grid-cols-1 gap-6 lg:grid-cols-2">
+                      <div>{vaultData.copy.deposit.description}</div>
+                      <TimelineAnimation
+                        steps={[
+                          ...vaultData.copy.deposit.steps,
+                          `Earning ${vaultData.apr}% APY`,
+                        ]}
+                      />
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -528,37 +510,31 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 <Card variant="secondary">
                   <div className="mb-6">
                     <h3 className="text-lg font-beast text-accent-purple mb-1">
-                      Withdraw Initiated
+                      Withdraw In Progress
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Your shares are being converted back to {vaultData.token}.
-                      Assets will be claimable after the vault's unbonding
-                      period.
+                      {vaultData.copy.withdraw.description}
                     </p>
                   </div>
 
                   <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-                      <div className="flex items-center bg-accent-purple/10 py-3 px-5 rounded-xl border border-accent-purple/30 transform transition-transform w-full">
-                        <span className="text-2xl font-beast text-accent-purple mr-3">
-                          💸
-                        </span>
-                        <div className="flex flex-col items-start">
-                          <span className="text-xs text-gray-600 uppercase tracking-wider">
-                            Pending withdrawal
-                          </span>
-                          <span className="text-2xl font-beast text-accent-purple">
-                            {pendingWithdrawal.withdrawAssetBalance}
-                          </span>
-                          <span className="text-xs text-gray-600 mt-1">
-                            {pendingWithdrawal.formatted.sharesAmount}{" "}
-                            {pendingWithdrawal?.withdrawRate && (
-                              <>at {pendingWithdrawal?.withdrawRate}% </>
-                            )}
-                          </span>
-                          <span className="text-xs text-gray-600 mt-1"></span>
-                        </div>
-                      </div>
+                    <div className="flex flex-col w-full items-center">
+                      <span className="text-2xl font-beast text-accent-purple">
+                        {pendingWithdrawal.withdrawAssetBalance}
+                      </span>
+                      <span className="text-xs text-gray-600 mt-1">
+                        {pendingWithdrawal.formatted.sharesAmount}{" "}
+                        {pendingWithdrawal?.withdrawRate &&
+                          Number(pendingWithdrawal.withdrawRate) > 0 && (
+                            <>at {pendingWithdrawal.withdrawRate}% </>
+                          )}
+                      </span>
+                      <span className="text-xs text-gray-600 mt-1"></span>
+                      {vaultData.copy.withdraw.steps && (
+                        <TimelineAnimation
+                          steps={vaultData.copy.withdraw.steps}
+                        />
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -568,9 +544,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       Complete Withdraw
                     </h3>
                     <p className="text-sm text-gray-500">
-                      Due to the cross-chain nature of the vault, the withdraw
-                      process includes a delay. Your tokens can be claimed after
-                      the unbonding period.
+                      Transfer can be completed after the vault's unbonding
+                      period.
                     </p>
                     <div className="mt-2">
                       <WithdrawTimer
@@ -598,7 +573,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       variant="primary"
                       isLoading={isCompletingWithdraw}
                     >
-                      {isCompletingWithdraw ? "Processing..." : "Claim deposit"}
+                      {isCompletingWithdraw
+                        ? "Processing..."
+                        : "Transfer to Wallet"}
                     </Button>
                   </div>
                 </Card>

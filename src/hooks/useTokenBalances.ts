@@ -7,6 +7,8 @@ import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { QUERY_KEYS } from "@/const";
 
+const REFRESH_INTERVAL = 5000;
+
 export function useTokenBalances({
   address,
   tokenAddresses,
@@ -21,7 +23,7 @@ export function useTokenBalances({
     address,
     query: {
       enabled: !!address,
-      refetchInterval: 5000,
+      refetchInterval: REFRESH_INTERVAL,
     },
   });
 
@@ -31,6 +33,7 @@ export function useTokenBalances({
       : tokenAddresses.map((tokenAddress) => ({
           queryKey: [QUERY_KEYS.TOKEN_BALANCE, address, tokenAddress],
           enabled: !!address,
+          refetchInterval: REFRESH_INTERVAL,
           queryFn: async () => {
             if (!address) return;
             const [balance, decimals, symbol] = await readContracts(config, {
