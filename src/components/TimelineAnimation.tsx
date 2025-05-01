@@ -5,12 +5,14 @@ interface TimelineAnimationProps {
   steps: string[];
   durationPerStep?: number;
   pauseDuration?: number;
+  lineAnimationDuration?: number;
 }
 
 export const TimelineAnimation = ({
   steps,
   durationPerStep = 2000,
   pauseDuration = 6000,
+  lineAnimationDuration = 600,
 }: TimelineAnimationProps) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [animatingLineIndex, setAnimatingLineIndex] = useState<number | null>(
@@ -52,7 +54,7 @@ export const TimelineAnimation = ({
           setCurrentStepIndex(nextIndex);
           setAnimatingLineIndex(null);
         }
-      }, 300);
+      }, lineAnimationDuration);
     };
 
     const interval = setInterval(progressAnimation, durationPerStep);
@@ -61,7 +63,7 @@ export const TimelineAnimation = ({
   }, [steps, durationPerStep, currentStepIndex, isPaused, pauseDuration]);
 
   return (
-    <div className="w-full py-2">
+    <div className="w-full">
       {/* Current step display */}
       <div className="mb-3 text-sm md:text-base font-medium text-accent-purple flex items-center">
         {steps[currentStepIndex]}
