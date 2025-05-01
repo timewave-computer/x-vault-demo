@@ -14,6 +14,7 @@ import {
   formatBigInt,
   formatBigIntToTimestamp,
   unixTimestampToDateString,
+  formatRemainingTime,
 } from "@/lib";
 import { readContract } from "@wagmi/core";
 
@@ -152,26 +153,64 @@ export function useVaultContract(vaultMetadata?: VaultData) {
         sharesAmount,
       ] = userWithdrawRequest;
 
-      const claimTime = formatBigIntToTimestamp(_claimTime);
-      const now = new Date().getTime();
+      // Add 2 hours (7200 seconds) to _claimTime to adjust for server time difference
+      // TEMP
+      const adjustedClaimTime = _claimTime - BigInt(7200);
+      const claimTime = formatBigIntToTimestamp(adjustedClaimTime);
+
+      // Calculate the time remaining
+      const timeRemaining = formatRemainingTime(claimTime);
 
       withdrawData = {
         owner,
-        isClaimable: claimTime ? now > claimTime : false,
-        claimTime: claimTime
-          ? unixTimestampToDateString(claimTime, "toLocaleString")
-          : "N/A",
+        timeRemaining,
         maxLossBps,
         receiver,
         updateId,
         solverFee,
-        sharesAmount:
-          shareDecimals && sharesAmount
-            ? formatUnits(sharesAmount ?? BigInt(0), shareDecimals)
+        raw: {
+          sharesAmount: sharesAmount,
+          claimTime: claimTime,
+        },
+        formatted: {
+          sharesAmount: sharesAmount
+            ? formatBigInt(sharesAmount, shareDecimals, "shares", {
+                displayDecimals: 2,
+              })
             : "0",
+          claimTime: claimTime
+            ? unixTimestampToDateString(claimTime, "toLocaleString")
+            : "N/A",
+        },
       };
     }
   }
+
+  //  user's withdraw asset amount (shares -> assets)
+  const {
+    data: _withdrawAssetBalance,
+    refetch: refetchWithdrawAssetBalance,
+    isLoading: isLoadingWithdrawAssetBalance,
+    isError: isWithdrawAssetBalanceError,
+  } = useReadContract({
+    query: {
+      enabled: !!withdrawData?.raw.sharesAmount,
+    },
+    abi: valenceVaultABI,
+    functionName: "convertToAssets",
+    address: vaultProxyAddress as Address,
+    args: withdrawData?.raw.sharesAmount
+      ? [withdrawData.raw.sharesAmount]
+      : [BigInt(0)],
+  });
+  const withdrawAssetBalance = formatBigInt(
+    _withdrawAssetBalance,
+    tokenDecimals,
+    symbol,
+    {
+      displayDecimals: 2,
+    },
+  );
 
   //  user's vault "position" (shares -> assets)
   // depends on user's share balance
@@ -209,27 +248,16 @@ export function useVaultContract(vaultMetadata?: VaultData) {
   // extract values from response
   if (updateInfoRequest?.length === 3) {
     const [withdrawRate, timestamp, withdrawFee] = updateInfoRequest;
+
     updateData = {
       withdrawRate:
         shareDecimals && withdrawRate
-          ? formatUnits(withdrawRate, shareDecimals)
+          ? formatUnits(withdrawRate, tokenDecimals)
           : "0",
       timestamp: unixTimestampToDateString(formatBigIntToTimestamp(timestamp)),
       withdrawFee: withdrawFee.toString(),
     };
   }
-
-  const isLoading =
-    isLoadingVaultData ||
-    isLoadingUserData ||
-    isLoadingAssetBalance ||
-    isLoadingUpdateInfo;
-
-  const isError =
-    isErrorVaultData ||
-    isErrorUserData ||
-    isAssetBalanceError ||
-    isUpdateInfoError;
 
   /**
    * Vault actions
@@ -433,12 +461,33 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     });
   };
 
-  //Refetch all queries, useful after performing an action
+  /***
+   * Statuses
+   */
+
+  const now = new Date().getTime();
+
+  const isLoading =
+    isLoadingVaultData ||
+    isLoadingUserData ||
+    isLoadingAssetBalance ||
+    isLoadingUpdateInfo ||
+    isLoadingWithdrawAssetBalance;
+
+  const isError =
+    isErrorVaultData ||
+    isErrorUserData ||
+    isAssetBalanceError ||
+    isUpdateInfoError ||
+    isWithdrawAssetBalanceError;
+
+  // Refetch all queries, useful after performing an action
   const refetchContractState = () => {
     refetchVaultData();
     refetchUserData();
     refetchAssetBalance();
     refetchUpdateInfo();
+    refetchWithdrawAssetBalance();
   };
 
   return {
@@ -452,6 +501,11 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       hasActiveWithdraw,
       ...withdrawData,
       ...updateData,
+      withdrawAssetBalance,
+      isClaimable:
+        withdrawData?.raw.claimTime && updateData?.withdrawRate
+          ? now > withdrawData.raw.claimTime
+          : false,
     },
     raw: {
       tvl,

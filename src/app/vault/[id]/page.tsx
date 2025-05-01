@@ -5,10 +5,10 @@ import { useViewAllVaults, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
 import { isValidNumberInput } from "@/lib";
-import { useToast } from "@/context";
+import { useToast } from "@/hooks";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
-import { Button, Input, Card } from "@/components";
+import { Button, Input, Card, WithdrawTimer } from "@/components";
 import { formatUnits } from "viem";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
@@ -35,8 +35,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     refetchContractState,
     formatted: {
       tvl: tvlFormatted,
-      redemptionRate: redemptionRateFormatted,
-      maxRedeem: maxRedeemFormatted,
       shareBalance: shareBalanceFormatted,
       assetBalance: assetBalanceFormatted,
     },
@@ -521,51 +519,92 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 )}
             </div>
           </Card>
-        </div>
 
-        {pendingWithdrawal && pendingWithdrawal.hasActiveWithdraw && (
-          <div className="mt-8">
-            <Card variant="primary">
-              <div className="mb-6">
-                <h3 className="text-lg font-beast text-accent-purple mb-1">
-                  Pending Withdrawal
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Complete your pending withdrawal to receive your tokens.
-                  Assets will be claimable after the vault's unbonding period.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white w-1/2 rounded-lg border border-gray-200">
-                  <div className="mb-4 sm:mb-0">
-                    <p className="text-base font-medium text-gray-900">
-                      {pendingWithdrawal.sharesAmount} shares at{" "}
-                      {pendingWithdrawal?.withdrawRate}%
-                    </p>
-
-                    <p className="text-sm text-gray-500 mt-2">
-                      Claimable after: {pendingWithdrawal.claimTime}
+          {/* Withdrawal Status */}
+          {pendingWithdrawal &&
+            pendingWithdrawal.formatted &&
+            pendingWithdrawal.hasActiveWithdraw && (
+              <>
+                <Card variant="secondary">
+                  <div className="mb-6">
+                    <h3 className="text-lg font-beast text-accent-purple mb-1">
+                      Withdraw Initiated
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Your shares are being converted back to {vaultData.token}.
+                      Assets will be claimable after the vault's unbonding
+                      period.
                     </p>
                   </div>
-                </div>
 
-                <Button
-                  onClick={() => handleCompleteWithdraw()}
-                  disabled={
-                    !isConnected ||
-                    isCompletingWithdraw ||
-                    !pendingWithdrawal.isClaimable
-                  }
-                  variant="primary"
-                  isLoading={isCompletingWithdraw}
-                >
-                  {isCompletingWithdraw ? "Processing..." : "Complete Withdraw"}
-                </Button>
-              </div>
-            </Card>
-          </div>
-        )}
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+                      <div className="flex items-center bg-accent-purple/10 py-3 px-5 rounded-xl border border-accent-purple/30 transform transition-transform w-full">
+                        <span className="text-2xl font-beast text-accent-purple mr-3">
+                          💸
+                        </span>
+                        <div className="flex flex-col items-start">
+                          <span className="text-xs text-gray-600 uppercase tracking-wider">
+                            Pending withdrawal
+                          </span>
+                          <span className="text-2xl font-beast text-accent-purple">
+                            {pendingWithdrawal.withdrawAssetBalance}
+                          </span>
+                          <span className="text-xs text-gray-600 mt-1">
+                            {pendingWithdrawal.formatted.sharesAmount}{" "}
+                            {pendingWithdrawal?.withdrawRate && (
+                              <>at {pendingWithdrawal?.withdrawRate}% </>
+                            )}
+                          </span>
+                          <span className="text-xs text-gray-600 mt-1"></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+                <Card variant="primary">
+                  <div className="mb-6">
+                    <h3 className="text-lg font-beast text-accent-purple mb-1">
+                      Complete Withdraw
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Due to the cross-chain nature of the vault, the withdraw
+                      process includes a delay. Your tokens can be claimed after
+                      the unbonding period.
+                    </p>
+                    <div className="mt-2">
+                      <WithdrawTimer
+                        initialTimeRemaining={
+                          pendingWithdrawal.isClaimable
+                            ? "00:00:00"
+                            : pendingWithdrawal.timeRemaining || "--:--:--"
+                        }
+                        isClaimable={!!pendingWithdrawal.isClaimable}
+                        claimTime={
+                          pendingWithdrawal.formatted.claimTime || "N/A"
+                        }
+                      >
+                        Claimable after: {pendingWithdrawal.formatted.claimTime}
+                      </WithdrawTimer>
+                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={() => handleCompleteWithdraw()}
+                      disabled={
+                        !isConnected ||
+                        isCompletingWithdraw ||
+                        !pendingWithdrawal.isClaimable
+                      }
+                      variant="primary"
+                      isLoading={isCompletingWithdraw}
+                    >
+                      {isCompletingWithdraw ? "Processing..." : "Claim deposit"}
+                    </Button>
+                  </div>
+                </Card>
+              </>
+            )}
+        </div>
       </div>
     </div>
   );

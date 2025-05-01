@@ -57,3 +57,41 @@ export const unixTimestampToDateString = (
       })} ${timeZoneName}`;
   }
 };
+
+/**
+ * Calculates and formats the remaining time until a future timestamp
+ * @param claimTimestamp - Future timestamp in milliseconds
+ * @returns Formatted time string in "HH:MM:SS" or "DD:HH:MM:SS" format for longer timeframes
+ */
+export const formatRemainingTime = (
+  claimTimestamp: number | undefined,
+): string | null => {
+  if (!claimTimestamp) return null;
+
+  const now = Date.now();
+
+  // If timestamp is in the past, return null
+  if (claimTimestamp <= now) return null;
+
+  // Calculate difference in seconds
+  const diffInSeconds = Math.floor((claimTimestamp - now) / 1000);
+
+  // For larger time frames, show days
+  const days = Math.floor(diffInSeconds / 86400); // 86400 seconds in a day
+  const hours = Math.floor((diffInSeconds % 86400) / 3600);
+  const minutes = Math.floor((diffInSeconds % 3600) / 60);
+  const seconds = diffInSeconds % 60;
+
+  // Format with leading zeros
+  const formattedHours = String(hours).padStart(2, "0");
+  const formattedMinutes = String(minutes).padStart(2, "0");
+  const formattedSeconds = String(seconds).padStart(2, "0");
+
+  // Include days in the output if there are any
+  if (days > 0) {
+    const formattedDays = String(days).padStart(2, "0");
+    return `${formattedDays}:${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+  }
+
+  return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+};

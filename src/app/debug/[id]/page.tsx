@@ -59,7 +59,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     );
   } else if (isErrorVaults) {
     return (
-      <p>Could not load vaults Check that vault exists and chain is running.</p>
+      <p>Error loading vault. Check that vault exists and chain is running.</p>
     );
   } else if (logsError) {
     return <p>Error loading logs.</p>;

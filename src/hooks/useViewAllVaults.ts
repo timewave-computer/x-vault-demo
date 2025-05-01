@@ -37,7 +37,6 @@ export function useViewAllVaults() {
   // fetches vault data for a single vault
   const fetchVaultData = useCallback(
     async (vault: VaultConfig) => {
-      console.log("config", config);
       const generalVaultData = await readContracts(config, {
         contracts: [
           {
@@ -74,7 +73,6 @@ export function useViewAllVaults() {
           },
         ],
       });
-      console.log("generalVaultData", generalVaultData);
       let tokenDecimals: number;
       let shareDecimals: number;
       let tvl: bigint | undefined = undefined;
@@ -178,7 +176,6 @@ export function useViewAllVaults() {
         enabled: vaultsConfig?.length > 0,
         queryKey: [QUERY_KEYS.VAULT_DATA, vaultConfig.vaultId, address],
         queryFn: async () => {
-          console.log("fetching vault data for", vaultConfig.vaultId);
           return fetchVaultData(vaultConfig);
         },
       })),
