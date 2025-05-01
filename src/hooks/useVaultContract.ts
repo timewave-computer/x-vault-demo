@@ -153,18 +153,16 @@ export function useVaultContract(vaultMetadata?: VaultData) {
         sharesAmount,
       ] = userWithdrawRequest;
 
-      const claimTime = formatBigIntToTimestamp(_claimTime);
-      const now = new Date().getTime();
+      // Add 2 hours (7200 seconds) to _claimTime to adjust for server time difference
+      // TEMP
+      const adjustedClaimTime = _claimTime - BigInt(7200);
+      const claimTime = formatBigIntToTimestamp(adjustedClaimTime);
 
       // Calculate the time remaining
       const timeRemaining = formatRemainingTime(claimTime);
 
       withdrawData = {
         owner,
-        isClaimable: claimTime ? now > claimTime : false,
-        claimTime: claimTime
-          ? unixTimestampToDateString(claimTime, "toLocaleString")
-          : "N/A",
         timeRemaining,
         maxLossBps,
         receiver,
@@ -172,6 +170,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
         solverFee,
         raw: {
           sharesAmount: sharesAmount,
+          claimTime: claimTime,
         },
         formatted: {
           sharesAmount: sharesAmount
@@ -179,6 +178,9 @@ export function useVaultContract(vaultMetadata?: VaultData) {
                 displayDecimals: 2,
               })
             : "0",
+          claimTime: claimTime
+            ? unixTimestampToDateString(claimTime, "toLocaleString")
+            : "N/A",
         },
       };
     }
@@ -462,6 +464,9 @@ export function useVaultContract(vaultMetadata?: VaultData) {
   /***
    * Statuses
    */
+
+  const now = new Date().getTime();
+
   const isLoading =
     isLoadingVaultData ||
     isLoadingUserData ||
@@ -497,6 +502,10 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       ...withdrawData,
       ...updateData,
       withdrawAssetBalance,
+      isClaimable:
+        withdrawData?.raw.claimTime && updateData?.withdrawRate
+          ? now > withdrawData.raw.claimTime
+          : false,
     },
     raw: {
       tvl,

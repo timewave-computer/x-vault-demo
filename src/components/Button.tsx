@@ -8,9 +8,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-accent-purple text-white hover:scale-110 hover:shadow-xl hover:bg-accent-purple-hover active:bg-accent-purple-active",
+          "bg-accent-purple text-white hover:scale-105 hover:shadow-xl hover:bg-accent-purple-hover active:bg-accent-purple-active",
         secondary:
-          "font-sans bg-primary text-white hover:scale-110 hover:shadow-xl hover:bg-secondary-hover",
+          "font-sans bg-primary text-white hover:scale-105 hover:shadow-xl hover:bg-secondary-hover",
         outline:
           "border-2 border-primary/40 bg-white text-primary hover:bg-primary-light hover:text-primary-hover",
         ghost: "text-primary hover:bg-primary-light hover:text-primary-hover",
@@ -23,7 +23,7 @@ const buttonVariants = cva(
         true: "w-full",
       },
       isDisabled: {
-        true: "bg-gray-300 text-gray-500 cursor-not-allowed hover:scale-100 hover:shadow-none",
+        true: "bg-gray-300 text-gray-500 cursor-not-allowed hover:scale-100  hover:shadow-none",
       },
     },
     defaultVariants: {

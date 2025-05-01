@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useViewAllVaults, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { isValidNumberInput } from "@/lib";
-import { useToast } from "@/context";
+import { useToast } from "@/hooks";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
-import { Button, Input, Card } from "@/components";
+import { Button, Input, Card, WithdrawTimer } from "@/components";
 import { formatUnits } from "viem";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
@@ -35,8 +35,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     refetchContractState,
     formatted: {
       tvl: tvlFormatted,
-      redemptionRate: redemptionRateFormatted,
-      maxRedeem: maxRedeemFormatted,
       shareBalance: shareBalanceFormatted,
       assetBalance: assetBalanceFormatted,
     },
@@ -168,6 +166,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
         if (!isConnected || !vaultData)
           throw new Error("Unable to complete withdrawal");
         return completeWithdraw();
+      },
+      onMutate: () => {
+        showToast({
+          title: "Withdrawal completed",
+          description: "Your withdrawal has been completed successfully.",
+          type: "success",
+          txHash: "",
+        });
       },
       onSuccess: (hash) => {
         showToast({
@@ -553,8 +559,10 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                             {pendingWithdrawal.withdrawAssetBalance}
                           </span>
                           <span className="text-xs text-gray-600 mt-1">
-                            {pendingWithdrawal.formatted.sharesAmount} at{" "}
-                            {pendingWithdrawal?.withdrawRate}%
+                            {pendingWithdrawal.formatted.sharesAmount}{" "}
+                            {pendingWithdrawal?.withdrawRate && (
+                              <>at {pendingWithdrawal?.withdrawRate}% </>
+                            )}
                           </span>
                           <span className="text-xs text-gray-600 mt-1"></span>
                         </div>
@@ -573,23 +581,22 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                       the unbonding period.
                     </p>
                     <div className="mt-2">
-                      <WithdrawalTimer
+                      <WithdrawTimer
                         initialTimeRemaining={
                           pendingWithdrawal.isClaimable
                             ? "00:00:00"
                             : pendingWithdrawal.timeRemaining || "--:--:--"
                         }
                         isClaimable={!!pendingWithdrawal.isClaimable}
-                        claimTime={pendingWithdrawal.claimTime || "N/A"}
+                        claimTime={
+                          pendingWithdrawal.formatted.claimTime || "N/A"
+                        }
                       >
-                        {!pendingWithdrawal.isClaimable && (
-                          <p className="text-center text-xs text-gray-600 mt-2">
-                            Claimable after: {pendingWithdrawal.claimTime}
-                          </p>
-                        )}
-                      </WithdrawalTimer>
+                        Claimable after: {pendingWithdrawal.formatted.claimTime}
+                      </WithdrawTimer>
                     </div>
                     <Button
+                      className="w-full"
                       onClick={() => handleCompleteWithdraw()}
                       disabled={
                         !isConnected ||
@@ -628,99 +635,3 @@ const handleNumberInput = (
     setValue(value);
   }
 };
-
-/**
- * A component that displays a countdown timer for withdrawals
- */
-function WithdrawalTimer({
-  initialTimeRemaining,
-  isClaimable,
-  claimTime,
-  children,
-}: {
-  initialTimeRemaining: string;
-  isClaimable: boolean;
-  claimTime: string;
-  children?: React.ReactNode;
-}) {
-  const [timeRemaining, setTimeRemaining] = useState(initialTimeRemaining);
-
-  useEffect(() => {
-    // Only run the timer if we're not yet claimable
-    if (isClaimable) return;
-
-    // Parse the claim time from the string
-    if (!claimTime || claimTime === "N/A") return;
-
-    try {
-      // Extract the date from the claimTime string
-      const claimDate = new Date(claimTime.split(" ").slice(0, -1).join(" "));
-
-      const timer = setInterval(() => {
-        const now = new Date();
-
-        if (claimDate <= now) {
-          setTimeRemaining("00:00:00");
-          clearInterval(timer);
-          return;
-        }
-
-        // Calculate remaining time
-        const diffInSeconds = Math.floor(
-          (claimDate.getTime() - now.getTime()) / 1000,
-        );
-
-        // For larger time frames, show days
-        const days = Math.floor(diffInSeconds / 86400); // 86400 seconds in a day
-        const hours = Math.floor((diffInSeconds % 86400) / 3600);
-        const minutes = Math.floor((diffInSeconds % 3600) / 60);
-        const seconds = diffInSeconds % 60;
-
-        // Format with leading zeros
-        const formattedHours = String(hours).padStart(2, "0");
-        const formattedMinutes = String(minutes).padStart(2, "0");
-        const formattedSeconds = String(seconds).padStart(2, "0");
-
-        // Include days in the output if there are any
-        if (days > 0) {
-          const formattedDays = String(days).padStart(2, "0");
-          setTimeRemaining(
-            `${formattedDays}:${formattedHours}:${formattedMinutes}:${formattedSeconds}`,
-          );
-        } else {
-          setTimeRemaining(
-            `${formattedHours}:${formattedMinutes}:${formattedSeconds}`,
-          );
-        }
-      }, 1000);
-
-      return () => clearInterval(timer);
-    } catch (error) {
-      console.error("Error parsing claim time:", error);
-      return;
-    }
-  }, [isClaimable, claimTime]);
-
-  const containerClassName = isClaimable
-    ? "bg-green-100 border border-green-300 rounded-lg p-3 mb-4"
-    : "bg-gray-100 border border-gray-300 rounded-lg p-3 mb-4";
-
-  const timerClassName = isClaimable
-    ? "font-mono text-2xl text-center text-green-600 font-bold"
-    : "font-mono text-2xl text-center text-gray-700 font-bold";
-
-  const labelClassName = isClaimable
-    ? "text-center text-green-600 font-medium mb-1"
-    : "text-center text-gray-600 font-medium mt-1";
-
-  const label = isClaimable ? "Ready to claim" : "Time Remaining";
-
-  return (
-    <div className={containerClassName}>
-      {!isClaimable && <p className={labelClassName}>{label}</p>}
-      <div className={timerClassName}>{timeRemaining}</div>
-      {isClaimable && <p className={labelClassName}>{label}</p>}
-      {children}
-    </div>
-  );
-}
