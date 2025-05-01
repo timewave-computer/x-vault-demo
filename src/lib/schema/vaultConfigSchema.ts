@@ -43,8 +43,14 @@ export const vaultConfigSchema = z.object({
   copy: z.object({
     name: z.string(),
     description: z.string(),
-    onDepositSuccess: z.string().optional(),
-    vaultPath: z.string().optional(),
+    deposit: z.object({
+      steps: z.array(z.string()),
+      description: z.string(),
+    }),
+    withdraw: z.object({
+      steps: z.array(z.string()),
+      description: z.string(),
+    }),
   }),
   token: z.string(),
   aprRequest: aprRequestSchema,
