@@ -153,10 +153,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
         sharesAmount,
       ] = userWithdrawRequest;
 
-      // Add 2 hours (7200 seconds) to _claimTime to adjust for server time difference
-      // TEMP
-      const adjustedClaimTime = _claimTime - BigInt(7200);
-      const claimTime = formatBigIntToTimestamp(adjustedClaimTime);
+      const claimTime = formatBigIntToTimestamp(_claimTime);
 
       // Calculate the time remaining
       const timeRemaining = formatRemainingTime(claimTime);
@@ -186,7 +183,6 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     }
   }
 
-  //  user's withdraw asset amount (shares -> assets)
   const {
     data: _withdrawAssetBalance,
     refetch: refetchWithdrawAssetBalance,

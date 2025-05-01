@@ -167,14 +167,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           throw new Error("Unable to complete withdrawal");
         return completeWithdraw();
       },
-      onMutate: () => {
-        showToast({
-          title: "Withdrawal completed",
-          description: "Your withdrawal has been completed successfully.",
-          type: "success",
-          txHash: "",
-        });
-      },
       onSuccess: (hash) => {
         showToast({
           title: "Withdrawal completed",
