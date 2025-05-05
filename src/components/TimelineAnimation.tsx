@@ -4,70 +4,58 @@ import { useEffect, useState } from "react";
 interface TimelineAnimationProps {
   steps: string[];
   durationPerStep?: number;
-  pauseDuration?: number;
   lineAnimationDuration?: number;
 }
 
 export const TimelineAnimation = ({
   steps,
-  durationPerStep = 2000,
-  pauseDuration = 6000,
-  lineAnimationDuration = 600,
+  durationPerStep = 2500,
+  lineAnimationDuration = 800,
 }: TimelineAnimationProps) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [animatingLineIndex, setAnimatingLineIndex] = useState<number | null>(
     null,
   );
-  const [isPaused, setIsPaused] = useState(false);
 
   const isLastStep = currentStepIndex === steps.length - 1;
 
   useEffect(() => {
     if (steps.length <= 1) return;
 
-    const progressAnimation = () => {
-      if (isPaused) return;
+    let intervalId: NodeJS.Timeout;
 
+    const progressAnimation = () => {
       // Start animating the current step's line
       setAnimatingLineIndex(currentStepIndex);
 
       // After the line animation completes, move to the next step
       setTimeout(() => {
-        const nextIndex =
-          currentStepIndex === steps.length - 1 ? 0 : currentStepIndex + 1;
+        const nextIndex = currentStepIndex + 1;
 
-        // If we're at the last step
-        if (currentStepIndex === steps.length - 2) {
-          // Next step will be the last one - prepare for celebration
+        // Only proceed if we haven't reached the end
+        if (nextIndex < steps.length) {
           setCurrentStepIndex(nextIndex);
           setAnimatingLineIndex(null);
 
-          // Pause after completing the cycle
+          // If this is the last step, clear the interval
           if (nextIndex === steps.length - 1) {
-            setIsPaused(true);
-            setTimeout(() => {
-              setIsPaused(false);
-            }, pauseDuration);
+            clearInterval(intervalId);
           }
-        } else {
-          // Normal step progression
-          setCurrentStepIndex(nextIndex);
-          setAnimatingLineIndex(null);
         }
       }, lineAnimationDuration);
     };
 
-    const interval = setInterval(progressAnimation, durationPerStep);
+    intervalId = setInterval(progressAnimation, durationPerStep);
 
-    return () => clearInterval(interval);
-  }, [steps, durationPerStep, currentStepIndex, isPaused, pauseDuration]);
+    return () => clearInterval(intervalId);
+  }, [steps, durationPerStep, currentStepIndex, lineAnimationDuration]);
 
   return (
     <div className="w-full">
       {/* Current step display */}
       <div className="mb-3 text-sm md:text-base font-medium text-accent-purple flex items-center">
         {steps[currentStepIndex]}
-        {isLastStep && <span className="ml-2 animate-bounce">🎉</span>}
+        {isLastStep && <span className="ml-2 animate-scale">🎉</span>}
       </div>
 
       {/* Timeline */}
@@ -110,22 +98,37 @@ export const TimelineAnimation = ({
       </div>
 
       {/* Step labels */}
-      <div className="flex w-full mt-1">
-        {steps.map((step, index) => (
-          <div
-            key={index}
-            className={`text-xs flex-grow last:flex-grow-0 last:text-right first:text-left text-center 
-              ${index === currentStepIndex ? "text-accent-purple" : "text-gray-400"}`}
-            style={{
-              maxWidth:
-                index === 0 || index === steps.length - 1
-                  ? "auto"
-                  : `${100 / steps.length}%`,
-            }}
-          >
-            {step}
-          </div>
-        ))}
+      <div className="w-full mt-1 relative">
+        {steps.map((step, index) => {
+          // Calculate position for first and last steps
+          let leftPosition = "0%";
+          if (index === steps.length - 1) {
+            leftPosition = "100%";
+          } else if (index > 0) {
+            // For middle steps, calculate based on position
+            leftPosition = `${(index / (steps.length - 1)) * 100}%`;
+          }
+
+          return (
+            <div
+              key={index}
+              className={`text-xs absolute transform -translate-x-1/2 ${
+                index === currentStepIndex
+                  ? "text-accent-purple"
+                  : "text-gray-400"
+              } ${index === 0 ? "text-left !translate-x-0" : ""} ${
+                index === steps.length - 1
+                  ? "text-right !translate-x-[-100%]"
+                  : ""
+              }`}
+              style={{
+                left: leftPosition,
+              }}
+            >
+              {step}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

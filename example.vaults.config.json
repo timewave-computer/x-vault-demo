@@ -4,12 +4,34 @@
     "vaultId": "usdc",
     "vaultAddress": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
     "vaultProxyAddress": "0x9A676e781A523b5d0C0e43731313A708CB607508",
-    "tokenAddress": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
     "transactionConfirmationTimeout": 60000,
-    "startBlock": 0,
-    "name": "USDC Stable Vault",
-    "description": "Stable yield generation for USDC deposits.",
+    "tokenAddress": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
     "token": "USDC",
+    "startBlock": 0,
+    "copy": {
+      "name": "USDC Stable Vault",
+      "description": "Deposit USDC and let Valence’s cross-chain vault automatically handle the bridging from Ethereum to Neutron via IBC, depositing to an Astroport liquidity position, and auto-compounding of yield.",
+      "deposit": {
+        "title": "Deposit",
+        "description": "Deposit tokens to start earning yield.",
+        "cta": "Deposit"
+      },
+      "withdraw": {
+        "title": "Withdraw",
+        "description": "Convert shares back to USDC on Ethereum mainnet.",
+        "cta": "Initiate Withdraw"
+      },
+      "depositInProgress": {
+        "title": "Your Funds are Working",
+        "steps": ["Ethereum", "IBC Bridge", "Neutron", "Astroport Vault"],
+        "description": "Valence automatically bridges your USDC from Ethereum mainnet to Neutron via IBC Eureka, deposits to an Astroport liquidity position, and earns yield until you initiate a withdrawal."
+      },
+      "withdrawInProgress": {
+        "title": "Withdraw in Progress",
+        "description": "Your funds are being moved back to Ethereum mainnet. Once complete, you can complete the withdrawal by clicking 'Transfer to Wallet'.",
+        "cta": "Transfer to Wallet"
+      }
+    },
     "aprRequest": {
       "type": "api",
       "url": "/api/mock-apr",
