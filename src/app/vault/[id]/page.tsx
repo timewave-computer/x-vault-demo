@@ -14,6 +14,7 @@ import {
   Card,
   WithdrawTimer,
   TimelineAnimation,
+  Tooltip,
 } from "@/components";
 import { formatUnits } from "viem";
 
@@ -341,7 +342,42 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                     <div>
                       <div className="space-y-1">
                         <p>{vaultData.copy.withdraw.description}</p>
-                        <p>Why do I have to wait?</p>
+                        <p className="flex items-center gap-1">
+                          Why do I have to wait?
+                          <Tooltip
+                            content={
+                              <div>
+                                <p className="font-medium mb-1">
+                                  Two-Step Withdrawal Process
+                                </p>
+                                <p className="mb-2">
+                                  This is a cross-chain vault, which means your
+                                  assets need to be moved back to the source
+                                  chain before they can be withdrawn.
+                                </p>
+                                <p className="font-medium mb-1">
+                                  Step 1: Clearing Period
+                                </p>
+                                <p className="mb-2">
+                                  When you initiate a withdrawal, your funds
+                                  enter a clearing period where they are moved
+                                  from the destination chain back to the source
+                                  chain. This process takes time to complete
+                                  safely.
+                                </p>
+                                <p className="font-medium mb-1">
+                                  Step 2: Final Withdrawal
+                                </p>
+                                <p>
+                                  Once your funds have returned to the source
+                                  chain, they become claimable. At this point,
+                                  you must manually complete the withdrawal by
+                                  clicking "Transfer to Wallet".
+                                </p>
+                              </div>
+                            }
+                          />
+                        </p>
                       </div>
                     </div>
 
