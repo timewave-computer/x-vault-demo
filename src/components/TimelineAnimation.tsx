@@ -98,22 +98,37 @@ export const TimelineAnimation = ({
       </div>
 
       {/* Step labels */}
-      <div className="flex w-full mt-1">
-        {steps.map((step, index) => (
-          <div
-            key={index}
-            className={`text-xs flex-grow last:flex-grow-0 last:text-right first:text-left text-center 
-              ${index === currentStepIndex ? "text-accent-purple" : "text-gray-400"}`}
-            style={{
-              maxWidth:
-                index === 0 || index === steps.length - 1
-                  ? "auto"
-                  : `${100 / steps.length}%`,
-            }}
-          >
-            {step}
-          </div>
-        ))}
+      <div className="w-full mt-1 relative">
+        {steps.map((step, index) => {
+          // Calculate position for first and last steps
+          let leftPosition = "0%";
+          if (index === steps.length - 1) {
+            leftPosition = "100%";
+          } else if (index > 0) {
+            // For middle steps, calculate based on position
+            leftPosition = `${(index / (steps.length - 1)) * 100}%`;
+          }
+
+          return (
+            <div
+              key={index}
+              className={`text-xs absolute transform -translate-x-1/2 ${
+                index === currentStepIndex
+                  ? "text-accent-purple"
+                  : "text-gray-400"
+              } ${index === 0 ? "text-left !translate-x-0" : ""} ${
+                index === steps.length - 1
+                  ? "text-right !translate-x-[-100%]"
+                  : ""
+              }`}
+              style={{
+                left: leftPosition,
+              }}
+            >
+              {step}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
