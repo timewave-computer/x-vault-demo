@@ -171,7 +171,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       },
       onSuccess: (hash) => {
         showToast({
-          title: "Withdrawal completed",
+          title: "Transfer successful",
           description: "Your withdrawal has been completed successfully.",
           type: "success",
           txHash: hash,
