@@ -15,6 +15,7 @@ import {
   WithdrawTimer,
   TimelineAnimation,
   Tooltip,
+  WithdrawInProgress,
 } from "@/components";
 import { formatUnits } from "viem";
 
@@ -312,12 +313,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 <div className="py-4 relative z-10">
                   <div className="flex flex-col  px-4 max-w-[1200px] ">
                     <div className="text-xl font-beast text-accent-purple mb-2">
-                      Your Funds are Working
+                      {vaultData.copy.depositInProgress.title}
                     </div>
 
                     <div className=" grid grid-cols-1 gap-6 lg:grid-cols-2">
-                      <div>{vaultData.copy.deposit.description}</div>
-                      <TimelineAnimation steps={vaultData.copy.deposit.steps} />
+                      <div>{vaultData.copy.depositInProgress.description}</div>
+                      <TimelineAnimation
+                        steps={vaultData.copy.depositInProgress.steps}
+                      />
                     </div>
                   </div>
                 </div>
@@ -326,127 +329,25 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           )}
 
         {/*shows when user has a pending withdrawal */}
-        {isConnected &&
-          pendingWithdrawal?.formatted &&
-          pendingWithdrawal?.hasActiveWithdraw && (
-            <div className="mt-8">
-              <Card variant="secondary">
-                <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 bg-accent-purple/5 rounded-full blur-xl"></div>
-                <div className="absolute bottom-0 left-0 w-24 h-24 -ml-10 -mb-10 bg-accent-purple/5 rounded-full blur-xl"></div>
-
-                <div className="py-4 relative z-10">
-                  <div className="flex flex-col  px-4 max-w-[1200px] ">
-                    <div className="text-xl font-beast text-accent-purple mb-2">
-                      Withdraw in Progress
-                    </div>
-                    <div>
-                      <div className="space-y-1">
-                        <p>{vaultData.copy.withdraw.description}</p>
-                        <p className="flex items-center gap-1">
-                          Why do I have to wait?
-                          <Tooltip
-                            content={
-                              <div>
-                                <p className="font-medium mb-1">
-                                  Two-Step Withdrawal Process
-                                </p>
-                                <p className="mb-2">
-                                  This is a cross-chain vault, which means your
-                                  assets need to be moved back to the source
-                                  chain before they can be withdrawn.
-                                </p>
-                                <p className="font-medium mb-1">
-                                  Step 1: Clearing Period
-                                </p>
-                                <p className="mb-2">
-                                  When you initiate a withdrawal, your funds
-                                  enter a clearing period where they are moved
-                                  from the destination chain back to the source
-                                  chain. This process takes time to complete
-                                  safely.
-                                </p>
-                                <p className="font-medium mb-1">
-                                  Step 2: Final Withdrawal
-                                </p>
-                                <p>
-                                  Once your funds have returned to the source
-                                  chain, they become claimable. At this point,
-                                  you must manually complete the withdrawal by
-                                  clicking "Transfer to Wallet".
-                                </p>
-                              </div>
-                            }
-                          />
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
-                      {/* col 1 */}
-
-                      <div className="">
-                        <WithdrawTimer
-                          initialTimeRemaining={
-                            pendingWithdrawal.isClaimable
-                              ? "00:00:00"
-                              : pendingWithdrawal.timeRemaining || "--:--:--"
-                          }
-                          isClaimable={pendingWithdrawal.isClaimable}
-                          claimTime={
-                            pendingWithdrawal.formatted.claimTime || "N/A"
-                          }
-                        >
-                          Claimable after:{" "}
-                          {pendingWithdrawal.formatted.claimTime}
-                        </WithdrawTimer>
-                      </div>
-
-                      {/* col 2 */}
-
-                      <div>
-                        <div className="flex flex-col w-full items-center">
-                          <span className="text-2xl font-beast text-accent-purple">
-                            {pendingWithdrawal.withdrawAssetBalanceFormatted}
-                          </span>
-                          <span className="text-sm text-accent-purple">
-                            {pendingWithdrawal.formatted.sharesAmount}{" "}
-                            {pendingWithdrawal?.withdrawRate &&
-                              Number(pendingWithdrawal.withdrawRate) > 0 && (
-                                <>at {pendingWithdrawal.withdrawRate}% </>
-                              )}
-                          </span>
-                        </div>
-                        <Button
-                          className="w-full mt-2"
-                          onClick={() => handleCompleteWithdraw()}
-                          disabled={
-                            !isConnected ||
-                            isCompletingWithdraw ||
-                            !pendingWithdrawal.isClaimable
-                          }
-                          variant="primary"
-                          isLoading={isCompletingWithdraw}
-                        >
-                          {isCompletingWithdraw
-                            ? "Processing..."
-                            : "Transfer to Wallet"}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
+        {isConnected && pendingWithdrawal?.hasActiveWithdraw && (
+          <WithdrawInProgress
+            copy={vaultData?.copy.withdrawInProgress}
+            pendingWithdrawal={pendingWithdrawal}
+            onCompleteWithdraw={handleCompleteWithdraw}
+            isCompletingWithdraw={isCompletingWithdraw}
+          />
+        )}
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Deposit Section */}
           <Card variant="primary">
             <div className="mb-6">
-              <h3 className="text-lg font-beast text-accent-purple">Deposit</h3>
+              <h3 className="text-lg font-beast text-accent-purple">
+                {vaultData.copy.deposit.title}
+              </h3>
               <div className="flex justify-between items-center mt-2">
                 <p className="text-sm text-gray-500">
-                  Deposit tokens to start earning yield
+                  {vaultData.copy.deposit.description}
                 </p>
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-gray-500">
@@ -499,7 +400,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               fullWidth
               isLoading={isDepositing}
             >
-              {isDepositing ? "Confirm in Wallet..." : "Deposit"}
+              {isDepositing
+                ? "Confirm in Wallet..."
+                : vaultData.copy.deposit.cta}
             </Button>
 
             {/* Deposit estimate and warning display */}
@@ -526,11 +429,11 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           <Card variant="primary">
             <div className="mb-6">
               <h3 className="text-lg font-beast text-accent-purple mb-1">
-                Withdraw
+                {vaultData.copy.withdraw.title}
               </h3>
               <div className="flex justify-between items-start mt-2">
                 <p className="text-sm text-gray-500">
-                  Convert shares back to tokens
+                  {vaultData.copy.withdraw.description}
                 </p>
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-gray-500">
@@ -583,7 +486,9 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               fullWidth
               isLoading={isWithdrawing}
             >
-              {isWithdrawing ? "Confirm in Wallet..." : "Initiate Withdraw"}
+              {isWithdrawing
+                ? "Confirm in Wallet..."
+                : vaultData.copy.withdraw.cta}
             </Button>
 
             {/* Withdraw estimate and warning display */}

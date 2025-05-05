@@ -44,10 +44,23 @@ export const vaultConfigSchema = z.object({
     name: z.string(),
     description: z.string(),
     deposit: z.object({
+      title: z.string(),
+      description: z.string(),
+      cta: z.string(),
+    }),
+    depositInProgress: z.object({
+      title: z.string(),
       steps: z.array(z.string()),
       description: z.string(),
     }),
     withdraw: z.object({
+      title: z.string(),
+      description: z.string(),
+      cta: z.string(),
+    }),
+
+    withdrawInProgress: z.object({
+      title: z.string(),
       description: z.string(),
       cta: z.string(),
     }),
