@@ -5,7 +5,7 @@ import { useViewAllVaults, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
 import { isValidNumberInput } from "@/lib";
-import { useToast } from "@/hooks";
+import { useToast } from "@/context";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
 import {
@@ -39,11 +39,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     previewRedeem,
     previewDeposit,
     refetchContractState,
-    formatted: {
-      tvl: tvlFormatted,
-      shareBalance: shareBalanceFormatted,
-      assetBalance: assetBalanceFormatted,
-    },
+    formatted: { tvl: tvlFormatted, totalShareBalance, totalAssetBalance },
     raw: { maxRedeem, tokenBalance, tokenDecimals, shareDecimals },
 
     isLoading: isLoadingContract,
@@ -175,7 +171,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       },
       onSuccess: (hash) => {
         showToast({
-          title: "Withdrawal completed",
+          title: "Transfer successful",
           description: "Your withdrawal has been completed successfully.",
           type: "success",
           txHash: hash,
@@ -268,14 +264,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Your Balance</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
-              {isConnected ? shareBalanceFormatted : "-"}
+              {isConnected ? totalShareBalance : "-"}
             </dd>
           </Card>
 
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Your Position</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
-              {isConnected ? assetBalanceFormatted : "-"}
+              {isConnected ? totalAssetBalance : "-"}
             </dd>
           </Card>
 
@@ -520,7 +516,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   <div className="space-y-4">
                     <div className="flex flex-col w-full items-center">
                       <span className="text-2xl font-beast text-accent-purple">
-                        {pendingWithdrawal.withdrawAssetBalance}
+                        {pendingWithdrawal.withdrawAssetBalanceFormatted}
                       </span>
                       <span className="text-xs text-gray-600 mt-1">
                         {pendingWithdrawal.formatted.sharesAmount}{" "}

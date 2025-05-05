@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import "./globals.css";
 import { Header, Footer } from "@/components";
 import { VaultsConfigProvider, ChainProviders, ToastProvider } from "@/context";
 import { Recursive } from "next/font/google";
 import { readVaultsConfig } from "@/lib";
 import { MobileDetection } from "@/components";
+import "./globals.css";
 
 const recursive = Recursive({
   subsets: ["latin"],
@@ -96,9 +96,9 @@ export default async function RootLayout({
         </div>
 
         <ChainProviders>
-          <ToastProvider>
-            <VaultsConfigProvider vaultsConfig={vaultsConfig}>
-              <MobileDetection>
+          <VaultsConfigProvider vaultsConfig={vaultsConfig}>
+            <MobileDetection>
+              <ToastProvider>
                 <div className="flex flex-col min-h-screen relative">
                   <Header />
                   <main className="flex-1">
@@ -108,9 +108,9 @@ export default async function RootLayout({
                   </main>
                   <Footer />
                 </div>
-              </MobileDetection>
-            </VaultsConfigProvider>
-          </ToastProvider>
+              </ToastProvider>
+            </MobileDetection>
+          </VaultsConfigProvider>
         </ChainProviders>
       </body>
     </html>
