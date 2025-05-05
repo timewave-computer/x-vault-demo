@@ -191,7 +191,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
   }
 
   const {
-    data: _withdrawAssetBalance,
+    data: withdrawAssetBalanceRaw,
     refetch: refetchWithdrawAssetBalance,
     isLoading: isLoadingWithdrawAssetBalance,
     isError: isWithdrawAssetBalanceError,
@@ -207,8 +207,8 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       ? [withdrawData.raw.sharesAmount]
       : [BigInt(0)],
   });
-  const withdrawAssetBalance = formatBigInt(
-    _withdrawAssetBalance,
+  const withdrawAssetBalanceFormatted = formatBigInt(
+    withdrawAssetBalanceRaw,
     tokenDecimals,
     symbol,
     {
@@ -507,7 +507,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       hasActiveWithdraw,
       ...withdrawData,
       ...updateData,
-      withdrawAssetBalance,
+      withdrawAssetBalanceFormatted,
       isClaimable:
         withdrawData?.raw.claimTime && updateData?.withdrawRate
           ? now > withdrawData.raw.claimTime
@@ -542,6 +542,23 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       assetBalance: formatBigInt(assetBalance, tokenDecimals, symbol, {
         displayDecimals: 2,
       }),
+      totalShareBalance: formatBigInt(
+        (shareBalance ?? BigInt(0)) +
+          (withdrawData?.raw.sharesAmount ?? BigInt(0)),
+        shareDecimals,
+        "shares",
+        {
+          displayDecimals: 2,
+        },
+      ),
+      totalAssetBalance: formatBigInt(
+        (assetBalance ?? BigInt(0)) + (withdrawAssetBalanceRaw ?? BigInt(0)),
+        tokenDecimals,
+        symbol,
+        {
+          displayDecimals: 2,
+        },
+      ),
     },
     isLoading,
     isError,
