@@ -5,7 +5,7 @@ import { useViewAllVaults, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
 import { isValidNumberInput } from "@/lib";
-import { useToast } from "@/hooks";
+import { useToast } from "@/context";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
 import {
