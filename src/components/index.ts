@@ -12,3 +12,4 @@ export * from "./TimelineAnimation";
 export * from "./Toast";
 export * from "./Tooltip";
 export * from "./WithdrawInProgress";
+export * from "./DepositInProgress";
