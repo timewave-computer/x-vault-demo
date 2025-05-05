@@ -9,8 +9,8 @@ interface TimelineAnimationProps {
 
 export const TimelineAnimation = ({
   steps,
-  durationPerStep = 2000,
-  lineAnimationDuration = 600,
+  durationPerStep = 2500,
+  lineAnimationDuration = 800,
 }: TimelineAnimationProps) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [animatingLineIndex, setAnimatingLineIndex] = useState<number | null>(
