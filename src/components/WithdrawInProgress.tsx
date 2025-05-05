@@ -99,7 +99,7 @@ export const WithdrawInProgress: React.FC<WithdrawInProgressProps> = ({
                       ? "00:00:00"
                       : pendingWithdrawal.timeRemaining || "--:--:--"
                   }
-                  isClaimable={!!!pendingWithdrawal.isClaimable}
+                  isClaimable={!pendingWithdrawal.isClaimable}
                   claimTime={pendingWithdrawal.formatted.claimTime || "N/A"}
                 >
                   Claimable after: {pendingWithdrawal.formatted.claimTime}
