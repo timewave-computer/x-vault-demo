@@ -27,6 +27,15 @@ module.exports = {
           "purple-light": "#f7f1f9", // Light purple
         },
       },
+      keyframes: {
+        scale: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.4)" },
+        },
+      },
+      animation: {
+        scale: "scale 0.8s ease-in-out 3",
+      },
     },
   },
   plugins: [],

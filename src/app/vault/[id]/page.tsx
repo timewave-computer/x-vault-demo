@@ -102,9 +102,13 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     },
     onSuccess: (hash) => {
       setDepositInput("");
+
+      const toastDescription = vaultData?.apr
+        ? `Your funds are now earning ${vaultData?.apr}% APY!`
+        : "Funds are now earning yield.";
       showToast({
         title: "Deposit successful",
-        description: "Your deposit has been processed successfully.",
+        description: toastDescription,
         type: "success",
         txHash: hash,
       });
@@ -247,14 +251,17 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               {vaultData.copy.name}
             </h1>
             <div className="flex flex-col gap-1 mt-1 text-base text-gray-500">
-              <a
-                href={`https://etherscan.io/address/${vaultData.vaultProxyAddress}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className=" hover:underline"
-              >
-                {vaultData.vaultProxyAddress}
-              </a>
+              <p>
+                Vault Address:{" "}
+                <a
+                  href={`https://etherscan.io/address/${vaultData.vaultProxyAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className=" hover:underline"
+                >
+                  {vaultData.vaultProxyAddress}
+                </a>
+              </p>
               <p className="mt-2">{vaultData.copy.description}</p>
             </div>
           </div>
@@ -312,12 +319,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
 
                     <div className=" grid grid-cols-1 gap-6 lg:grid-cols-2">
                       <div>{vaultData.copy.deposit.description}</div>
-                      <TimelineAnimation
-                        steps={[
-                          ...vaultData.copy.deposit.steps,
-                          `Earning ${vaultData.apr}% APY`,
-                        ]}
-                      />
+                      <TimelineAnimation steps={vaultData.copy.deposit.steps} />
                     </div>
                   </div>
                 </div>

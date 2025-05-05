@@ -4,70 +4,58 @@ import { useEffect, useState } from "react";
 interface TimelineAnimationProps {
   steps: string[];
   durationPerStep?: number;
-  pauseDuration?: number;
   lineAnimationDuration?: number;
 }
 
 export const TimelineAnimation = ({
   steps,
   durationPerStep = 2000,
-  pauseDuration = 6000,
   lineAnimationDuration = 600,
 }: TimelineAnimationProps) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [animatingLineIndex, setAnimatingLineIndex] = useState<number | null>(
     null,
   );
-  const [isPaused, setIsPaused] = useState(false);
 
   const isLastStep = currentStepIndex === steps.length - 1;
 
   useEffect(() => {
     if (steps.length <= 1) return;
 
-    const progressAnimation = () => {
-      if (isPaused) return;
+    let intervalId: NodeJS.Timeout;
 
+    const progressAnimation = () => {
       // Start animating the current step's line
       setAnimatingLineIndex(currentStepIndex);
 
       // After the line animation completes, move to the next step
       setTimeout(() => {
-        const nextIndex =
-          currentStepIndex === steps.length - 1 ? 0 : currentStepIndex + 1;
+        const nextIndex = currentStepIndex + 1;
 
-        // If we're at the last step
-        if (currentStepIndex === steps.length - 2) {
-          // Next step will be the last one - prepare for celebration
+        // Only proceed if we haven't reached the end
+        if (nextIndex < steps.length) {
           setCurrentStepIndex(nextIndex);
           setAnimatingLineIndex(null);
 
-          // Pause after completing the cycle
+          // If this is the last step, clear the interval
           if (nextIndex === steps.length - 1) {
-            setIsPaused(true);
-            setTimeout(() => {
-              setIsPaused(false);
-            }, pauseDuration);
+            clearInterval(intervalId);
           }
-        } else {
-          // Normal step progression
-          setCurrentStepIndex(nextIndex);
-          setAnimatingLineIndex(null);
         }
       }, lineAnimationDuration);
     };
 
-    const interval = setInterval(progressAnimation, durationPerStep);
+    intervalId = setInterval(progressAnimation, durationPerStep);
 
-    return () => clearInterval(interval);
-  }, [steps, durationPerStep, currentStepIndex, isPaused, pauseDuration]);
+    return () => clearInterval(intervalId);
+  }, [steps, durationPerStep, currentStepIndex, lineAnimationDuration]);
 
   return (
     <div className="w-full">
       {/* Current step display */}
       <div className="mb-3 text-sm md:text-base font-medium text-accent-purple flex items-center">
         {steps[currentStepIndex]}
-        {isLastStep && <span className="ml-2 animate-bounce">🎉</span>}
+        {isLastStep && <span className="ml-2 animate-scale">🎉</span>}
       </div>
 
       {/* Timeline */}
