@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { cn } from "@/lib";
 
 /**
  * A component that displays a countdown timer for withdrawals
@@ -73,29 +74,43 @@ export function WithdrawTimer({
     }
   }, [isClaimable, claimTime]);
 
-  const containerClassName = isClaimable
-    ? "bg-green-100 border border-green-300 rounded-lg p-3 mb-4"
-    : "bg-gray-100 border border-gray-300 rounded-lg p-3 mb-4";
-
-  const timerClassName = isClaimable
-    ? "font-mono text-2xl text-center text-green-600 font-bold"
-    : "font-mono text-2xl text-center text-gray-700 font-bold";
-
-  const labelClassName = isClaimable
-    ? "text-center text-green-600 font-medium mb-1"
-    : "text-center text-gray-600 font-medium mt-1";
-
-  const childrenClassName = isClaimable
-    ? "text-center text-green-600 text-xs"
-    : "text-center text-gray-600 text-xs ";
-
   const label = isClaimable ? "Ready to claim" : "Time Remaining";
 
   return (
-    <div className={containerClassName}>
-      <p className={labelClassName}>{label}</p>
-      <div className={timerClassName}>{timeRemaining}</div>
-      {children && <div className={childrenClassName}>{children}</div>}
+    <div
+      className={cn(
+        "rounded-lg p-3 flex flex-col items-center justify-center h-full",
+        isClaimable
+          ? "bg-primary-light border-2 border-primary/40"
+          : "bg-secondary border border-secondary/60",
+      )}
+    >
+      <p
+        className={cn(
+          "text-center text-primary font-medium",
+          isClaimable ? "text-primary/80" : "text-gray-100",
+        )}
+      >
+        {label}
+      </p>
+      <div
+        className={cn(
+          "font-mono text-2xl text-center text-primary font-bold",
+          isClaimable ? "text-primary/80" : "text-gray-100",
+        )}
+      >
+        {timeRemaining}
+      </div>
+      {children && (
+        <div
+          className={cn(
+            "text-center text-primary/80 text-xs",
+            isClaimable ? "text-primary/80" : "text-gray-100",
+          )}
+        >
+          {children}
+        </div>
+      )}
     </div>
   );
 }

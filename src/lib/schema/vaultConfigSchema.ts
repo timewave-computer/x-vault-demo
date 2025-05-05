@@ -48,8 +48,8 @@ export const vaultConfigSchema = z.object({
       description: z.string(),
     }),
     withdraw: z.object({
-      steps: z.array(z.string()),
       description: z.string(),
+      cta: z.string(),
     }),
   }),
   token: z.string(),

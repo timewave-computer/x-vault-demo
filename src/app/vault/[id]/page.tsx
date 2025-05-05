@@ -297,17 +297,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           </Card>
         </dl>
 
-        {/*shows when user has assets in the vault */}
+        {/*shows when user has a deposit, and no pending withdrawal */}
         {isConnected &&
           maxRedeem &&
           maxRedeem > BigInt(0) &&
           // contains copy for vault path and on deposit success
           !pendingWithdrawal?.hasActiveWithdraw && (
             <div className="mt-8">
-              <Card
-                variant="secondary"
-                className="bg-gradient-to-r from-accent-purple/10 to-primary-light/20 overflow-hidden relative border-2 border-accent-purple/20"
-              >
+              <Card variant="secondary">
                 <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 bg-accent-purple/5 rounded-full blur-xl"></div>
                 <div className="absolute bottom-0 left-0 w-24 h-24 -ml-10 -mb-10 bg-accent-purple/5 rounded-full blur-xl"></div>
 
@@ -320,6 +317,85 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                     <div className=" grid grid-cols-1 gap-6 lg:grid-cols-2">
                       <div>{vaultData.copy.deposit.description}</div>
                       <TimelineAnimation steps={vaultData.copy.deposit.steps} />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
+
+        {/*shows when user has a pending withdrawal */}
+        {isConnected &&
+          pendingWithdrawal?.formatted &&
+          pendingWithdrawal?.hasActiveWithdraw && (
+            <div className="mt-8">
+              <Card variant="secondary">
+                <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 bg-accent-purple/5 rounded-full blur-xl"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 -ml-10 -mb-10 bg-accent-purple/5 rounded-full blur-xl"></div>
+
+                <div className="py-4 relative z-10">
+                  <div className="flex flex-col  px-4 max-w-[1200px] ">
+                    <div className="text-xl font-beast text-accent-purple mb-2">
+                      Withdraw in Progress
+                    </div>
+                    <div>
+                      <div className="space-y-1">
+                        <p>{vaultData.copy.withdraw.description}</p>
+                        <p>Why do I have to wait?</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                      {/* col 1 */}
+
+                      <div className="">
+                        <WithdrawTimer
+                          initialTimeRemaining={
+                            pendingWithdrawal.isClaimable
+                              ? "00:00:00"
+                              : pendingWithdrawal.timeRemaining || "--:--:--"
+                          }
+                          isClaimable={pendingWithdrawal.isClaimable}
+                          claimTime={
+                            pendingWithdrawal.formatted.claimTime || "N/A"
+                          }
+                        >
+                          Claimable after:{" "}
+                          {pendingWithdrawal.formatted.claimTime}
+                        </WithdrawTimer>
+                      </div>
+
+                      {/* col 2 */}
+
+                      <div>
+                        <div className="flex flex-col w-full items-center">
+                          <span className="text-2xl font-beast text-accent-purple">
+                            {pendingWithdrawal.withdrawAssetBalanceFormatted}
+                          </span>
+                          <span className="text-sm text-accent-purple">
+                            {pendingWithdrawal.formatted.sharesAmount}{" "}
+                            {pendingWithdrawal?.withdrawRate &&
+                              Number(pendingWithdrawal.withdrawRate) > 0 && (
+                                <>at {pendingWithdrawal.withdrawRate}% </>
+                              )}
+                          </span>
+                        </div>
+                        <Button
+                          className="w-full mt-2"
+                          onClick={() => handleCompleteWithdraw()}
+                          disabled={
+                            !isConnected ||
+                            isCompletingWithdraw ||
+                            !pendingWithdrawal.isClaimable
+                          }
+                          variant="primary"
+                          isLoading={isCompletingWithdraw}
+                        >
+                          {isCompletingWithdraw
+                            ? "Processing..."
+                            : "Transfer to Wallet"}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -499,86 +575,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 )}
             </div>
           </Card>
-
-          {/* Withdrawal Status */}
-          {pendingWithdrawal &&
-            pendingWithdrawal.formatted &&
-            pendingWithdrawal.hasActiveWithdraw && (
-              <>
-                <Card variant="secondary">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-beast text-accent-purple mb-1">
-                      Withdraw In Progress
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {vaultData.copy.withdraw.description}
-                    </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex flex-col w-full items-center">
-                      <span className="text-2xl font-beast text-accent-purple">
-                        {pendingWithdrawal.withdrawAssetBalanceFormatted}
-                      </span>
-                      <span className="text-xs text-gray-600 mt-1">
-                        {pendingWithdrawal.formatted.sharesAmount}{" "}
-                        {pendingWithdrawal?.withdrawRate &&
-                          Number(pendingWithdrawal.withdrawRate) > 0 && (
-                            <>at {pendingWithdrawal.withdrawRate}% </>
-                          )}
-                      </span>
-                      <span className="text-xs text-gray-600 mt-1"></span>
-                      {vaultData.copy.withdraw.steps && (
-                        <TimelineAnimation
-                          steps={vaultData.copy.withdraw.steps}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </Card>
-                <Card variant="primary">
-                  <div className="mb-6">
-                    <h3 className="text-lg font-beast text-accent-purple mb-1">
-                      Complete Withdraw
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      Transfer can be completed after the vault's unbonding
-                      period.
-                    </p>
-                    <div className="mt-2">
-                      <WithdrawTimer
-                        initialTimeRemaining={
-                          pendingWithdrawal.isClaimable
-                            ? "00:00:00"
-                            : pendingWithdrawal.timeRemaining || "--:--:--"
-                        }
-                        isClaimable={!!pendingWithdrawal.isClaimable}
-                        claimTime={
-                          pendingWithdrawal.formatted.claimTime || "N/A"
-                        }
-                      >
-                        Claimable after: {pendingWithdrawal.formatted.claimTime}
-                      </WithdrawTimer>
-                    </div>
-                    <Button
-                      className="w-full"
-                      onClick={() => handleCompleteWithdraw()}
-                      disabled={
-                        !isConnected ||
-                        isCompletingWithdraw ||
-                        !pendingWithdrawal.isClaimable
-                      }
-                      variant="primary"
-                      isLoading={isCompletingWithdraw}
-                    >
-                      {isCompletingWithdraw
-                        ? "Processing..."
-                        : "Transfer to Wallet"}
-                    </Button>
-                  </div>
-                </Card>
-              </>
-            )}
         </div>
       </div>
     </div>
