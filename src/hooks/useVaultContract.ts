@@ -322,7 +322,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     }
   };
 
-  //Withdraw shares from vault. Withdraw will be "pending" until the user completes the withdrawal.
+  // Withdraw shares from vault. Withdraw will be "pending" until the user completes the withdrawal.
   const withdrawShares = async (
     shares: string,
     maxLossBps: number = 1000,
