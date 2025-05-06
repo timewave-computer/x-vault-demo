@@ -256,7 +256,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   href={`https://etherscan.io/address/${vaultData.vaultProxyAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className=" hover:underline"
+                  className="underline"
                 >
                   {vaultData.vaultProxyAddress}
                 </a>

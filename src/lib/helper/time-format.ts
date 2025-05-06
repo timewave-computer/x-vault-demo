@@ -64,17 +64,17 @@ export const unixTimestampToDateString = (
  * @returns Formatted time string in "HH:MM:SS" or "DD:HH:MM:SS" format for longer timeframes
  */
 export const formatRemainingTime = (
-  claimTimestamp: number | undefined,
+  endtimeStamp: number | undefined,
 ): string | null => {
-  if (!claimTimestamp) return null;
+  if (!endtimeStamp) return null;
 
   const now = Date.now();
 
   // If timestamp is in the past, return null
-  if (claimTimestamp <= now) return null;
+  if (endtimeStamp <= now) return null;
 
   // Calculate difference in seconds
-  const diffInSeconds = Math.floor((claimTimestamp - now) / 1000);
+  const diffInSeconds = Math.floor((endtimeStamp - now) / 1000);
 
   // For larger time frames, show days
   const days = Math.floor(diffInSeconds / 86400); // 86400 seconds in a day
