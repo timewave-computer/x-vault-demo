@@ -102,7 +102,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     },
     onSuccess: (hash) => {
       setDepositInput("");
-
       const toastDescription = vaultData?.apr
         ? `Your funds are now earning ${vaultData?.apr}% APY!`
         : "Funds are now earning yield.";
@@ -383,7 +382,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             </Button>
 
             {/* Deposit estimate and warning display */}
-            <div className="h-6 mt-2 flex justify-between items-start">
+            <div className="h-6 mt-2 flex justify-between items-center">
               {depositInput &&
                 previewDepositAmount &&
                 parseFloat(depositInput) > 0 && (
@@ -408,7 +407,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
               <h3 className="text-lg font-beast text-accent-purple mb-1">
                 {vaultData.copy.withdraw.title}
               </h3>
-              <div className="flex justify-between items-start mt-2">
+              <div className="flex justify-between items-center mt-2">
                 <p className="text-sm text-gray-500">
                   {vaultData.copy.withdraw.description}
                 </p>
