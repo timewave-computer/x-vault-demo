@@ -159,7 +159,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
         sharesAmount,
       ] = userWithdrawRequest;
 
-      const claimTime = formatBigIntToTimestamp(_claimTime) - 16 * 60 * 1000; // Subtract 16 minutes in milliseconds
+      const claimTime = formatBigIntToTimestamp(_claimTime) + 5 * 60 * 1000; // add 5 mins in milliseconds
 
       // Calculate the time remaining
       const timeRemaining = formatRemainingTime(claimTime);
