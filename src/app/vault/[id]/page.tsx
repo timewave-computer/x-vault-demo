@@ -249,6 +249,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             <h1 className="text-3xl font-beast text-primary sm:text-4xl">
               {vaultData.copy.name}
             </h1>
+
             <div className="flex flex-col gap-1 mt-1 text-base text-gray-500">
               <p>
                 Vault Address:{" "}
