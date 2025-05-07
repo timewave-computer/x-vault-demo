@@ -159,8 +159,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
         sharesAmount,
       ] = userWithdrawRequest;
 
-      const adjustedClaimTime = _claimTime - BigInt(7200);
-      const claimTime = formatBigIntToTimestamp(adjustedClaimTime);
+      const claimTime = formatBigIntToTimestamp(_claimTime) + 60 * 1000; // add 1 min in milliseconds
 
       // Calculate the time remaining
       const timeRemaining = formatRemainingTime(claimTime);
@@ -258,7 +257,9 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     updateData = {
       withdrawRate:
         shareDecimals && withdrawRate
-          ? formatUnits(withdrawRate, tokenDecimals)
+          ? formatBigInt(withdrawRate, shareDecimals, "", {
+              displayDecimals: 2,
+            })
           : "0",
       timestamp: unixTimestampToDateString(formatBigIntToTimestamp(timestamp)),
       withdrawFee: withdrawFee.toString(),
@@ -323,7 +324,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     }
   };
 
-  //Withdraw shares from vault. Withdraw will be "pending" until the user completes the withdrawal.
+  // Withdraw shares from vault. Withdraw will be "pending" until the user completes the withdrawal.
   const withdrawShares = async (
     shares: string,
     maxLossBps: number = 1000,
@@ -509,7 +510,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       ...updateData,
       withdrawAssetBalanceFormatted,
       isClaimable:
-        withdrawData?.raw.claimTime && updateData?.withdrawRate
+        updateData?.withdrawRate && withdrawData?.raw.claimTime
           ? now > withdrawData.raw.claimTime
           : false,
     },

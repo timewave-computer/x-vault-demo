@@ -174,8 +174,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       },
       onSuccess: (hash) => {
         showToast({
-          title: "Transfer successful",
-          description: "Your withdrawal has been completed successfully.",
+          title: "Withdraw successful",
+          description: "Your withdraw has been completed successfully.",
           type: "success",
           txHash: hash,
         });
@@ -256,7 +256,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                   href={`https://etherscan.io/address/${vaultData.vaultProxyAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className=" hover:underline"
+                  className="underline"
                 >
                   {vaultData.vaultProxyAddress}
                 </a>

@@ -44,7 +44,7 @@ export const WithdrawInProgress: React.FC<WithdrawInProgressProps> = ({
         <div className="absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 bg-accent-purple/5 rounded-full blur-xl"></div>
         <div className="absolute bottom-0 left-0 w-24 h-24 -ml-10 -mb-10 bg-accent-purple/5 rounded-full blur-xl"></div>
 
-        <div className="py-4 relative z-10">
+        <div className="py-4">
           <div className="flex flex-col px-4 max-w-[1200px]">
             <div className="text-xl font-beast text-accent-purple mb-2">
               {copy.title}
@@ -99,7 +99,7 @@ export const WithdrawInProgress: React.FC<WithdrawInProgressProps> = ({
                       ? "00:00:00"
                       : pendingWithdrawal.timeRemaining || "--:--:--"
                   }
-                  isClaimable={!pendingWithdrawal.isClaimable}
+                  isClaimable={!!pendingWithdrawal.isClaimable}
                   claimTime={pendingWithdrawal.formatted.claimTime || "N/A"}
                 >
                   Claimable after: {pendingWithdrawal.formatted.claimTime}

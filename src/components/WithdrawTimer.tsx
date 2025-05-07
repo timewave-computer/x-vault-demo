@@ -79,34 +79,22 @@ export function WithdrawTimer({
   return (
     <div
       className={cn(
-        "rounded-lg p-3 flex flex-col items-center justify-center h-full",
-        isClaimable
-          ? "bg-primary-light border-2 border-primary/40"
-          : "bg-secondary border border-secondary/60",
+        "rounded-lg p-3 flex flex-col items-center justify-center h-full bg-primary-light border-2 border-primary/40",
       )}
     >
-      <p
-        className={cn(
-          "text-center text-primary font-medium",
-          isClaimable ? "text-primary/80" : "text-gray-100",
-        )}
-      >
+      <p className={cn("text-center text-primary font-medium text-primary/80")}>
         {label}
       </p>
       <div
         className={cn(
-          "font-mono text-2xl text-center text-primary font-bold",
-          isClaimable ? "text-primary/80" : "text-gray-100",
+          "font-mono text-2xl text-center text-primary font-bold text-primary/80",
         )}
       >
         {timeRemaining}
       </div>
       {children && (
         <div
-          className={cn(
-            "text-center text-primary/80 text-xs",
-            isClaimable ? "text-primary/80" : "text-gray-100",
-          )}
+          className={cn("text-center text-primary/80 text-xs text-primary/80")}
         >
           {children}
         </div>
