@@ -258,7 +258,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       withdrawRate:
         shareDecimals && withdrawRate
           ? formatBigInt(withdrawRate, shareDecimals, "", {
-              displayDecimals: 4,
+              displayDecimals: 2,
             })
           : "0",
       timestamp: unixTimestampToDateString(formatBigIntToTimestamp(timestamp)),

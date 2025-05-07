@@ -27,9 +27,9 @@ export function Tooltip({ content, children }: TooltipProps) {
       </div>
 
       {isVisible && (
-        <div className="absolute z-10 w-64 p-3 text-sm text-left text-gray-700 bg-white rounded-lg shadow-lg bottom-full left-1/2 transform -translate-x-1/2 -translate-y-2">
+        <div className="absolute z-50 w-64 p-3 text-sm text-left text-gray-700 bg-white rounded-lg shadow-lg bottom-full left-1/2 transform -translate-x-1/2 -translate-y-2">
           <div className="absolute w-3 h-3 bg-white transform rotate-45 -bottom-1.5 left-1/2 -translate-x-1/2"></div>
-          <div className="relative z-10">{content}</div>
+          <div className="relative z-50">{content}</div>
         </div>
       )}
     </div>
