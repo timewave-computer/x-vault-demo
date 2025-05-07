@@ -79,10 +79,7 @@ export function WithdrawTimer({
   return (
     <div
       className={cn(
-        "rounded-lg p-3 flex flex-col items-center justify-center h-full",
-        isClaimable
-          ? "bg-primary-light border-2 border-primary/40"
-          : "bg-secondary border border-secondary/60",
+        "rounded-lg p-3 flex flex-col items-center justify-center h-full bg-primary-light border-2 border-primary/40",
       )}
     >
       <p
