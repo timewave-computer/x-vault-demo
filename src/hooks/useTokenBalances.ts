@@ -58,10 +58,8 @@ export function useTokenBalances({
               ],
             });
             return {
-              balance: {
-                raw: balance,
-                formatted: formatUnits(balance, decimals),
-              },
+              address: tokenAddress,
+              balance,
               decimals,
               symbol,
             };
@@ -95,6 +93,12 @@ export function useTokenBalances({
         decimals: ethBalance.data?.decimals,
         symbol: ethBalance.data?.symbol,
       },
+    },
+    refetchTokenBalance: (tokenAddress: Address) => {
+      if (!address || !tokenAddress) return;
+      return queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.TOKEN_BALANCE, address, tokenAddress],
+      });
     },
   };
 }

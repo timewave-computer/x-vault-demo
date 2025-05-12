@@ -4,6 +4,7 @@ import { useAccount, useDisconnect } from "wagmi";
 import { useState, useEffect, Fragment } from "react";
 import { useAppKit } from "@/context";
 import { useTokenBalances, useViewAllVaults } from "@/hooks";
+import { formatBigInt } from "@/lib";
 
 /**
  * Utility function to format an Ethereum address for display
@@ -77,7 +78,7 @@ export function ConnectButton() {
             {/* Display ETH balance */}
             {ethBalance && (
               <span className="text-accent-purple whitespace-nowrap">
-                {formatBalance(ethBalance.data?.balance.formatted, "ETH")}
+                {formatBalance(ethBalance.data?.balance.formatted, "ETH", 2)}
               </span>
             )}
             {/* Display token balances */}
@@ -85,9 +86,13 @@ export function ConnectButton() {
               <Fragment key={`accountTokenBalance-${index}`}>
                 {tokenBalance && (
                   <span className="text-accent-purple whitespace-nowrap">
-                    {formatBalance(
-                      tokenBalance.balance.formatted,
+                    {formatBigInt(
+                      tokenBalance.balance,
+                      tokenBalance.decimals,
                       tokenBalance.symbol,
+                      {
+                        displayDecimals: 2,
+                      },
                     )}
                   </span>
                 )}
