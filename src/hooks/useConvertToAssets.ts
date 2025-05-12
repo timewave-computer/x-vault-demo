@@ -19,7 +19,7 @@ export function useConvertToAssets({
 }: UseConvertToAssetsProps) {
   return useReadContract({
     query: {
-      enabled: enabled && !!shares,
+      enabled,
       refetchInterval,
     },
     abi: valenceVaultABI,

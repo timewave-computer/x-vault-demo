@@ -129,9 +129,9 @@ export function useViewAllVaults() {
         : undefined;
 
       const result: VaultData = {
+        ...vault,
         tokenDecimals,
         shareDecimals,
-        ...vault,
         aprPercentage,
         totalShares: totalShares ?? BigInt(0),
         tvl: tvl ?? BigInt(0),
