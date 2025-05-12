@@ -410,8 +410,11 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       tvl,
       redemptionRate,
       maxRedeemableShares,
-      shareBalance,
-      assetBalance: userAssetAmount,
+      shareBalance:
+        (shareBalance ?? BigInt(0)) +
+        (userWithdrawRequest?.withdrawSharesAmount ?? BigInt(0)),
+      assetBalance:
+        (userAssetAmount ?? BigInt(0)) + (withdrawAssetAmount ?? BigInt(0)),
       pendingWithdraw: {
         hasActiveWithdraw,
         ...userWithdrawRequest,
@@ -449,7 +452,7 @@ const handleAndThrowError = (error: unknown, defaultMessage: string) => {
   }
 };
 
-const parseWithdrawRequest = (
+export const parseWithdrawRequest = (
   withdrawRequest?: readonly [
     `0x${string}`,
     bigint,
@@ -460,7 +463,7 @@ const parseWithdrawRequest = (
     bigint,
   ],
 ) => {
-  if (!withdrawRequest) return undefined;
+  if (!withdrawRequest || withdrawRequest.length !== 7) return undefined;
   const owner = withdrawRequest?.[0];
   const _claimableAtTimestamp = withdrawRequest?.[1];
   const maxLossBps = withdrawRequest?.[2];

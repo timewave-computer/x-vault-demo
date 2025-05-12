@@ -8,6 +8,7 @@ import { erc20Abi } from "viem";
 import { fetchAprFromApi, fetchAprFromContract } from "@/lib";
 import { useQueries } from "@tanstack/react-query";
 import { useVaultsConfig, type VaultConfig } from "@/context";
+import { parseWithdrawRequest } from "./useVaultContract";
 
 export type VaultData = VaultConfig & {
   tokenDecimals: number;
@@ -73,7 +74,6 @@ export function useViewAllVaults() {
       const tvl = generalVaultData[2].result;
       const totalShares = generalVaultData[3].result;
       const redemptionRate = generalVaultData[4].result;
-
       if (!tokenDecimals || !shareDecimals) {
         // if these are undefined, unit conversions cannot be done
         throw new Error("Failed to fetch general vault data");
@@ -96,6 +96,26 @@ export function useViewAllVaults() {
           functionName: "convertToAssets",
           args: [userVaultShares],
         });
+
+        const _userWithdrawRequest = await readContract(config, {
+          abi: valenceVaultABI,
+          address: vault.vaultProxyAddress,
+          functionName: "userWithdrawRequest",
+          args: [address as `0x${string}`],
+        });
+
+        const userWithdrawRequest = parseWithdrawRequest(_userWithdrawRequest);
+        if (userWithdrawRequest) {
+          const withdrawAssetAmount = await readContract(config, {
+            abi: valenceVaultABI,
+            address: vault.vaultProxyAddress,
+            functionName: "convertToAssets",
+            args: [userWithdrawRequest.withdrawSharesAmount],
+          });
+          userVaultShares =
+            userVaultShares + userWithdrawRequest.withdrawSharesAmount;
+          userVaultAssets = userVaultAssets + withdrawAssetAmount;
+        }
       }
 
       let apr: string | undefined = undefined;

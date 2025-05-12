@@ -42,11 +42,11 @@ export default function Home() {
                 ? formatBigInt(vault.tvl, vault.tokenDecimals, vault.token, {
                     displayDecimals: 2,
                   })
-                : "N/A";
+                : "0.00";
 
               const apr = vault.aprPercentage
                 ? `${vault.aprPercentage} %`
-                : "N/A";
+                : "0";
 
               const userVaultAssets = vault.userVaultAssets
                 ? formatBigInt(
@@ -57,7 +57,7 @@ export default function Home() {
                       displayDecimals: 2,
                     },
                   )
-                : "N/A";
+                : "0.00";
 
               return (
                 <Link
