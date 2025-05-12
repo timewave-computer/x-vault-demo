@@ -54,7 +54,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       maxRedeemableShares: _maxRedeemableShares,
       shareBalance: _shareBalance,
       assetBalance: _assetBalance,
-      pendingWithdraw,
+      pendingWithdraw: _pendingWithdraw,
     },
     isLoading: isLoadingContract,
     isError: isContractError,
@@ -233,6 +233,17 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     },
   );
 
+  const withdrawSharesAmount = formatBigInt(
+    _pendingWithdraw?.withdrawSharesAmount ?? BigInt(0),
+    shareDecimals,
+    "shares",
+  );
+  const withdrawAssetAmount = formatBigInt(
+    _pendingWithdraw?.withdrawAssetAmount ?? BigInt(0),
+    tokenDecimals,
+    tokenSymbol,
+  );
+
   const isWithdrawDisabled =
     !isConnected ||
     !withdrawInput ||
@@ -339,20 +350,24 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           maxRedeemableShares &&
           parseFloat(maxRedeemableShares) > 0 &&
           // contains copy for vault path and on deposit success
-          !pendingWithdraw?.hasActiveWithdraw && (
+          !_pendingWithdraw?.hasActiveWithdraw && (
             <DepositInProgress copy={vaultData.copy.depositInProgress} />
           )}
 
         {/*shows when user has a pending withdrawal */}
         {isConnected &&
-          pendingWithdraw &&
-          pendingWithdraw?.hasActiveWithdraw && (
+          _pendingWithdraw &&
+          _pendingWithdraw?.hasActiveWithdraw && (
             <WithdrawInProgress
+              hasActiveWithdraw={_pendingWithdraw?.hasActiveWithdraw}
+              isClaimable={_pendingWithdraw?.isClaimable}
+              withdrawAssetAmount={withdrawAssetAmount}
+              withdrawSharesAmount={withdrawSharesAmount}
               copy={vaultData?.copy.withdrawInProgress}
               claimableAtTimestamp={
-                pendingWithdraw?.claimableAtTimestamp ?? undefined
+                _pendingWithdraw?.claimableAtTimestamp ?? undefined
               }
-              timeRemaining={pendingWithdraw?.timeRemaining}
+              timeRemaining={_pendingWithdraw?.timeRemaining}
               onCompleteWithdraw={handleCompleteWithdraw}
               isCompletingWithdraw={isCompletingWithdraw}
             />

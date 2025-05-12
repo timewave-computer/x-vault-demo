@@ -64,6 +64,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       })
     : "N/A";
 
+  const apr = vaultData?.aprPercentage ? `${vaultData.aprPercentage} %` : "N/A";
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -143,7 +145,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">APR</dt>
             <dd className="mt-2 text-2xl font-beast text-secondary text-wrap break-words">
-              {vaultData.aprPercentage ? `${vaultData.aprPercentage} %` : "N/A"}
+              {apr}
             </dd>
           </Card>
         </dl>

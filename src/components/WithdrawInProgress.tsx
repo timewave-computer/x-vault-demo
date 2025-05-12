@@ -98,7 +98,7 @@ export const WithdrawInProgress: React.FC<WithdrawInProgressProps> = ({
               <div className="">
                 <WithdrawTimer
                   initialTimeRemaining={
-                    isClaimable ? "00:00:00" : timeRemaining || "--:--:--"
+                    isClaimable ? "00:00:00" : timeRemaining || "00:00:00"
                   }
                   isClaimable={!!isClaimable}
                   claimTime={claimableAtTimestampFormatted || "N/A"}

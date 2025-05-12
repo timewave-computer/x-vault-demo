@@ -120,37 +120,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
   const hasActiveWithdraw = userDataQuery.data?.[3]?.result;
   const _userWithdrawRequest = userDataQuery.data?.[4]?.result;
 
-  let userWithdrawRequest = null;
-
-  if (_userWithdrawRequest) {
-    const owner = userWithdrawRequest?.[0];
-    const _claimTime = userWithdrawRequest?.[1];
-    const maxLossBps = userWithdrawRequest?.[2];
-    const receiver = userWithdrawRequest?.[3];
-    const updateId = userWithdrawRequest?.[4];
-    const solverFee = userWithdrawRequest?.[5];
-    const sharesAmount = userWithdrawRequest?.[6];
-
-    const claimableAtTimestamp = _claimTime
-      ? formatBigIntToTimestamp(_claimTime)
-      : null;
-
-    // Calculate the time remaining
-    const timeRemaining = claimableAtTimestamp
-      ? formatRemainingTime(claimableAtTimestamp)
-      : null;
-
-    userWithdrawRequest = {
-      owner,
-      timeRemaining,
-      maxLossBps,
-      receiver,
-      updateId,
-      solverFee,
-      sharesAmount,
-      claimableAtTimestamp,
-    };
-  }
+  const userWithdrawRequest = parseWithdrawRequest(_userWithdrawRequest);
 
   // Convert user's share balance to assets
   const convertShareBalanceQuery = useConvertToAssets({
@@ -165,9 +135,10 @@ export function useVaultContract(vaultMetadata?: VaultData) {
   // Convert withdraw shares to assets
   const convertWithdrawSharesQuery = useConvertToAssets({
     vaultProxyAddress: vaultProxyAddress as Address,
-    shares: userWithdrawRequest?.sharesAmount,
+    shares: userWithdrawRequest?.withdrawSharesAmount,
     refetchInterval: REFRESH_INTERVAL,
-    enabled: isConnected && !!address && !!userWithdrawRequest?.sharesAmount,
+    enabled:
+      isConnected && !!address && !!userWithdrawRequest?.withdrawSharesAmount,
   });
   const withdrawAssetAmount = convertWithdrawSharesQuery.data;
 
@@ -476,4 +447,43 @@ const handleAndThrowError = (error: unknown, defaultMessage: string) => {
   } else {
     throw new Error(defaultMessage);
   }
+};
+
+const parseWithdrawRequest = (
+  withdrawRequest?: readonly [
+    `0x${string}`,
+    bigint,
+    number,
+    `0x${string}`,
+    number,
+    bigint,
+    bigint,
+  ],
+) => {
+  if (!withdrawRequest) return undefined;
+  const owner = withdrawRequest?.[0];
+  const _claimableAtTimestamp = withdrawRequest?.[1];
+  const maxLossBps = withdrawRequest?.[2];
+  const receiver = withdrawRequest?.[3];
+  const updateId = withdrawRequest?.[4];
+  const solverFee = withdrawRequest?.[5];
+  const withdrawSharesAmount = withdrawRequest?.[6];
+
+  // add 1 minute to simulate a 1 minute delay in claiming. The current env is has a wait period of 1 second so this simulates the delay
+  const claimableAtTimestamp = _claimableAtTimestamp
+    ? formatBigIntToTimestamp(_claimableAtTimestamp) + 1000 * 60
+    : null;
+  const timeRemaining = claimableAtTimestamp
+    ? formatRemainingTime(claimableAtTimestamp)
+    : null;
+  return {
+    owner,
+    timeRemaining,
+    maxLossBps,
+    receiver,
+    updateId,
+    solverFee,
+    withdrawSharesAmount,
+    claimableAtTimestamp,
+  };
 };
