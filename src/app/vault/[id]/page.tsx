@@ -54,7 +54,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       maxRedeemableShares: _maxRedeemableShares,
       shareBalance: _shareBalance,
       assetBalance: _assetBalance,
-      pendingWithdrawal,
+      pendingWithdraw,
     },
     isLoading: isLoadingContract,
     isError: isContractError,
@@ -339,20 +339,20 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           maxRedeemableShares &&
           parseFloat(maxRedeemableShares) > 0 &&
           // contains copy for vault path and on deposit success
-          !pendingWithdrawal?.hasActiveWithdraw && (
+          !pendingWithdraw?.hasActiveWithdraw && (
             <DepositInProgress copy={vaultData.copy.depositInProgress} />
           )}
 
         {/*shows when user has a pending withdrawal */}
         {isConnected &&
-          pendingWithdrawal &&
-          pendingWithdrawal?.hasActiveWithdraw && (
+          pendingWithdraw &&
+          pendingWithdraw?.hasActiveWithdraw && (
             <WithdrawInProgress
               copy={vaultData?.copy.withdrawInProgress}
               claimableAtTimestamp={
-                pendingWithdrawal?.claimableAtTimestamp ?? undefined
+                pendingWithdraw?.claimableAtTimestamp ?? undefined
               }
-              timeRemaining={pendingWithdrawal?.timeRemaining}
+              timeRemaining={pendingWithdraw?.timeRemaining}
               onCompleteWithdraw={handleCompleteWithdraw}
               isCompletingWithdraw={isCompletingWithdraw}
             />

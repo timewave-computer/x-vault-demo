@@ -186,7 +186,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
   const strategistUpdateTimestamp = strategistUpdateInfoQuery.data?.[1];
   const withdrawFee = strategistUpdateInfoQuery.data?.[2];
 
-  const isClaimable =
+  const isWithdrawClaimable =
     withdrawRate &&
     userWithdrawRequest?.claimableAtTimestamp &&
     strategistUpdateTimestamp
@@ -441,14 +441,13 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       maxRedeemableShares,
       shareBalance,
       assetBalance: userAssetAmount,
-
-      pendingWithdrawal: {
+      pendingWithdraw: {
         hasActiveWithdraw,
         ...userWithdrawRequest,
         withdrawFee,
         withdrawRate,
         withdrawAssetAmount,
-        isClaimable,
+        isClaimable: isWithdrawClaimable,
       },
     },
   };
