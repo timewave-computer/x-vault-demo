@@ -5,28 +5,19 @@ import { useAccount, useConfig } from "wagmi";
 import { QUERY_KEYS, valenceVaultABI } from "@/const";
 import { readContract, readContracts } from "@wagmi/core";
 import { erc20Abi } from "viem";
-import { formatBigInt, fetchAprFromApi, fetchAprFromContract } from "@/lib";
+import { fetchAprFromApi, fetchAprFromContract } from "@/lib";
 import { useQueries } from "@tanstack/react-query";
 import { useVaultsConfig, type VaultConfig } from "@/context";
 
 export type VaultData = VaultConfig & {
   tokenDecimals: number;
   shareDecimals: number;
-  apr?: string;
-  raw: {
-    totalShares: bigint;
-    userShares: bigint;
-    userPosition: bigint;
-    tvl: bigint;
-    redemptionRate: bigint;
-  };
-  formatted: {
-    totalShares: string;
-    userShares: string;
-    userPosition: string;
-    tvl: string;
-    redemptionRate: string;
-  };
+  aprPercentage?: string;
+  totalShares: bigint;
+  userVaultShares: bigint;
+  userVaultAssets: bigint;
+  tvl: bigint;
+  redemptionRate: bigint;
 };
 
 export function useViewAllVaults() {
@@ -73,89 +64,60 @@ export function useViewAllVaults() {
           },
         ],
       });
-      let tokenDecimals: number;
-      let shareDecimals: number;
-      let tvl: bigint | undefined = undefined;
-      let totalShares: bigint | undefined = undefined;
-      let redemptionRate: bigint | undefined = undefined;
 
       if (!generalVaultData) {
         throw new Error("Failed to fetch general vault data");
       }
+      const tokenDecimals = Number(generalVaultData[0].result);
+      const shareDecimals = Number(generalVaultData[1].result);
+      const tvl = generalVaultData[2].result;
+      const totalShares = generalVaultData[3].result;
+      const redemptionRate = generalVaultData[4].result;
 
-      if (generalVaultData.length !== 5) {
-        throw new Error("Failed to fetch general vault data");
-      } else if (
-        generalVaultData[0] === undefined ||
-        generalVaultData[1] === undefined
-      ) {
+      if (!tokenDecimals || !shareDecimals) {
         // if these are undefined, unit conversions cannot be done
-        throw new Error("Failed to fetch token or share decimals");
+        throw new Error("Failed to fetch general vault data");
       }
 
-      tokenDecimals = Number(generalVaultData[0].result);
-      shareDecimals = Number(generalVaultData[1].result);
-      tvl = generalVaultData[2].result;
-      totalShares = generalVaultData[3].result;
-      redemptionRate = generalVaultData[4].result;
+      let userVaultShares = BigInt(0);
+      let userVaultAssets = BigInt(0);
 
-      let userShares = BigInt(0),
-        userPosition = BigInt(0);
       if (address) {
-        userShares = await readContract(config, {
+        userVaultShares = await readContract(config, {
           abi: valenceVaultABI,
           address: vault.vaultProxyAddress,
           functionName: "balanceOf",
           args: [address as `0x${string}`],
         });
 
-        userPosition = await readContract(config, {
+        userVaultAssets = await readContract(config, {
           abi: valenceVaultABI,
           address: vault.vaultProxyAddress,
           functionName: "convertToAssets",
-          args: [userShares],
+          args: [userVaultShares],
         });
       }
 
-      let _apr: string | undefined = undefined;
+      let apr: string | undefined = undefined;
       if (vault.aprRequest.type === "contract") {
-        _apr = await fetchAprFromContract(vault, config, tokenDecimals);
+        apr = await fetchAprFromContract(vault, config, tokenDecimals);
       } else if (vault.aprRequest.type === "api") {
-        _apr = await fetchAprFromApi(vault);
+        apr = await fetchAprFromApi(vault);
       }
-      const aprPercentage = _apr
-        ? (parseFloat(_apr) * 100).toString()
+      const aprPercentage = apr
+        ? (parseFloat(apr) * 100).toString()
         : undefined;
 
       const result: VaultData = {
         tokenDecimals,
         shareDecimals,
         ...vault,
-        apr: aprPercentage,
-        raw: {
-          totalShares: totalShares ?? BigInt(0),
-          tvl: tvl ?? BigInt(0),
-          userShares: userShares ?? BigInt(0),
-          userPosition: userPosition ?? BigInt(0),
-          redemptionRate: redemptionRate ?? BigInt(0),
-        },
-        formatted: {
-          totalShares: formatBigInt(totalShares, shareDecimals, "shares", {
-            displayDecimals: 2,
-          }),
-          tvl: formatBigInt(tvl, tokenDecimals, vault.token, {
-            displayDecimals: 2,
-          }),
-          userShares: formatBigInt(userShares, shareDecimals, "shares", {
-            displayDecimals: 2,
-          }),
-          userPosition: formatBigInt(userPosition, tokenDecimals, vault.token, {
-            displayDecimals: 2,
-          }),
-          redemptionRate: formatBigInt(redemptionRate, shareDecimals, "%", {
-            displayDecimals: 2,
-          }),
-        },
+        aprPercentage,
+        totalShares: totalShares ?? BigInt(0),
+        tvl: tvl ?? BigInt(0),
+        userVaultShares: userVaultShares ?? BigInt(0),
+        userVaultAssets: userVaultAssets ?? BigInt(0),
+        redemptionRate: redemptionRate ?? BigInt(0),
       };
       return result;
     },

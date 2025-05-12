@@ -100,8 +100,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     },
     onSuccess: (hash) => {
       setDepositInput("");
-      const toastDescription = vaultData?.apr
-        ? `Your funds are now earning ${vaultData?.apr}% APY!`
+      const toastDescription = vaultData?.aprPercentage
+        ? `Your funds are now earning ${vaultData?.aprPercentage}% APY!`
         : "Funds are now earning yield.";
       showToast({
         title: "Deposit successful",
@@ -329,7 +329,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">APR</dt>
             <dd className="mt-2 text-2xl font-beast text-secondary text-wrap break-words">
-              {vaultData.apr ? `${vaultData.apr} %` : "N/A"}
+              {vaultData.aprPercentage ? `${vaultData.aprPercentage} %` : "N/A"}
             </dd>
           </Card>
         </dl>
