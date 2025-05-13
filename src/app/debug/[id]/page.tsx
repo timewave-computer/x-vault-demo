@@ -14,6 +14,7 @@ import {
   type ToggleOption,
   ChronologicalEvents,
 } from "@/components";
+import { formatBigInt } from "@/lib";
 
 // Export specific EventToggle for backward compatibility
 export type ViewMode = "divided" | "chronological";
@@ -50,6 +51,20 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const { withdrawRequests, processedUpdates, deposits } = logs ?? {};
 
   const isLoading = isLoadingVaults || isLogsLoading;
+
+  const tvl = vaultData?.tvl
+    ? formatBigInt(vaultData.tvl, vaultData.tokenDecimals, vaultData.token, {
+        displayDecimals: 2,
+      })
+    : "N/A";
+
+  const totalShares = vaultData?.totalShares
+    ? formatBigInt(vaultData.totalShares, vaultData.shareDecimals, "shares", {
+        displayDecimals: 2,
+      })
+    : "N/A";
+
+  const apr = vaultData?.aprPercentage ? `${vaultData.aprPercentage} %` : "N/A";
 
   if (isLoading) {
     return (
@@ -116,21 +131,21 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">TVL</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
-              {vaultData.formatted.tvl}
+              {tvl}
             </dd>
           </Card>
 
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Total Shares</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
-              {vaultData.formatted.totalShares}
+              {totalShares}
             </dd>
           </Card>
 
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">APR</dt>
             <dd className="mt-2 text-2xl font-beast text-secondary text-wrap break-words">
-              {vaultData.apr ? `${vaultData.apr} %` : "N/A"}
+              {apr}
             </dd>
           </Card>
         </dl>

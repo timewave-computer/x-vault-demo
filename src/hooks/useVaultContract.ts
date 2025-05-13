@@ -6,17 +6,17 @@ import {
   useConfig,
   useReadContracts,
 } from "wagmi";
-import { parseUnits, formatUnits, erc20Abi, BaseError } from "viem";
+import { parseUnits, erc20Abi, BaseError } from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
 import { VaultData } from "@/hooks";
 import {
   formatBigInt,
   formatBigIntToTimestamp,
-  unixTimestampToDateString,
   formatRemainingTime,
 } from "@/lib";
 import { readContract } from "@wagmi/core";
+import { useConvertToAssets } from "@/hooks";
 
 const REFRESH_INTERVAL = 5000;
 
@@ -47,13 +47,9 @@ export function useVaultContract(vaultMetadata?: VaultData) {
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
   const config = useConfig();
+  const now = new Date().getTime();
 
-  const {
-    data: vaultData,
-    isLoading: isLoadingVaultData,
-    isError: isErrorVaultData,
-    refetch: refetchVaultData,
-  } = useReadContracts({
+  const vaultMetadataQuery = useReadContracts({
     query: {
       refetchInterval: REFRESH_INTERVAL,
     },
@@ -73,22 +69,10 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     ],
   });
 
-  let tvl: bigint | undefined = undefined;
-  let redemptionRate: bigint | undefined = undefined;
-  if (vaultData && vaultData.length !== 2) {
-    throw new Error("Failed to fetch vault data");
-  }
-  if (vaultData) {
-    tvl = vaultData[0].result;
-    redemptionRate = vaultData[1].result;
-  }
+  const tvl = vaultMetadataQuery.data?.[0]?.result;
+  const redemptionRate = vaultMetadataQuery.data?.[1]?.result;
 
-  const {
-    data: userData,
-    isLoading: isLoadingUserData,
-    isError: isErrorUserData,
-    refetch: refetchUserData,
-  } = useReadContracts({
+  const userDataQuery = useReadContracts({
     query: {
       enabled: isConnected && !!address,
       refetchInterval: REFRESH_INTERVAL,
@@ -130,141 +114,99 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       },
     ],
   });
-  let tokenBalance = undefined;
-  let shareBalance = undefined;
-  let maxRedeem = undefined;
-  let hasActiveWithdraw = undefined;
-  let userWithdrawRequest = undefined;
 
-  let withdrawData = null;
+  const shareBalance = userDataQuery.data?.[1]?.result;
+  const maxRedeemableShares = userDataQuery.data?.[2]?.result;
+  const hasActiveWithdraw = userDataQuery.data?.[3]?.result;
+  const _userWithdrawRequest = userDataQuery.data?.[4]?.result;
 
-  if (userData?.length && userData.length !== 5) {
-    throw new Error("Failed to fetch user data");
-  }
-  if (userData) {
-    tokenBalance = userData[0].result;
-    shareBalance = userData[1].result;
-    maxRedeem = userData[2].result;
-    hasActiveWithdraw = userData[3].result;
-    userWithdrawRequest = userData[4].result;
+  const userWithdrawRequest = parseWithdrawRequest(_userWithdrawRequest);
 
-    if (userWithdrawRequest && userWithdrawRequest?.length === 7) {
-      const [
-        owner,
-        _claimTime, // bigint
-        maxLossBps,
-        receiver,
-        updateId,
-        solverFee,
-        sharesAmount,
-      ] = userWithdrawRequest;
-
-      const claimTime = formatBigIntToTimestamp(_claimTime) + 60 * 1000; // add 1 min in milliseconds
-
-      // Calculate the time remaining
-      const timeRemaining = formatRemainingTime(claimTime);
-
-      withdrawData = {
-        owner,
-        timeRemaining,
-        maxLossBps,
-        receiver,
-        updateId,
-        solverFee,
-        raw: {
-          sharesAmount: sharesAmount,
-          claimTime: claimTime,
-        },
-        formatted: {
-          sharesAmount: sharesAmount
-            ? formatBigInt(sharesAmount, shareDecimals, "shares", {
-                displayDecimals: 2,
-              })
-            : "0",
-          claimTime: claimTime
-            ? unixTimestampToDateString(claimTime, "toLocaleString")
-            : "N/A",
-        },
-      };
-    }
-  }
-
-  const {
-    data: withdrawAssetBalanceRaw,
-    refetch: refetchWithdrawAssetBalance,
-    isLoading: isLoadingWithdrawAssetBalance,
-    isError: isWithdrawAssetBalanceError,
-  } = useReadContract({
-    query: {
-      enabled: isConnected && !!address && !!withdrawData?.raw.sharesAmount,
-      refetchInterval: REFRESH_INTERVAL,
-    },
-    abi: valenceVaultABI,
-    functionName: "convertToAssets",
-    address: vaultProxyAddress as Address,
-    args: withdrawData?.raw.sharesAmount
-      ? [withdrawData.raw.sharesAmount]
-      : [BigInt(0)],
+  // Convert user's share balance to assets
+  const convertShareBalanceQuery = useConvertToAssets({
+    vaultProxyAddress: vaultProxyAddress as Address,
+    shares: shareBalance,
+    refetchInterval: REFRESH_INTERVAL,
+    enabled: isConnected && !!address && !!shareBalance,
   });
-  const withdrawAssetBalanceFormatted = formatBigInt(
-    withdrawAssetBalanceRaw,
-    tokenDecimals,
-    symbol,
-    {
-      displayDecimals: 2,
-    },
-  );
 
-  //  user's vault "position" (shares -> assets)
-  // depends on user's share balance
-  const {
-    data: assetBalance,
-    refetch: refetchAssetBalance,
-    isLoading: isLoadingAssetBalance,
-    isError: isAssetBalanceError,
-  } = useReadContract({
-    query: {
-      enabled: isConnected && !!address && !!shareBalance,
-      refetchInterval: REFRESH_INTERVAL,
-    },
-    abi: valenceVaultABI,
-    functionName: "convertToAssets",
-    address: vaultProxyAddress as Address,
-    args: shareBalance ? [shareBalance] : [BigInt(0)],
+  const userAssetAmount = convertShareBalanceQuery.data;
+
+  // Convert withdraw shares to assets
+  const convertWithdrawSharesQuery = useConvertToAssets({
+    vaultProxyAddress: vaultProxyAddress as Address,
+    shares: userWithdrawRequest?.withdrawSharesAmount,
+    refetchInterval: REFRESH_INTERVAL,
+    enabled:
+      isConnected && !!address && !!userWithdrawRequest?.withdrawSharesAmount,
   });
+  const withdrawAssetAmount = convertWithdrawSharesQuery.data;
 
   // Query the strategist update info for the withdrawal request
-  const {
-    data: updateInfoRequest,
-    refetch: refetchUpdateInfo,
-    isLoading: isLoadingUpdateInfo,
-    isError: isUpdateInfoError,
-  } = useReadContract({
+  const strategistUpdateInfoQuery = useReadContract({
     query: {
-      enabled: isConnected && !!address && !!withdrawData?.updateId,
+      enabled: isConnected && !!address && !!userWithdrawRequest?.updateId,
       refetchInterval: REFRESH_INTERVAL,
     },
     abi: valenceVaultABI,
     functionName: "updateInfos",
     address: vaultProxyAddress as Address,
-    args: [BigInt(withdrawData?.updateId ?? 0)],
+    args: [BigInt(userWithdrawRequest?.updateId ?? 0)],
   });
-  let updateData = null;
-  // extract values from response
-  if (updateInfoRequest?.length === 3) {
-    const [withdrawRate, timestamp, withdrawFee] = updateInfoRequest;
+  const withdrawRate = strategistUpdateInfoQuery.data?.[0];
+  const strategistUpdateTimestamp = strategistUpdateInfoQuery.data?.[1];
+  const withdrawFee = strategistUpdateInfoQuery.data?.[2];
 
-    updateData = {
-      withdrawRate:
-        shareDecimals && withdrawRate
-          ? formatBigInt(withdrawRate, shareDecimals, "", {
-              displayDecimals: 2,
-            })
-          : "0",
-      timestamp: unixTimestampToDateString(formatBigIntToTimestamp(timestamp)),
-      withdrawFee: withdrawFee.toString(),
-    };
-  }
+  const isWithdrawClaimable =
+    withdrawRate &&
+    userWithdrawRequest?.claimableAtTimestamp &&
+    strategistUpdateTimestamp
+      ? now > userWithdrawRequest.claimableAtTimestamp
+      : false;
+
+  /**
+   *  Vault queries
+   */
+
+  //Preview a deposit (tokens -> vault shares)
+  const previewDeposit = async (amount: string) => {
+    if (!vaultMetadata) throw new Error("Failed to preview deposit");
+    if (!address) throw new Error("Not connected");
+    if (!walletClient) throw new Error("Wallet not connected");
+    if (!publicClient) throw new Error("Public client not initialized");
+
+    const parsedAmount = parseUnits(amount, Number(tokenDecimals));
+    const previewAmount = await readContract(config, {
+      abi: valenceVaultABI,
+      functionName: "previewDeposit",
+      address: vaultProxyAddress as Address,
+      args: [parsedAmount],
+    });
+
+    return formatBigInt(previewAmount, shareDecimals, "shares", {
+      displayDecimals: 4,
+    });
+  };
+
+  // Preview a withdrawal (vault shares -> tokens)
+  const previewRedeem = async (shares: string) => {
+    if (!vaultMetadata) throw new Error("Failed to preview redeem");
+    if (!address) throw new Error("Not connected");
+    if (!walletClient) throw new Error("Wallet not connected");
+    if (!publicClient) throw new Error("Public client not initialized");
+
+    const parsedShares = parseUnits(shares, Number(shareDecimals));
+    const previewAmount = await readContract(config, {
+      abi: valenceVaultABI,
+      functionName: "previewRedeem",
+      address: vaultProxyAddress as Address,
+      args: [parsedShares],
+    });
+
+    return formatBigInt(previewAmount, tokenDecimals, symbol, {
+      displayDecimals: 2,
+    });
+  };
 
   /**
    * Vault actions
@@ -272,7 +214,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
 
   //Deposit tokens into vault
   const depositWithAmount = async (amount: string) => {
-    if (!vaultData) throw new Error("Failed to initiate deposit");
+    if (!vaultMetadata) throw new Error("Failed to initiate deposit");
     if (!address) throw new Error("Not connected");
     if (!walletClient) throw new Error("Wallet not connected");
     if (!publicClient) throw new Error("Public client not initialized");
@@ -330,7 +272,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     maxLossBps: number = 1000,
     allowSolverCompletion: boolean = false,
   ) => {
-    if (!vaultData) throw new Error("Failed to initiate withdraw");
+    if (!vaultMetadata) throw new Error("Failed to initiate withdraw");
     if (!address) throw new Error("Not connected");
     if (!walletClient) throw new Error("Wallet not connected");
     if (!publicClient) throw new Error("Public client not initialized");
@@ -396,7 +338,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
 
   // Complete a withdrawal. Can be executed after the lockup period has passed.
   const completeWithdraw = async () => {
-    if (!vaultData) throw new Error("Failed to complete withdrawal");
+    if (!vaultMetadata) throw new Error("Failed to complete withdrawal");
     if (!address) throw new Error("Not connected");
     if (!walletClient) throw new Error("Wallet not connected");
     if (!publicClient) throw new Error("Public client not initialized");
@@ -428,141 +370,60 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     }
   };
 
-  //Preview a deposit (tokens -> vault shares)
-  const previewDeposit = async (amount: string) => {
-    if (!vaultData) throw new Error("Failed to preview deposit");
-    if (!address) throw new Error("Not connected");
-    if (!walletClient) throw new Error("Wallet not connected");
-    if (!publicClient) throw new Error("Public client not initialized");
-
-    const parsedAmount = parseUnits(amount, Number(tokenDecimals));
-    const previewAmount = await readContract(config, {
-      abi: valenceVaultABI,
-      functionName: "previewDeposit",
-      address: vaultProxyAddress as Address,
-      args: [parsedAmount],
-    });
-
-    return formatBigInt(previewAmount, shareDecimals, "shares", {
-      displayDecimals: 4,
-    });
+  // Refetch all data. Nice utility to use after performing an action
+  const refetch = () => {
+    vaultMetadataQuery.refetch();
+    userDataQuery.refetch();
+    convertWithdrawSharesQuery.refetch();
+    convertShareBalanceQuery.refetch();
+    strategistUpdateInfoQuery.refetch();
   };
 
-  // Preview a withdrawal (vault shares -> tokens)
-  const previewRedeem = async (shares: string) => {
-    if (!vaultData) throw new Error("Failed to preview redeem");
-    if (!address) throw new Error("Not connected");
-    if (!walletClient) throw new Error("Wallet not connected");
-    if (!publicClient) throw new Error("Public client not initialized");
-
-    const parsedShares = parseUnits(shares, Number(shareDecimals));
-    const previewAmount = await readContract(config, {
-      abi: valenceVaultABI,
-      functionName: "previewRedeem",
-      address: vaultProxyAddress as Address,
-      args: [parsedShares],
-    });
-
-    return formatBigInt(previewAmount, tokenDecimals, symbol, {
-      displayDecimals: 2,
-    });
-  };
-
-  /***
-   * Statuses
-   */
-
-  const now = new Date().getTime();
+  // statuses
 
   const isLoading =
-    isLoadingVaultData ||
-    isLoadingUserData ||
-    isLoadingAssetBalance ||
-    isLoadingUpdateInfo ||
-    isLoadingWithdrawAssetBalance;
+    vaultMetadataQuery.isLoading ||
+    userDataQuery.isLoading ||
+    convertWithdrawSharesQuery.isLoading ||
+    convertShareBalanceQuery.isLoading ||
+    strategistUpdateInfoQuery.isLoading;
 
   const isError =
-    isErrorVaultData ||
-    isErrorUserData ||
-    isAssetBalanceError ||
-    isUpdateInfoError ||
-    isWithdrawAssetBalanceError;
-
-  // Refetch all queries, useful after performing an action
-  const refetchContractState = () => {
-    refetchVaultData();
-    refetchUserData();
-    refetchAssetBalance();
-    refetchUpdateInfo();
-    refetchWithdrawAssetBalance();
-  };
+    vaultMetadataQuery.isError ||
+    userDataQuery.isError ||
+    convertWithdrawSharesQuery.isError ||
+    convertShareBalanceQuery.isError ||
+    strategistUpdateInfoQuery.isError;
 
   return {
+    isLoading,
+    isError,
+    refetch,
     depositWithAmount,
     withdrawShares,
     completeWithdraw,
     previewDeposit,
     previewRedeem,
-    refetchContractState,
-    pendingWithdrawal: {
-      hasActiveWithdraw,
-      ...withdrawData,
-      ...updateData,
-      withdrawAssetBalanceFormatted,
-      isClaimable:
-        updateData?.withdrawRate && withdrawData?.raw.claimTime
-          ? now > withdrawData.raw.claimTime
-          : false,
-    },
-    raw: {
+    tokenDecimals,
+    shareDecimals,
+    data: {
       tvl,
       redemptionRate,
-      tokenBalance,
-      maxRedeem,
-      shareBalance,
-      assetBalance,
-      tokenDecimals,
-      shareDecimals,
-    },
-    formatted: {
-      tvl: formatBigInt(tvl, tokenDecimals, symbol, {
-        displayDecimals: 2,
-      }),
-      redemptionRate: formatBigInt(redemptionRate, shareDecimals, "%", {
-        displayDecimals: 2,
-      }),
-      tokenBalance: formatBigInt(tokenBalance, tokenDecimals, symbol, {
-        displayDecimals: 2,
-      }),
-      maxRedeem: formatBigInt(maxRedeem, shareDecimals, "shares", {
-        displayDecimals: 2,
-      }),
-      shareBalance: formatBigInt(shareBalance, shareDecimals, "shares", {
-        displayDecimals: 2,
-      }),
-      assetBalance: formatBigInt(assetBalance, tokenDecimals, symbol, {
-        displayDecimals: 2,
-      }),
-      totalShareBalance: formatBigInt(
+      maxRedeemableShares,
+      shareBalance:
         (shareBalance ?? BigInt(0)) +
-          (withdrawData?.raw.sharesAmount ?? BigInt(0)),
-        shareDecimals,
-        "shares",
-        {
-          displayDecimals: 2,
-        },
-      ),
-      totalAssetBalance: formatBigInt(
-        (assetBalance ?? BigInt(0)) + (withdrawAssetBalanceRaw ?? BigInt(0)),
-        tokenDecimals,
-        symbol,
-        {
-          displayDecimals: 2,
-        },
-      ),
+        (userWithdrawRequest?.withdrawSharesAmount ?? BigInt(0)),
+      assetBalance:
+        (userAssetAmount ?? BigInt(0)) + (withdrawAssetAmount ?? BigInt(0)),
+      pendingWithdraw: {
+        hasActiveWithdraw,
+        ...userWithdrawRequest,
+        withdrawFee,
+        withdrawRate,
+        withdrawAssetAmount,
+        isClaimable: isWithdrawClaimable,
+      },
     },
-    isLoading,
-    isError,
   };
 }
 
@@ -589,4 +450,43 @@ const handleAndThrowError = (error: unknown, defaultMessage: string) => {
   } else {
     throw new Error(defaultMessage);
   }
+};
+
+export const parseWithdrawRequest = (
+  withdrawRequest?: readonly [
+    `0x${string}`,
+    bigint,
+    number,
+    `0x${string}`,
+    number,
+    bigint,
+    bigint,
+  ],
+) => {
+  if (!withdrawRequest || withdrawRequest.length !== 7) return undefined;
+  const owner = withdrawRequest?.[0];
+  const _claimableAtTimestamp = withdrawRequest?.[1];
+  const maxLossBps = withdrawRequest?.[2];
+  const receiver = withdrawRequest?.[3];
+  const updateId = withdrawRequest?.[4];
+  const solverFee = withdrawRequest?.[5];
+  const withdrawSharesAmount = withdrawRequest?.[6];
+
+  // add 1 minute to simulate a 1 minute delay in claiming. The current env is has a wait period of 1 second so this simulates the delay
+  const claimableAtTimestamp = _claimableAtTimestamp
+    ? formatBigIntToTimestamp(_claimableAtTimestamp) + 1000 * 60
+    : null;
+  const timeRemaining = claimableAtTimestamp
+    ? formatRemainingTime(claimableAtTimestamp)
+    : null;
+  return {
+    owner,
+    timeRemaining,
+    maxLossBps,
+    receiver,
+    updateId,
+    solverFee,
+    withdrawSharesAmount,
+    claimableAtTimestamp,
+  };
 };

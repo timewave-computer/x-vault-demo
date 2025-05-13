@@ -6,12 +6,12 @@ export function formatBigInt(
   _value: bigint | undefined,
   decimals: number,
   symbol: string,
-  options: {
+  options?: {
     displayDecimals?: number; // fraction precision
   },
 ): string {
   const value = _value ?? BigInt(0);
-  const displayDecimals = options.displayDecimals ?? defaultDisplayDecimals;
+  const displayDecimals = options?.displayDecimals ?? defaultDisplayDecimals;
 
   // Use formatUnits to shift the decimal point
   const formatted = formatUnits(value, decimals);

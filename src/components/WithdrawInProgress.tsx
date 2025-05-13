@@ -1,6 +1,7 @@
 import React from "react";
 import { Button, Card, Tooltip, WithdrawTimer } from "@/components";
 import { useAccount } from "wagmi";
+import { unixTimestampToDateString } from "@/lib/helper/time-format";
 
 interface WithdrawInProgressProps {
   copy: {
@@ -8,35 +9,37 @@ interface WithdrawInProgressProps {
     description: string;
     cta: string;
   };
-  pendingWithdrawal?: {
-    formatted?: {
-      claimTime: string;
-      sharesAmount: string;
-    };
-    isClaimable?: boolean;
-    timeRemaining?: string | null;
-    withdrawAssetBalanceFormatted?: string;
-    hasActiveWithdraw?: boolean;
-    withdrawRate?: string;
-  };
+  claimableAtTimestamp?: number;
+  timeRemaining?: string | null;
+  withdrawSharesAmount?: string;
+  withdrawAssetAmount?: string;
+  withdrawRate?: string;
+  isClaimable?: boolean;
+  hasActiveWithdraw?: boolean;
   onCompleteWithdraw: () => void;
   isCompletingWithdraw: boolean;
 }
 
 export const WithdrawInProgress: React.FC<WithdrawInProgressProps> = ({
   copy,
-  pendingWithdrawal,
+  claimableAtTimestamp,
+  timeRemaining,
+  withdrawSharesAmount,
+  withdrawAssetAmount,
+  withdrawRate,
+  isClaimable,
+  hasActiveWithdraw,
   onCompleteWithdraw,
   isCompletingWithdraw,
 }) => {
   const { isConnected } = useAccount();
-  if (
-    !pendingWithdrawal ||
-    !pendingWithdrawal?.formatted ||
-    !pendingWithdrawal?.hasActiveWithdraw
-  ) {
+  if (!hasActiveWithdraw) {
     return null;
   }
+
+  const claimableAtTimestampFormatted = claimableAtTimestamp
+    ? unixTimestampToDateString(claimableAtTimestamp, "toLocaleString")
+    : "N/A";
 
   return (
     <div className="mt-8">
@@ -95,14 +98,12 @@ export const WithdrawInProgress: React.FC<WithdrawInProgressProps> = ({
               <div className="">
                 <WithdrawTimer
                   initialTimeRemaining={
-                    pendingWithdrawal.isClaimable
-                      ? "00:00:00"
-                      : pendingWithdrawal.timeRemaining || "--:--:--"
+                    isClaimable ? "00:00:00" : timeRemaining || "00:00:00"
                   }
-                  isClaimable={!!pendingWithdrawal.isClaimable}
-                  claimTime={pendingWithdrawal.formatted.claimTime || "N/A"}
+                  isClaimable={!!isClaimable}
+                  claimTime={claimableAtTimestampFormatted || "N/A"}
                 >
-                  Claimable after: {pendingWithdrawal.formatted.claimTime}
+                  Claimable after: {claimableAtTimestampFormatted}
                 </WithdrawTimer>
               </div>
 
@@ -110,23 +111,20 @@ export const WithdrawInProgress: React.FC<WithdrawInProgressProps> = ({
               <div>
                 <div className="flex flex-col w-full items-center">
                   <span className="text-2xl font-beast text-accent-purple">
-                    {pendingWithdrawal.withdrawAssetBalanceFormatted}
+                    {withdrawAssetAmount}
                   </span>
                   <span className="text-sm text-accent-purple">
-                    {pendingWithdrawal.formatted.sharesAmount}{" "}
-                    {pendingWithdrawal?.withdrawRate &&
-                      Number(pendingWithdrawal.withdrawRate) > 0 && (
-                        <>at {pendingWithdrawal.withdrawRate}% </>
-                      )}
+                    {withdrawSharesAmount}{" "}
+                    {withdrawRate && Number(withdrawRate) > 0 && (
+                      <>at {withdrawRate}% </>
+                    )}
                   </span>
                 </div>
                 <Button
                   className="w-full mt-2"
                   onClick={onCompleteWithdraw}
                   disabled={
-                    !isConnected ||
-                    isCompletingWithdraw ||
-                    !pendingWithdrawal.isClaimable
+                    !isConnected || isCompletingWithdraw || !isClaimable
                   }
                   variant="primary"
                   isLoading={isCompletingWithdraw}

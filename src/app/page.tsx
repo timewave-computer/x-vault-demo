@@ -2,6 +2,7 @@
 
 import { Card } from "@/components";
 import { useViewAllVaults } from "@/hooks";
+import { formatBigInt } from "@/lib";
 import Link from "next/link";
 import { useAccount } from "wagmi";
 export default function Home() {
@@ -36,61 +37,88 @@ export default function Home() {
               connected to the correct chain.
             </p>
           ) : (
-            vaults.map((vault) => (
-              <Link
-                key={`vaultcard-${vault.vaultId}`}
-                href={`/vault/${vault.vaultId}`}
-              >
-                <Card isHoverable={true} className="block  " variant="primary">
-                  <div className="mt-2">
-                    <dl>
-                      <div>
-                        <dt className="sr-only">Name</dt>
-                        <dd className="text-2xl font-beast text-primary">
-                          {vault.copy.name}
-                        </dd>
-                      </div>
-                      <div className="mt-2">
-                        <dt className="sr-only">Description</dt>
-                        <dd className="text-sm text-gray-500">
-                          {vault.copy.description}
-                        </dd>
-                      </div>
-                    </dl>
-                    <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
-                      <div className="mt-1.5 sm:mt-0">
-                        <p className="text-black">Vault TVL</p>
-                        <p className="text-xl font-beast text-accent-purple text-wrap break-words">
-                          {vault.formatted.tvl}
-                        </p>
-                      </div>
+            vaults.map((vault) => {
+              const tvl = vault.tvl
+                ? formatBigInt(vault.tvl, vault.tokenDecimals, vault.token, {
+                    displayDecimals: 2,
+                  })
+                : "0.00";
 
-                      <div className="gap-2">
+              const apr = vault.aprPercentage
+                ? `${vault.aprPercentage} %`
+                : "0";
+
+              const userVaultAssets = vault.userVaultAssets
+                ? formatBigInt(
+                    vault.userVaultAssets,
+                    vault.tokenDecimals,
+                    vault.token,
+                    {
+                      displayDecimals: 2,
+                    },
+                  )
+                : "0.00";
+
+              return (
+                <Link
+                  key={`vaultcard-${vault.vaultId}`}
+                  href={`/vault/${vault.vaultId}`}
+                >
+                  <Card
+                    isHoverable={true}
+                    className="block  "
+                    variant="primary"
+                  >
+                    <div className="mt-2">
+                      <dl>
+                        <div>
+                          <dt className="sr-only">Name</dt>
+                          <dd className="text-2xl font-beast text-primary">
+                            {vault.copy.name}
+                          </dd>
+                        </div>
+                        <div className="mt-2">
+                          <dt className="sr-only">Description</dt>
+                          <dd className="text-sm text-gray-500">
+                            {vault.copy.description}
+                          </dd>
+                        </div>
+                      </dl>
+                      <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
                         <div className="mt-1.5 sm:mt-0">
-                          <p className="text-black">APR</p>
-                          <p className="text-xl font-beast text-secondary text-wrap break-words">
-                            {vault.apr ? `${vault.apr} %` : "N/A"}
+                          <p className="text-black">Vault TVL</p>
+                          <p className="text-xl font-beast text-accent-purple text-wrap break-words">
+                            {tvl}
                           </p>
                         </div>
-                      </div>
 
-                      {isConnected && (
-                        <div className="col-span-2 border-t-2 border-primary/40 pt-4">
-                          <div className="items-center gap-2">
-                            <div className="mt-1.5 sm:mt-0">
-                              <p className="text-black">Your Deposit</p>
-                              <p className="text-xl font-beast text-accent-purple text-wrap break-words">
-                                {vault.formatted.userPosition}
-                              </p>
-                            </div>
+                        <div className="gap-2">
+                          <div className="mt-1.5 sm:mt-0">
+                            <p className="text-black">APR</p>
+                            <p className="text-xl font-beast text-secondary text-wrap break-words">
+                              {apr}
+                            </p>
                           </div>
                         </div>
-                      )}
+
+                        {isConnected && (
+                          <div className="col-span-2 border-t-2 border-primary/40 pt-4">
+                            <div className="items-center gap-2">
+                              <div className="mt-1.5 sm:mt-0">
+                                <p className="text-black">Your Deposit</p>
+                                <p className="text-xl font-beast text-accent-purple text-wrap break-words">
+                                  {userVaultAssets}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              </Link>
-            ))
+                  </Card>
+                </Link>
+              );
+            })
           )}
         </div>
       </div>
