@@ -54,21 +54,19 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     },
     isLoading: isLoadingContract,
     isError: isContractError,
-  } = useVaultContract(
-    vaultData
+  } = useVaultContract({
+    vaultMetadata: vaultData
       ? {
-          vaultMetadata: {
-            vaultProxyAddress: vaultData.vaultProxyAddress,
-            tokenAddress: vaultData.tokenAddress,
-            tokenDecimals: vaultData.tokenDecimals,
-            shareDecimals: vaultData.shareDecimals,
-            token: vaultData.token,
-            transactionConfirmationTimeout:
-              vaultData.transactionConfirmationTimeout,
-          },
+          vaultProxyAddress: vaultData.vaultProxyAddress,
+          tokenAddress: vaultData.tokenAddress,
+          tokenDecimals: vaultData.tokenDecimals,
+          shareDecimals: vaultData.shareDecimals,
+          token: vaultData.token,
+          transactionConfirmationTimeout:
+            vaultData.transactionConfirmationTimeout,
         }
-      : {},
-  );
+      : undefined,
+  });
 
   const { data: previewDepositAmount } = useQuery({
     enabled:
