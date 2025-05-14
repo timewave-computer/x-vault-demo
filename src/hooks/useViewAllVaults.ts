@@ -5,10 +5,13 @@ import { useAccount, useConfig } from "wagmi";
 import { QUERY_KEYS, valenceVaultABI } from "@/const";
 import { readContract, readContracts } from "@wagmi/core";
 import { erc20Abi } from "viem";
-import { fetchAprFromApi, fetchAprFromContract } from "@/lib";
+import {
+  fetchAprFromApi,
+  fetchAprFromContract,
+  parseWithdrawRequest,
+} from "@/lib";
 import { useQueries } from "@tanstack/react-query";
 import { useVaultsConfig, type VaultConfig } from "@/context";
-import { parseWithdrawRequest } from "./useVaultContract";
 
 export type VaultData = VaultConfig & {
   tokenDecimals: number;

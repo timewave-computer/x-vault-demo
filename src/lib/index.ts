@@ -3,3 +3,4 @@ export * from "./helper";
 export * from "./fetchVaultApr";
 export * from "./readVaultsConfig";
 export * from "./schema";
+export * from "./parseWithdrawRequest";

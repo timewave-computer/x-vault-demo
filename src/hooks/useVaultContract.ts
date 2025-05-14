@@ -10,11 +10,7 @@ import { parseUnits, erc20Abi, BaseError } from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
 import { VaultData } from "@/hooks";
-import {
-  formatBigInt,
-  formatBigIntToTimestamp,
-  formatRemainingTime,
-} from "@/lib";
+import { formatBigInt, parseWithdrawRequest } from "@/lib";
 import { readContract } from "@wagmi/core";
 import { useConvertToAssets } from "@/hooks";
 
@@ -28,7 +24,9 @@ const REFRESH_INTERVAL = 5000;
  * - Depositing assets and withdrawing shares
  * - Viewing pending withdrawals
  */
-export function useVaultContract(vaultMetadata?: VaultData) {
+export function useVaultContract(
+  vaultMetadata?: VaultData,
+): UseVaultContractReturnValue {
   const {
     vaultProxyAddress,
     tokenAddress,
@@ -416,14 +414,53 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       assetBalance:
         (userAssetAmount ?? BigInt(0)) + (withdrawAssetAmount ?? BigInt(0)),
       pendingWithdraw: {
-        hasActiveWithdraw,
         ...userWithdrawRequest,
-        withdrawFee,
-        withdrawRate,
-        withdrawAssetAmount,
+        hasActiveWithdraw: hasActiveWithdraw ?? false,
+        withdrawFee: withdrawFee,
+        withdrawRate: withdrawRate ?? BigInt(0),
+        withdrawAssetAmount: withdrawAssetAmount ?? BigInt(0),
         isClaimable: isWithdrawClaimable,
       },
     },
+  };
+}
+
+interface UseVaultContractReturnValue {
+  isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
+  depositWithAmount: (amount: string) => Promise<`0x${string}` | undefined>;
+  withdrawShares: (
+    shares: string,
+    maxLossBps?: number,
+    allowSolverCompletion?: boolean,
+  ) => Promise<`0x${string}` | undefined>;
+  completeWithdraw: () => Promise<`0x${string}` | undefined>;
+  previewDeposit: (amount: string) => Promise<string>;
+  previewRedeem: (shares: string) => Promise<string>;
+  tokenDecimals: number;
+  shareDecimals: number;
+  data: {
+    tvl?: bigint;
+    redemptionRate?: bigint;
+    maxRedeemableShares?: bigint;
+    shareBalance: bigint;
+    assetBalance: bigint;
+    pendingWithdraw: {
+      hasActiveWithdraw: boolean;
+      withdrawFee?: number;
+      withdrawRate?: bigint;
+      withdrawAssetAmount: bigint;
+      isClaimable?: boolean;
+      owner?: Address;
+      timeRemaining?: string | null;
+      maxLossBps?: number;
+      receiver?: Address;
+      updateId?: number;
+      solverFee?: bigint;
+      withdrawSharesAmount?: bigint;
+      claimableAtTimestamp?: number | null;
+    };
   };
 }
 
@@ -450,43 +487,4 @@ const handleAndThrowError = (error: unknown, defaultMessage: string) => {
   } else {
     throw new Error(defaultMessage);
   }
-};
-
-export const parseWithdrawRequest = (
-  withdrawRequest?: readonly [
-    `0x${string}`,
-    bigint,
-    number,
-    `0x${string}`,
-    number,
-    bigint,
-    bigint,
-  ],
-) => {
-  if (!withdrawRequest || withdrawRequest.length !== 7) return undefined;
-  const owner = withdrawRequest?.[0];
-  const _claimableAtTimestamp = withdrawRequest?.[1];
-  const maxLossBps = withdrawRequest?.[2];
-  const receiver = withdrawRequest?.[3];
-  const updateId = withdrawRequest?.[4];
-  const solverFee = withdrawRequest?.[5];
-  const withdrawSharesAmount = withdrawRequest?.[6];
-
-  // add 1 minute to simulate a 1 minute delay in claiming. The current env is has a wait period of 1 second so this simulates the delay
-  const claimableAtTimestamp = _claimableAtTimestamp
-    ? formatBigIntToTimestamp(_claimableAtTimestamp) + 1000 * 60
-    : null;
-  const timeRemaining = claimableAtTimestamp
-    ? formatRemainingTime(claimableAtTimestamp)
-    : null;
-  return {
-    owner,
-    timeRemaining,
-    maxLossBps,
-    receiver,
-    updateId,
-    solverFee,
-    withdrawSharesAmount,
-    claimableAtTimestamp,
-  };
 };
