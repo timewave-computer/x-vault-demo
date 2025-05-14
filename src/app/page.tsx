@@ -39,9 +39,7 @@ export default function Home() {
           ) : (
             vaults.map((vault) => {
               const tvl = vault.tvl
-                ? formatBigInt(vault.tvl, vault.tokenDecimals, vault.token, {
-                    displayDecimals: 2,
-                  })
+                ? formatBigInt(vault.tvl, vault.tokenDecimals)
                 : "0.00";
 
               const apr = vault.aprPercentage
@@ -49,14 +47,7 @@ export default function Home() {
                 : "0";
 
               const userVaultAssets = vault.userVaultAssets
-                ? formatBigInt(
-                    vault.userVaultAssets,
-                    vault.tokenDecimals,
-                    vault.token,
-                    {
-                      displayDecimals: 2,
-                    },
-                  )
+                ? formatBigInt(vault.userVaultAssets, vault.tokenDecimals)
                 : "0.00";
 
               return (

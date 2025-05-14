@@ -138,7 +138,7 @@ export function useVaultContract(
     enabled:
       isConnected && !!address && !!userWithdrawRequest?.withdrawSharesAmount,
   });
-  const withdrawAssetAmount = convertWithdrawSharesQuery.data;
+  const convertedWithdrawAssetAmount = convertWithdrawSharesQuery.data;
 
   // Query the strategist update info for the withdrawal request
   const strategistUpdateInfoQuery = useReadContract({
@@ -181,7 +181,7 @@ export function useVaultContract(
       args: [parsedAmount],
     });
 
-    return formatBigInt(previewAmount, shareDecimals, "shares", {
+    return formatBigInt(previewAmount, shareDecimals, {
       displayDecimals: 4,
     });
   };
@@ -201,7 +201,7 @@ export function useVaultContract(
       args: [parsedShares],
     });
 
-    return formatBigInt(previewAmount, tokenDecimals, symbol, {
+    return formatBigInt(previewAmount, tokenDecimals, {
       displayDecimals: 2,
     });
   };
@@ -393,6 +393,43 @@ export function useVaultContract(
     convertShareBalanceQuery.isError ||
     strategistUpdateInfoQuery.isError;
 
+  // for better UX, include assets in withdraw as part of the balance
+  const syntheticShareBalance =
+    (shareBalance ?? BigInt(0)) +
+    (userWithdrawRequest?.withdrawSharesAmount ?? BigInt(0));
+  const syntheticAssetBalance =
+    (userAssetAmount ?? BigInt(0)) +
+    (convertedWithdrawAssetAmount ?? BigInt(0));
+
+  const pendingWithdraw = userWithdrawRequest
+    ? {
+        withdrawSharesAmount: formatBigInt(
+          userWithdrawRequest.withdrawSharesAmount,
+          shareDecimals,
+        ),
+        withdrawAssetAmount: formatBigInt(
+          convertedWithdrawAssetAmount,
+          tokenDecimals,
+        ),
+
+        // withdraw info
+        owner: userWithdrawRequest.owner,
+        timeRemaining: userWithdrawRequest.timeRemaining,
+        maxLossBps: userWithdrawRequest.maxLossBps,
+        receiver: userWithdrawRequest.receiver,
+        updateId: userWithdrawRequest.updateId,
+
+        solverFee: formatBigInt(userWithdrawRequest.solverFee, shareDecimals),
+
+        claimableAtTimestamp: userWithdrawRequest.claimableAtTimestamp,
+        // update info
+        withdrawFee: withdrawFee,
+        withdrawRate: formatBigInt(withdrawRate, shareDecimals),
+        hasActiveWithdraw: hasActiveWithdraw ?? false,
+        isClaimable: isWithdrawClaimable,
+      }
+    : undefined;
+
   return {
     isLoading,
     isError,
@@ -405,22 +442,12 @@ export function useVaultContract(
     tokenDecimals,
     shareDecimals,
     data: {
-      tvl,
-      redemptionRate,
-      maxRedeemableShares,
-      shareBalance:
-        (shareBalance ?? BigInt(0)) +
-        (userWithdrawRequest?.withdrawSharesAmount ?? BigInt(0)),
-      assetBalance:
-        (userAssetAmount ?? BigInt(0)) + (withdrawAssetAmount ?? BigInt(0)),
-      pendingWithdraw: {
-        ...userWithdrawRequest,
-        hasActiveWithdraw: hasActiveWithdraw ?? false,
-        withdrawFee: withdrawFee,
-        withdrawRate: withdrawRate ?? BigInt(0),
-        withdrawAssetAmount: withdrawAssetAmount ?? BigInt(0),
-        isClaimable: isWithdrawClaimable,
-      },
+      tvl: formatBigInt(tvl, tokenDecimals),
+      redemptionRate: formatBigInt(redemptionRate, shareDecimals),
+      maxRedeemableShares: formatBigInt(maxRedeemableShares, shareDecimals),
+      shareBalance: formatBigInt(syntheticShareBalance, shareDecimals),
+      assetBalance: formatBigInt(syntheticAssetBalance, tokenDecimals),
+      pendingWithdraw,
     },
   };
 }
@@ -441,24 +468,24 @@ interface UseVaultContractReturnValue {
   tokenDecimals: number;
   shareDecimals: number;
   data: {
-    tvl?: bigint;
-    redemptionRate?: bigint;
-    maxRedeemableShares?: bigint;
-    shareBalance: bigint;
-    assetBalance: bigint;
-    pendingWithdraw: {
+    tvl?: string;
+    redemptionRate?: string;
+    maxRedeemableShares?: string;
+    shareBalance: string;
+    assetBalance: string;
+    pendingWithdraw?: {
       hasActiveWithdraw: boolean;
       withdrawFee?: number;
-      withdrawRate?: bigint;
-      withdrawAssetAmount: bigint;
+      withdrawRate?: string;
+      withdrawAssetAmount: string;
       isClaimable?: boolean;
       owner?: Address;
       timeRemaining?: string | null;
       maxLossBps?: number;
       receiver?: Address;
       updateId?: number;
-      solverFee?: bigint;
-      withdrawSharesAmount?: bigint;
+      solverFee?: string;
+      withdrawSharesAmount?: string;
       claimableAtTimestamp?: number | null;
     };
   };

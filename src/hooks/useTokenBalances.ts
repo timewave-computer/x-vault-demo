@@ -59,7 +59,7 @@ export function useTokenBalances({
             });
             return {
               address: tokenAddress,
-              balance,
+              balance: formatUnits(balance ?? BigInt(0), decimals),
               decimals,
               symbol,
             };
@@ -86,10 +86,7 @@ export function useTokenBalances({
     ethBalance: {
       ...ethBalance,
       data: {
-        balance: {
-          raw: ethBalance.data?.value,
-          formatted: formatUnits(ethBalance.data?.value ?? BigInt(0), 18),
-        },
+        balance: formatUnits(ethBalance.data?.value ?? BigInt(0), 18),
         decimals: ethBalance.data?.decimals,
         symbol: ethBalance.data?.symbol,
       },

@@ -53,15 +53,11 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const isLoading = isLoadingVaults || isLogsLoading;
 
   const tvl = vaultData?.tvl
-    ? formatBigInt(vaultData.tvl, vaultData.tokenDecimals, vaultData.token, {
-        displayDecimals: 2,
-      })
+    ? formatBigInt(vaultData.tvl, vaultData.tokenDecimals)
     : "N/A";
 
   const totalShares = vaultData?.totalShares
-    ? formatBigInt(vaultData.totalShares, vaultData.shareDecimals, "shares", {
-        displayDecimals: 2,
-      })
+    ? formatBigInt(vaultData.totalShares, vaultData.shareDecimals)
     : "N/A";
 
   const apr = vaultData?.aprPercentage ? `${vaultData.aprPercentage} %` : "N/A";
