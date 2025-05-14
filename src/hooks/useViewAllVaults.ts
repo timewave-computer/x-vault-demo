@@ -8,6 +8,7 @@ import { erc20Abi } from "viem";
 import {
   fetchAprFromApi,
   fetchAprFromContract,
+  formatBigInt,
   parseWithdrawRequest,
 } from "@/lib";
 import { useQueries } from "@tanstack/react-query";
@@ -24,7 +25,7 @@ export type VaultData = VaultConfig & {
   redemptionRate: bigint;
 };
 
-export function useViewAllVaults() {
+export function useViewAllVaults(): UseViewAllVaultsReturnValue {
   const { address, chainId } = useAccount();
   const config = useConfig();
   const { vaultsConfig } = useVaultsConfig();
@@ -84,6 +85,8 @@ export function useViewAllVaults() {
 
       let userVaultShares = BigInt(0);
       let userVaultAssets = BigInt(0);
+      let sharesInWithdrawRequest = BigInt(0);
+      let assetsInWithdrawRequest = BigInt(0);
 
       if (address) {
         userVaultShares = await readContract(config, {
@@ -108,6 +111,7 @@ export function useViewAllVaults() {
         });
 
         const userWithdrawRequest = parseWithdrawRequest(_userWithdrawRequest);
+
         if (userWithdrawRequest) {
           const withdrawAssetAmount = await readContract(config, {
             abi: valenceVaultABI,
@@ -115,11 +119,15 @@ export function useViewAllVaults() {
             functionName: "convertToAssets",
             args: [userWithdrawRequest.withdrawSharesAmount],
           });
-          userVaultShares =
-            userVaultShares + userWithdrawRequest.withdrawSharesAmount;
-          userVaultAssets = userVaultAssets + withdrawAssetAmount;
+
+          sharesInWithdrawRequest = userWithdrawRequest.withdrawSharesAmount;
+          assetsInWithdrawRequest = withdrawAssetAmount;
         }
       }
+
+      // for better UX, include shares in withdraw request in the users balance
+      const syntheticShareBalance = userVaultShares + sharesInWithdrawRequest;
+      const syntheticAssetBalance = userVaultAssets + assetsInWithdrawRequest;
 
       let apr: string | undefined = undefined;
       if (vault.aprRequest.type === "contract") {
@@ -131,16 +139,19 @@ export function useViewAllVaults() {
         ? (parseFloat(apr) * 100).toString()
         : undefined;
 
-      const result: VaultData = {
+      const result = {
         ...vault,
         tokenDecimals,
         shareDecimals,
         aprPercentage,
-        totalShares: totalShares ?? BigInt(0),
-        tvl: tvl ?? BigInt(0),
-        userVaultShares: userVaultShares ?? BigInt(0),
-        userVaultAssets: userVaultAssets ?? BigInt(0),
-        redemptionRate: redemptionRate ?? BigInt(0),
+        totalShares: formatBigInt(totalShares ?? BigInt(0), shareDecimals),
+        tvl: formatBigInt(tvl ?? BigInt(0), tokenDecimals),
+        userVaultShares: formatBigInt(syntheticShareBalance, shareDecimals),
+        userVaultAssets: formatBigInt(syntheticAssetBalance, tokenDecimals),
+        redemptionRate: formatBigInt(
+          redemptionRate ?? BigInt(0),
+          shareDecimals,
+        ),
       };
       return result;
     },
@@ -193,3 +204,25 @@ export function useViewAllVaults() {
     chainId,
   };
 }
+
+export type UseViewAllVaultsReturnValue = {
+  isLoading: boolean;
+  isError: boolean;
+  vaults: Array<{
+    token: string;
+    tvl: string;
+    aprPercentage?: string;
+    totalShares: string;
+    userVaultShares: string;
+    userVaultAssets: string;
+    redemptionRate: string;
+    tokenDecimals: number;
+    shareDecimals: number;
+    vaultId: string;
+    vaultProxyAddress: `0x${string}`;
+    tokenAddress: `0x${string}`;
+    copy: VaultConfig["copy"];
+    transactionConfirmationTimeout: number;
+  }>;
+  chainId?: number;
+};

@@ -9,7 +9,6 @@ import {
 import { parseUnits, erc20Abi, BaseError } from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
-import { VaultData } from "@/hooks";
 import { formatBigInt, parseWithdrawRequest } from "@/lib";
 import { readContract } from "@wagmi/core";
 import { useConvertToAssets } from "@/hooks";
@@ -24,9 +23,23 @@ const REFRESH_INTERVAL = 5000;
  * - Depositing assets and withdrawing shares
  * - Viewing pending withdrawals
  */
+
+interface UseVaultContractProps {
+  vaultMetadata?: {
+    vaultProxyAddress: `0x${string}`;
+    tokenAddress: `0x${string}`;
+    tokenDecimals: number;
+    shareDecimals: number;
+    transactionConfirmationTimeout: number;
+    token: string;
+  };
+}
+
 export function useVaultContract(
-  vaultMetadata?: VaultData,
+  props: UseVaultContractProps,
 ): UseVaultContractReturnValue {
+  const { vaultMetadata } = props;
+
   const {
     vaultProxyAddress,
     tokenAddress,
@@ -181,9 +194,7 @@ export function useVaultContract(
       args: [parsedAmount],
     });
 
-    return formatBigInt(previewAmount, shareDecimals, {
-      displayDecimals: 4,
-    });
+    return formatBigInt(previewAmount, shareDecimals);
   };
 
   // Preview a withdrawal (vault shares -> tokens)
@@ -201,9 +212,7 @@ export function useVaultContract(
       args: [parsedShares],
     });
 
-    return formatBigInt(previewAmount, tokenDecimals, {
-      displayDecimals: 2,
-    });
+    return formatBigInt(previewAmount, tokenDecimals);
   };
 
   /**

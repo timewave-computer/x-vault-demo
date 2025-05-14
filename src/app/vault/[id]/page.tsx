@@ -48,13 +48,27 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     data: {
       tvl,
       maxRedeemableShares,
-      shareBalance,
-      assetBalance,
+      shareBalance: userShares,
+      assetBalance: userVaultAssets,
       pendingWithdraw,
     },
     isLoading: isLoadingContract,
     isError: isContractError,
-  } = useVaultContract(vaultData);
+  } = useVaultContract(
+    vaultData
+      ? {
+          vaultMetadata: {
+            vaultProxyAddress: vaultData.vaultProxyAddress,
+            tokenAddress: vaultData.tokenAddress,
+            tokenDecimals: vaultData.tokenDecimals,
+            shareDecimals: vaultData.shareDecimals,
+            token: vaultData.token,
+            transactionConfirmationTimeout:
+              vaultData.transactionConfirmationTimeout,
+          },
+        }
+      : {},
+  );
 
   const { data: previewDepositAmount } = useQuery({
     enabled:
@@ -193,26 +207,21 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       },
     });
 
-  const vaultSharesFormatted = formatNumberString(shareBalance, "shares", {
+  const userSharesFormatted = formatNumberString(userShares, "shares", {
     displayDecimals: 2,
   });
 
-  const vaultAssetsFormatted = formatNumberString(assetBalance, tokenSymbol, {
-    displayDecimals: 2,
-  });
+  const userVaultAssetsFormatted = formatNumberString(
+    userVaultAssets,
+    tokenSymbol,
+    {
+      displayDecimals: 2,
+    },
+  );
 
   const vaultTvlFormatted = formatNumberString(tvl, tokenSymbol, {
     displayDecimals: 2,
   });
-
-  const withdrawSharesAmount = formatNumberString(
-    pendingWithdraw?.withdrawSharesAmount,
-    "shares",
-  );
-  const withdrawAssetAmount = formatNumberString(
-    pendingWithdraw?.withdrawAssetAmount,
-    tokenSymbol,
-  );
 
   const isWithdrawDisabled =
     !isConnected ||
@@ -289,14 +298,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Your Balance</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
-              {isConnected ? vaultSharesFormatted : "-"}
+              {isConnected ? userSharesFormatted : "-"}
             </dd>
           </Card>
 
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Your Position</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
-              {isConnected ? vaultAssetsFormatted : "-"}
+              {isConnected ? userVaultAssetsFormatted : "-"}
             </dd>
           </Card>
 
@@ -331,8 +340,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
             <WithdrawInProgress
               hasActiveWithdraw={pendingWithdraw.hasActiveWithdraw}
               isClaimable={pendingWithdraw.isClaimable}
-              withdrawAssetAmount={withdrawAssetAmount}
-              withdrawSharesAmount={withdrawSharesAmount}
+              withdrawAssetAmount={`${pendingWithdraw.withdrawAssetAmount} ${tokenSymbol}`}
+              withdrawSharesAmount={`${pendingWithdraw.withdrawSharesAmount} shares`}
               copy={vaultData?.copy.withdrawInProgress}
               claimableAtTimestamp={
                 pendingWithdraw.claimableAtTimestamp ?? undefined
@@ -415,7 +424,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 previewDepositAmount &&
                 parseFloat(depositInput) > 0 && (
                   <p className="text-sm text-gray-500">
-                    ≈ {previewDepositAmount}
+                    ≈ {previewDepositAmount} shares
                   </p>
                 )}
               {isConnected &&
@@ -502,7 +511,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 parseFloat(withdrawInput) > 0 &&
                 previewRedeemAmount && (
                   <p className="text-sm text-gray-500">
-                    ≈ {previewRedeemAmount}
+                    ≈ {previewRedeemAmount} {tokenSymbol}
                   </p>
                 )}
               {isConnected &&
