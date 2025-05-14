@@ -33,7 +33,16 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   } = useViewAllVaults();
   const vaultData = vaults?.find((v) => v.vaultId === params.id);
 
-  const { getLogs } = useVaultLogs(vaultData);
+  const { getLogs } = useVaultLogs(
+    vaultData
+      ? {
+          vaultProxyAddress: vaultData.vaultProxyAddress,
+          tokenDecimals: vaultData.tokenDecimals,
+          shareDecimals: vaultData.shareDecimals,
+          startBlock: vaultData.startBlock,
+        }
+      : undefined,
+  );
 
   const {
     data: logs,
@@ -51,14 +60,6 @@ export default function VaultPage({ params }: { params: { id: string } }) {
   const { withdrawRequests, processedUpdates, deposits } = logs ?? {};
 
   const isLoading = isLoadingVaults || isLogsLoading;
-
-  const tvl = vaultData?.tvl
-    ? formatBigInt(vaultData.tvl, vaultData.tokenDecimals)
-    : "N/A";
-
-  const totalShares = vaultData?.totalShares
-    ? formatBigInt(vaultData.totalShares, vaultData.shareDecimals)
-    : "N/A";
 
   const apr = vaultData?.aprPercentage ? `${vaultData.aprPercentage} %` : "N/A";
 
@@ -127,14 +128,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">TVL</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
-              {tvl}
+              {vaultData.tvl} {vaultData.token}
             </dd>
           </Card>
 
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Total Shares</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
-              {totalShares}
+              {vaultData.totalShares} shares
             </dd>
           </Card>
 

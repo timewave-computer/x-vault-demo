@@ -223,6 +223,7 @@ export type UseViewAllVaultsReturnValue = {
     tokenAddress: `0x${string}`;
     copy: VaultConfig["copy"];
     transactionConfirmationTimeout: number;
+    startBlock: number;
   }>;
   chainId?: number;
 };

@@ -1,13 +1,17 @@
 import { useConfig } from "wagmi";
 import { formatUnits } from "viem";
 import { usePublicClient } from "wagmi";
-import { VaultData } from "@/hooks";
 import { Address } from "viem";
 import { valenceVaultABI } from "@/const";
 import { readContract } from "wagmi/actions";
 import { formatBigIntToTimestamp, unixTimestampToDateString } from "@/lib";
 
-export function useVaultLogs(vaultData?: VaultData) {
+export function useVaultLogs(vaultData?: {
+  vaultProxyAddress: `0x${string}`;
+  tokenDecimals: number;
+  shareDecimals: number;
+  startBlock: number;
+}) {
   const { vaultProxyAddress, tokenDecimals, shareDecimals, startBlock } =
     vaultData ?? {
       // placeholders
@@ -19,7 +23,6 @@ export function useVaultLogs(vaultData?: VaultData) {
 
   const config = useConfig();
 
-  const test = BigInt(0);
   /**
    * Retrieves pending withdrawals for the current user from the vault
    * @returns An array of pending withdrawal objects with details
