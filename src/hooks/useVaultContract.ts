@@ -9,12 +9,7 @@ import {
 import { parseUnits, erc20Abi, BaseError } from "viem";
 import { type Address } from "viem";
 import { valenceVaultABI } from "@/const";
-import { VaultData } from "@/hooks";
-import {
-  formatBigInt,
-  formatBigIntToTimestamp,
-  formatRemainingTime,
-} from "@/lib";
+import { formatBigInt, parseWithdrawRequest } from "@/lib";
 import { readContract } from "@wagmi/core";
 import { useConvertToAssets } from "@/hooks";
 
@@ -28,7 +23,23 @@ const REFRESH_INTERVAL = 5000;
  * - Depositing assets and withdrawing shares
  * - Viewing pending withdrawals
  */
-export function useVaultContract(vaultMetadata?: VaultData) {
+
+interface UseVaultContractProps {
+  vaultMetadata?: {
+    vaultProxyAddress: `0x${string}`;
+    tokenAddress: `0x${string}`;
+    tokenDecimals: number;
+    shareDecimals: number;
+    transactionConfirmationTimeout: number;
+    token: string;
+  };
+}
+
+export function useVaultContract(
+  props: UseVaultContractProps,
+): UseVaultContractReturnValue {
+  const { vaultMetadata } = props;
+
   const {
     vaultProxyAddress,
     tokenAddress,
@@ -140,7 +151,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     enabled:
       isConnected && !!address && !!userWithdrawRequest?.withdrawSharesAmount,
   });
-  const withdrawAssetAmount = convertWithdrawSharesQuery.data;
+  const convertedWithdrawAssetAmount = convertWithdrawSharesQuery.data;
 
   // Query the strategist update info for the withdrawal request
   const strategistUpdateInfoQuery = useReadContract({
@@ -183,9 +194,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       args: [parsedAmount],
     });
 
-    return formatBigInt(previewAmount, shareDecimals, "shares", {
-      displayDecimals: 4,
-    });
+    return formatBigInt(previewAmount, shareDecimals);
   };
 
   // Preview a withdrawal (vault shares -> tokens)
@@ -203,9 +212,7 @@ export function useVaultContract(vaultMetadata?: VaultData) {
       args: [parsedShares],
     });
 
-    return formatBigInt(previewAmount, tokenDecimals, symbol, {
-      displayDecimals: 2,
-    });
+    return formatBigInt(previewAmount, tokenDecimals);
   };
 
   /**
@@ -395,6 +402,43 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     convertShareBalanceQuery.isError ||
     strategistUpdateInfoQuery.isError;
 
+  // for better UX, include assets in withdraw as part of the balance
+  const syntheticShareBalance =
+    (shareBalance ?? BigInt(0)) +
+    (userWithdrawRequest?.withdrawSharesAmount ?? BigInt(0));
+  const syntheticAssetBalance =
+    (userAssetAmount ?? BigInt(0)) +
+    (convertedWithdrawAssetAmount ?? BigInt(0));
+
+  const pendingWithdraw = userWithdrawRequest
+    ? {
+        withdrawSharesAmount: formatBigInt(
+          userWithdrawRequest.withdrawSharesAmount,
+          shareDecimals,
+        ),
+        withdrawAssetAmount: formatBigInt(
+          convertedWithdrawAssetAmount,
+          tokenDecimals,
+        ),
+
+        // withdraw info
+        owner: userWithdrawRequest.owner,
+        timeRemaining: userWithdrawRequest.timeRemaining,
+        maxLossBps: userWithdrawRequest.maxLossBps,
+        receiver: userWithdrawRequest.receiver,
+        updateId: userWithdrawRequest.updateId,
+
+        solverFee: formatBigInt(userWithdrawRequest.solverFee, shareDecimals),
+
+        claimableAtTimestamp: userWithdrawRequest.claimableAtTimestamp,
+        // update info
+        withdrawFee: withdrawFee,
+        withdrawRate: formatBigInt(withdrawRate, shareDecimals),
+        hasActiveWithdraw: hasActiveWithdraw ?? false,
+        isClaimable: isWithdrawClaimable,
+      }
+    : undefined;
+
   return {
     isLoading,
     isError,
@@ -407,23 +451,52 @@ export function useVaultContract(vaultMetadata?: VaultData) {
     tokenDecimals,
     shareDecimals,
     data: {
-      tvl,
-      redemptionRate,
-      maxRedeemableShares,
-      shareBalance:
-        (shareBalance ?? BigInt(0)) +
-        (userWithdrawRequest?.withdrawSharesAmount ?? BigInt(0)),
-      assetBalance:
-        (userAssetAmount ?? BigInt(0)) + (withdrawAssetAmount ?? BigInt(0)),
-      pendingWithdraw: {
-        hasActiveWithdraw,
-        ...userWithdrawRequest,
-        withdrawFee,
-        withdrawRate,
-        withdrawAssetAmount,
-        isClaimable: isWithdrawClaimable,
-      },
+      tvl: formatBigInt(tvl, tokenDecimals),
+      redemptionRate: formatBigInt(redemptionRate, shareDecimals),
+      maxRedeemableShares: formatBigInt(maxRedeemableShares, shareDecimals),
+      shareBalance: formatBigInt(syntheticShareBalance, shareDecimals),
+      assetBalance: formatBigInt(syntheticAssetBalance, tokenDecimals),
+      pendingWithdraw,
     },
+  };
+}
+
+interface UseVaultContractReturnValue {
+  isLoading: boolean;
+  isError: boolean;
+  refetch: () => void;
+  depositWithAmount: (amount: string) => Promise<`0x${string}` | undefined>;
+  withdrawShares: (
+    shares: string,
+    maxLossBps?: number,
+    allowSolverCompletion?: boolean,
+  ) => Promise<`0x${string}` | undefined>;
+  completeWithdraw: () => Promise<`0x${string}` | undefined>;
+  previewDeposit: (amount: string) => Promise<string>;
+  previewRedeem: (shares: string) => Promise<string>;
+  tokenDecimals: number;
+  shareDecimals: number;
+  data: {
+    tvl?: string;
+    redemptionRate?: string;
+    maxRedeemableShares?: string;
+    shareBalance: string;
+    assetBalance: string;
+    pendingWithdraw?: {
+      hasActiveWithdraw: boolean;
+      withdrawFee?: number;
+      withdrawRate?: string;
+      withdrawAssetAmount: string;
+      isClaimable?: boolean;
+      owner?: Address;
+      timeRemaining?: string | null;
+      maxLossBps?: number;
+      receiver?: Address;
+      updateId?: number;
+      solverFee?: string;
+      withdrawSharesAmount?: string;
+      claimableAtTimestamp?: number | null;
+    };
   };
 }
 
@@ -450,43 +523,4 @@ const handleAndThrowError = (error: unknown, defaultMessage: string) => {
   } else {
     throw new Error(defaultMessage);
   }
-};
-
-export const parseWithdrawRequest = (
-  withdrawRequest?: readonly [
-    `0x${string}`,
-    bigint,
-    number,
-    `0x${string}`,
-    number,
-    bigint,
-    bigint,
-  ],
-) => {
-  if (!withdrawRequest || withdrawRequest.length !== 7) return undefined;
-  const owner = withdrawRequest?.[0];
-  const _claimableAtTimestamp = withdrawRequest?.[1];
-  const maxLossBps = withdrawRequest?.[2];
-  const receiver = withdrawRequest?.[3];
-  const updateId = withdrawRequest?.[4];
-  const solverFee = withdrawRequest?.[5];
-  const withdrawSharesAmount = withdrawRequest?.[6];
-
-  // add 1 minute to simulate a 1 minute delay in claiming. The current env is has a wait period of 1 second so this simulates the delay
-  const claimableAtTimestamp = _claimableAtTimestamp
-    ? formatBigIntToTimestamp(_claimableAtTimestamp) + 1000 * 60
-    : null;
-  const timeRemaining = claimableAtTimestamp
-    ? formatRemainingTime(claimableAtTimestamp)
-    : null;
-  return {
-    owner,
-    timeRemaining,
-    maxLossBps,
-    receiver,
-    updateId,
-    solverFee,
-    withdrawSharesAmount,
-    claimableAtTimestamp,
-  };
 };

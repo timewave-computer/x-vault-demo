@@ -4,28 +4,7 @@ import { useAccount, useDisconnect } from "wagmi";
 import { useState, useEffect, Fragment } from "react";
 import { useAppKit } from "@/context";
 import { useTokenBalances, useViewAllVaults } from "@/hooks";
-import { formatBigInt } from "@/lib";
-
-/**
- * Utility function to format an Ethereum address for display
- * Returns address in format: 0x1234...5678
- */
-function shortenAddress(address: string) {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
-
-/**
- * Utility function to format token balances with specified decimals
- * Returns balance in format: "123.45 TOKEN"
- */
-function formatBalance(
-  balance: string | undefined,
-  symbol: string,
-  decimals: number = 4,
-): string {
-  if (!balance) return `0 ${symbol}`;
-  return `${Number(balance).toFixed(decimals)} ${symbol}`;
-}
+import { formatNumberString, shortenAddress } from "@/lib";
 
 /**
  * ConnectButton component
@@ -78,7 +57,9 @@ export function ConnectButton() {
             {/* Display ETH balance */}
             {ethBalance && (
               <span className="text-accent-purple whitespace-nowrap">
-                {formatBalance(ethBalance.data?.balance.formatted, "ETH", 2)}
+                {formatNumberString(ethBalance.data?.balance, "ETH", {
+                  displayDecimals: 2,
+                })}
               </span>
             )}
             {/* Display token balances */}
@@ -86,9 +67,8 @@ export function ConnectButton() {
               <Fragment key={`accountTokenBalance-${index}`}>
                 {tokenBalance && (
                   <span className="text-accent-purple whitespace-nowrap">
-                    {formatBigInt(
+                    {formatNumberString(
                       tokenBalance.balance,
-                      tokenBalance.decimals,
                       tokenBalance.symbol,
                       {
                         displayDecimals: 2,

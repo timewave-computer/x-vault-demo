@@ -2,7 +2,7 @@
 
 import { Card } from "@/components";
 import { useViewAllVaults } from "@/hooks";
-import { formatBigInt } from "@/lib";
+import { formatNumberString } from "@/lib";
 import Link from "next/link";
 import { useAccount } from "wagmi";
 export default function Home() {
@@ -38,26 +38,21 @@ export default function Home() {
             </p>
           ) : (
             vaults.map((vault) => {
-              const tvl = vault.tvl
-                ? formatBigInt(vault.tvl, vault.tokenDecimals, vault.token, {
-                    displayDecimals: 2,
-                  })
-                : "0.00";
+              const tvl = formatNumberString(vault.tvl, vault.token, {
+                displayDecimals: 2,
+              });
 
               const apr = vault.aprPercentage
                 ? `${vault.aprPercentage} %`
                 : "0";
 
-              const userVaultAssets = vault.userVaultAssets
-                ? formatBigInt(
-                    vault.userVaultAssets,
-                    vault.tokenDecimals,
-                    vault.token,
-                    {
-                      displayDecimals: 2,
-                    },
-                  )
-                : "0.00";
+              const userVaultAssets = formatNumberString(
+                vault.userVaultAssets,
+                vault.token,
+                {
+                  displayDecimals: 2,
+                },
+              );
 
               return (
                 <Link

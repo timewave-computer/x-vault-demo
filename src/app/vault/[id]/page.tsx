@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useViewAllVaults, useVaultContract, useTokenBalances } from "@/hooks";
 import { useAccount } from "wagmi";
 import { useState } from "react";
-import { formatBigInt, isValidNumberInput } from "@/lib";
+import { formatNumberString, isValidNumberInput } from "@/lib";
 import { useToast } from "@/context";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/const";
@@ -15,7 +15,6 @@ import {
   WithdrawInProgress,
   DepositInProgress,
 } from "@/components";
-import { formatUnits } from "viem";
 
 export default function VaultPage({ params }: { params: { id: string } }) {
   const { isConnected, address } = useAccount();
@@ -35,7 +34,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     address,
     tokenAddresses: vaultData ? [vaultData.tokenAddress] : [],
   });
-  const _userTokenBalance = tokenBalances?.data?.find(
+  const userTokenBalance = tokenBalances?.data?.find(
     (token) => token?.address === vaultData?.tokenAddress,
   )?.balance;
 
@@ -46,19 +45,28 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     completeWithdraw,
     previewRedeem,
     previewDeposit,
-    tokenDecimals,
-    shareDecimals,
     data: {
-      tvl: _tvl,
-      redemptionRate: _redemptionRate,
-      maxRedeemableShares: _maxRedeemableShares,
-      shareBalance: _shareBalance,
-      assetBalance: _assetBalance,
-      pendingWithdraw: _pendingWithdraw,
+      tvl,
+      maxRedeemableShares,
+      shareBalance: userShares,
+      assetBalance: userVaultAssets,
+      pendingWithdraw,
     },
     isLoading: isLoadingContract,
     isError: isContractError,
-  } = useVaultContract(vaultData);
+  } = useVaultContract({
+    vaultMetadata: vaultData
+      ? {
+          vaultProxyAddress: vaultData.vaultProxyAddress,
+          tokenAddress: vaultData.tokenAddress,
+          tokenDecimals: vaultData.tokenDecimals,
+          shareDecimals: vaultData.shareDecimals,
+          token: vaultData.token,
+          transactionConfirmationTimeout:
+            vaultData.transactionConfirmationTimeout,
+        }
+      : undefined,
+  });
 
   const { data: previewDepositAmount } = useQuery({
     enabled:
@@ -197,52 +205,21 @@ export default function VaultPage({ params }: { params: { id: string } }) {
       },
     });
 
-  // do not truncate the decimal places
-  const maxRedeemableShares = formatUnits(
-    _maxRedeemableShares ?? BigInt(0),
-    shareDecimals,
-  );
-  const userTokenBalance = formatUnits(
-    _userTokenBalance ?? BigInt(0),
-    tokenDecimals,
-  );
-  const vaultSharesFormatted = formatBigInt(
-    _shareBalance ?? BigInt(0),
-    shareDecimals,
-    "shares",
-    {
-      displayDecimals: 2,
-    },
-  );
+  const userSharesFormatted = formatNumberString(userShares, "shares", {
+    displayDecimals: 2,
+  });
 
-  const vaultAssetsFormatted = formatBigInt(
-    _assetBalance ?? BigInt(0),
-    tokenDecimals,
+  const userVaultAssetsFormatted = formatNumberString(
+    userVaultAssets,
     tokenSymbol,
     {
       displayDecimals: 2,
     },
   );
 
-  const vaultTvlFormatted = formatBigInt(
-    _tvl ?? BigInt(0),
-    tokenDecimals,
-    tokenSymbol,
-    {
-      displayDecimals: 2,
-    },
-  );
-
-  const withdrawSharesAmount = formatBigInt(
-    _pendingWithdraw?.withdrawSharesAmount ?? BigInt(0),
-    shareDecimals,
-    "shares",
-  );
-  const withdrawAssetAmount = formatBigInt(
-    _pendingWithdraw?.withdrawAssetAmount ?? BigInt(0),
-    tokenDecimals,
-    tokenSymbol,
-  );
+  const vaultTvlFormatted = formatNumberString(tvl, tokenSymbol, {
+    displayDecimals: 2,
+  });
 
   const isWithdrawDisabled =
     !isConnected ||
@@ -256,7 +233,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
     !isConnected ||
     !depositInput ||
     isDepositing ||
-    !_userTokenBalance ||
+    !userTokenBalance ||
     parseFloat(depositInput) > parseFloat(userTokenBalance);
 
   const isLoading = isLoadingVaults || isLoadingContract;
@@ -319,14 +296,14 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Your Balance</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
-              {isConnected ? vaultSharesFormatted : "-"}
+              {isConnected ? userSharesFormatted : "-"}
             </dd>
           </Card>
 
           <Card variant="secondary" className="text-center">
             <dt className="text-base text-black">Your Position</dt>
             <dd className="mt-2 text-2xl font-beast text-accent-purple text-wrap break-words">
-              {isConnected ? vaultAssetsFormatted : "-"}
+              {isConnected ? userVaultAssetsFormatted : "-"}
             </dd>
           </Card>
 
@@ -350,24 +327,24 @@ export default function VaultPage({ params }: { params: { id: string } }) {
           maxRedeemableShares &&
           parseFloat(maxRedeemableShares) > 0 &&
           // contains copy for vault path and on deposit success
-          !_pendingWithdraw?.hasActiveWithdraw && (
+          !pendingWithdraw?.hasActiveWithdraw && (
             <DepositInProgress copy={vaultData.copy.depositInProgress} />
           )}
 
         {/*shows when user has a pending withdrawal */}
         {isConnected &&
-          _pendingWithdraw &&
-          _pendingWithdraw?.hasActiveWithdraw && (
+          pendingWithdraw &&
+          pendingWithdraw?.hasActiveWithdraw && (
             <WithdrawInProgress
-              hasActiveWithdraw={_pendingWithdraw?.hasActiveWithdraw}
-              isClaimable={_pendingWithdraw?.isClaimable}
-              withdrawAssetAmount={withdrawAssetAmount}
-              withdrawSharesAmount={withdrawSharesAmount}
+              hasActiveWithdraw={pendingWithdraw.hasActiveWithdraw}
+              isClaimable={pendingWithdraw.isClaimable}
+              withdrawAssetAmount={`${pendingWithdraw.withdrawAssetAmount} ${tokenSymbol}`}
+              withdrawSharesAmount={`${pendingWithdraw.withdrawSharesAmount} shares`}
               copy={vaultData?.copy.withdrawInProgress}
               claimableAtTimestamp={
-                _pendingWithdraw?.claimableAtTimestamp ?? undefined
+                pendingWithdraw.claimableAtTimestamp ?? undefined
               }
-              timeRemaining={_pendingWithdraw?.timeRemaining}
+              timeRemaining={pendingWithdraw.timeRemaining}
               onCompleteWithdraw={handleCompleteWithdraw}
               isCompletingWithdraw={isCompletingWithdraw}
             />
@@ -388,7 +365,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                     Available: {`${userTokenBalance} ${tokenSymbol}`}
                   </p>
                   <Button
-                    onClick={() => setDepositInput(userTokenBalance)}
+                    onClick={() => setDepositInput(userTokenBalance ?? "0")}
                     disabled={!isConnected}
                     variant="secondary"
                     size="sm"
@@ -417,7 +394,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 }}
                 isEnabled={isConnected && !isDepositing}
                 isError={
-                  parseFloat(depositInput) > parseFloat(userTokenBalance)
+                  parseFloat(depositInput) > parseFloat(userTokenBalance ?? "0")
                 }
               />
 
@@ -445,7 +422,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 previewDepositAmount &&
                 parseFloat(depositInput) > 0 && (
                   <p className="text-sm text-gray-500">
-                    ≈ {previewDepositAmount}
+                    ≈ {previewDepositAmount} shares
                   </p>
                 )}
               {isConnected &&
@@ -474,7 +451,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                     Available: {maxRedeemableShares} shares
                   </p>
                   <Button
-                    onClick={() => setWithdrawInput(maxRedeemableShares)}
+                    onClick={() => setWithdrawInput(maxRedeemableShares ?? "0")}
                     disabled={!isConnected}
                     variant="secondary"
                     size="sm"
@@ -503,7 +480,8 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 }}
                 isEnabled={isConnected && !isWithdrawing}
                 isError={
-                  parseFloat(withdrawInput) > parseFloat(maxRedeemableShares)
+                  parseFloat(withdrawInput) >
+                  parseFloat(maxRedeemableShares ?? "0")
                 }
               />
 
@@ -531,7 +509,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 parseFloat(withdrawInput) > 0 &&
                 previewRedeemAmount && (
                   <p className="text-sm text-gray-500">
-                    ≈ {previewRedeemAmount}
+                    ≈ {previewRedeemAmount} {tokenSymbol}
                   </p>
                 )}
               {isConnected &&
@@ -543,6 +521,7 @@ export default function VaultPage({ params }: { params: { id: string } }) {
                 )}{" "}
               {isConnected &&
                 withdrawInput &&
+                maxRedeemableShares &&
                 parseFloat(withdrawInput) > parseFloat(maxRedeemableShares) && (
                   <p className="text-sm text-secondary">
                     Insufficient vault balance
